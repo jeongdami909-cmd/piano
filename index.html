@@ -3,72 +3,62 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Piano Tiles: UI Refined</title>
+    <title>Piano Master: Neon Beat</title>
     <style>
-        :root { --main: #00f2ff; --bg: #0a0a0c; --card: #1a1a1e; }
-        * { -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
+        :root { --neon: #00f2ff; --pink: #ff007b; --bg: #050505; }
+        * { -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; box-sizing: border-box; touch-action: none; }
         
-        body { margin: 0; background: var(--bg); color: #fff; font-family: 'Pretendard', sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        body { margin: 0; background: var(--bg); color: #fff; font-family: sans-serif; height: 100vh; overflow: hidden; display: flex; justify-content: center; }
         
-        /* 홈 화면 레이아웃 */
+        /* 홈 화면 */
         #home { 
-            display: flex; flex-direction: column; height: 100vh; width: 100%; 
-            max-width: 500px; margin: 0 auto; position: relative; z-index: 100; background: var(--bg);
+            position: absolute; inset: 0; background: #000; z-index: 100; 
+            display: flex; flex-direction: column; align-items: center; padding: 40px 20px;
         }
-        
-        header { padding: 30px 20px 10px; text-align: center; }
-        header h1 { margin: 0; font-size: 28px; color: var(--main); letter-spacing: 3px; }
+        .song-container { 
+            flex: 1; width: 100%; overflow-y: scroll; margin: 20px 0;
+            border-top: 1px solid #333; border-bottom: 1px solid #333;
+        }
+        .song-btn { 
+            width: 100%; padding: 20px; margin: 10px 0; background: #111; 
+            border: 1px solid #222; border-radius: 10px; color: #fff; text-align: left;
+        }
+        .song-btn.selected { border-color: var(--neon); background: rgba(0, 242, 255, 0.1); }
 
-        /* 곡 목록 영역 (스크롤 가능) */
-        #song-list-container { 
-            flex: 1; overflow-y: auto; padding: 10px 20px; 
-            touch-action: pan-y; /* 세로 스크롤 허용 */
+        /* 게임 스테이지 */
+        #game-stage { 
+            display: none; width: 100vw; max-width: 480px; height: 100vh; 
+            background: #000; position: relative; border-left: 1px solid #222; border-right: 1px solid #222;
         }
-        
-        .song-card { 
-            background: var(--card); margin-bottom: 12px; padding: 20px; 
-            border-radius: 15px; border: 2px solid transparent; transition: 0.2s;
-            display: flex; justify-content: space-between; align-items: center;
+        .lane { 
+            position: absolute; top: 0; width: 25%; height: 100%; 
+            border-right: 1px solid rgba(255, 255, 255, 0.05); 
         }
-        .song-card.selected { border-color: var(--main); background: rgba(0, 242, 255, 0.15); }
-        .song-info h3 { margin: 0; font-size: 18px; }
-        .song-info p { margin: 5px 0 0; font-size: 13px; color: #888; }
-        .level-tag { font-size: 11px; padding: 2px 8px; border-radius: 10px; background: #333; }
-
-        /* 하단 시작 버튼 영역 */
-        footer { padding: 20px; background: linear-gradient(to top, var(--bg) 80%, transparent); }
-        #start-btn { 
-            width: 100%; padding: 18px; background: var(--main); color: #000; 
-            border: none; border-radius: 50px; font-size: 20px; font-weight: bold; cursor: pointer;
-            box-shadow: 0 5px 20px rgba(0, 242, 255, 0.4);
+        /* 타일 디자인: 안 보이지 않게 네온 테두리 추가 */
+        .tile { 
+            width: 25%; position: absolute; border-radius: 5px;
+            background: linear-gradient(135deg, #1a1a1a 0%, #000 100%);
+            border: 1.5px solid var(--neon); box-shadow: 0 0 10px rgba(0, 242, 255, 0.3);
+        }
+        .tile.hit { 
+            background: var(--pink) !important; border-color: #fff;
+            box-shadow: 0 0 40px var(--pink); opacity: 0; transform: scale(1.2); transition: 0.15s;
         }
 
-        /* 게임 화면 */
-        #game-stage { display: none; width: 100vw; max-width: 500px; height: 100vh; background: #000; position: relative; margin: 0 auto; }
-        .lane { position: absolute; top: 0; bottom: 0; width: 25%; border-right: 1px solid rgba(255,255,255,0.05); }
-        .tile { width: 25%; position: absolute; background: linear-gradient(to bottom, #333, #000); border-radius: 5px; }
-        .tile.pressed { background: var(--main) !important; opacity: 0; transform: scale(1.1); transition: 0.1s; }
-        #score { position: absolute; top: 50px; width: 100%; text-align: center; font-size: 60px; font-weight: 900; opacity: 0.3; pointer-events: none; }
+        #score-board { position: absolute; top: 50px; width: 100%; text-align: center; font-size: 60px; font-weight: 900; opacity: 0.4; z-index: 10; }
+        #start-bar { width: 100%; padding: 20px; background: var(--neon); color: #000; border: none; border-radius: 50px; font-size: 20px; font-weight: bold; }
     </style>
 </head>
 <body>
 
 <div id="home">
-    <header>
-        <h1>PIANO MASTER</h1>
-        <p style="font-size: 14px; color: #666;">곡을 선택하고 연주를 시작하세요</p>
-    </header>
-    
-    <div id="song-list-container">
-        </div>
-    
-    <footer>
-        <button id="start-btn" onclick="startGame()">CONCERT START</button>
-    </footer>
+    <h1 style="color:var(--neon); letter-spacing: 5px;">PIANO BEAT</h1>
+    <div class="song-container" id="song-list"></div>
+    <button id="start-bar" onclick="startGame()">CONCERT START</button>
 </div>
 
 <div id="game-stage">
-    <div id="score">0</div>
+    <div id="score-board">0</div>
     <div class="lane" style="left:0%"></div>
     <div class="lane" style="left:25%"></div>
     <div class="lane" style="left:50%"></div>
@@ -77,123 +67,120 @@
 
 <script>
     const songs = [
-        { title: "나비야", diff: "Easy", speed: 5, notes: [392, 330, 330, 349, 294, 294, 262, 294, 330, 349, 392, 392, 392] },
-        { title: "작은 별", diff: "Easy", speed: 5, notes: [261, 261, 392, 392, 440, 440, 392, 349, 349, 329, 329, 293, 293, 261] },
-        { title: "할아버지의 낡은 시계", diff: "Normal", speed: 7, notes: [392, 523, 493, 523, 587, 659, 698, 659, 587, 523, 493, 392] },
-        { title: "엘리제를 위하여", diff: "Normal", speed: 8, notes: [659, 622, 659, 622, 659, 493, 587, 523, 440] },
-        { title: "차이코프스키 - 백조의 호수", diff: "Normal", speed: 8.5, notes: [493, 587, 659, 783, 739, 659, 587] },
-        { title: "쇼팽 - 강아지 왈츠", diff: "Hard", speed: 11, notes: [523, 493, 523, 587, 523, 493, 523, 659, 523, 493, 523] },
-        { title: "라흐마니노프 협주곡 2번", diff: "Hard", speed: 12, notes: [261, 311, 392, 523, 493, 392, 311, 261, 233, 261] },
-        { title: "왕벌의 비행", diff: "Hard", speed: 15, notes: [440, 415, 392, 370, 349, 330, 311, 293, 277, 261] },
-        { title: "리스트 - 라 캄파넬라", diff: "Hard", speed: 14, notes: [1046, 987, 1046, 1174, 1046, 1318, 1046, 1568] }
+        { title: "라흐마니노프 (Hard)", speed: 12, notes: [261, 311, 392, 523, 493, 392, 311, 261], beat: 120 },
+        { title: "차이코프스키 (Normal)", speed: 8, notes: [493, 587, 659, 783, 739, 659], beat: 100 },
+        { title: "엘리제를 위하여 (Normal)", speed: 7, notes: [659, 622, 659, 622, 659, 493, 587], beat: 90 },
+        { title: "왕벌의 비행 (Expert)", speed: 15, notes: [440, 415, 392, 370, 349, 330], beat: 140 }
     ];
 
-    let selectedSong = songs[0];
+    let selected = songs[0];
     let audioCtx, isPlaying = false, score = 0, noteIdx = 0, tiles = [];
-    let spawnTimer, loopReq;
+    let gameLoopReq, spawnInterval;
 
-    // 곡 리스트 생성 루프
-    const container = document.getElementById('song-list-container');
+    // 곡 목록 만들기
+    const list = document.getElementById('song-list');
     songs.forEach((s, i) => {
-        const card = document.createElement('div');
-        card.className = `song-card ${i === 0 ? 'selected' : ''}`;
-        card.innerHTML = `
-            <div class="song-info">
-                <h3>${s.title}</h3>
-                <p><span class="level-tag">${s.diff}</span> Speed: ${s.speed}</p>
-            </div>
-        `;
-        card.onclick = () => {
-            document.querySelectorAll('.song-card').forEach(c => c.classList.remove('selected'));
-            card.classList.add('selected');
-            selectedSong = s;
+        const b = document.createElement('button');
+        b.className = `song-btn ${i === 0 ? 'selected' : ''}`;
+        b.innerHTML = `<strong>${s.title}</strong><br><small>Speed: ${s.speed}</small>`;
+        b.onclick = () => {
+            document.querySelectorAll('.song-btn').forEach(btn => btn.classList.remove('selected'));
+            b.classList.add('selected');
+            selected = s;
         };
-        container.appendChild(card);
+        list.appendChild(b);
     });
 
-    function playPiano(f) {
+    function createAudio() {
         if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+
+    // 신나는 배경 비트 재생 (드럼 느낌)
+    function playBackgroundBeat() {
+        if (!isPlaying) return;
         const now = audioCtx.currentTime;
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
+        
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(60, now); // 낮은 킥 드럼 소리
+        osc.frequency.exponentialRampToValueAtTime(0.01, now + 0.1);
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+        
+        osc.connect(gain).connect(audioCtx.destination);
+        osc.start(); osc.stop(now + 0.1);
+        
+        setTimeout(playBackgroundBeat, 60000 / selected.beat); // 곡의 BPM에 맞춰 비트 재생
+    }
+
+    function playPiano(f) {
+        const now = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        
         osc.type = 'triangle';
         osc.frequency.setValueAtTime(f, now);
-        // 배음 추가 (소리를 더 풍성하게)
-        const osc2 = audioCtx.createOscillator();
-        osc2.frequency.setValueAtTime(f * 2, now);
-        const gain2 = audioCtx.createGain();
+        gain.gain.setValueAtTime(0.5, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
         
-        gain.gain.setValueAtTime(0.4, now);
-        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.8);
-        gain2.gain.setValueAtTime(0.1, now);
-        gain2.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
-
         osc.connect(gain).connect(audioCtx.destination);
-        osc2.connect(gain2).connect(audioCtx.destination);
-        osc.start(); osc.stop(now + 0.8);
-        osc2.start(); osc2.stop(now + 0.4);
-        
-        // 4박자마다 베이스 반주
-        if (noteIdx % 4 === 0) {
-            const bOsc = audioCtx.createOscillator();
-            const bGain = audioCtx.createGain();
-            bOsc.frequency.setValueAtTime(f / 2, now);
-            bGain.gain.setValueAtTime(0.1, now);
-            bGain.gain.exponentialRampToValueAtTime(0.01, now + 1.2);
-            bOsc.connect(bGain).connect(audioCtx.destination);
-            bOsc.start(); bOsc.stop(now + 1.2);
-        }
+        osc.start(); osc.stop(now + 0.5);
     }
 
     function createTile() {
         if (!isPlaying) return;
         const lane = Math.floor(Math.random() * 4);
-        const tile = document.createElement('div');
-        tile.className = 'tile';
-        tile.style.left = (lane * 25) + '%';
-        tile.style.top = '-200px';
-        tile.style.height = '160px';
+        const t = document.createElement('div');
+        t.className = 'tile';
+        t.style.left = (lane * 25) + '%';
+        t.style.top = '-150px';
+        t.style.height = '140px';
 
         const hit = (e) => {
             e.preventDefault();
-            if (tile.classList.contains('pressed')) return;
-            playPiano(selectedSong.notes[noteIdx % selectedSong.notes.length]);
+            if (t.classList.contains('hit')) return;
+            playPiano(selected.notes[noteIdx % selected.notes.length]);
             noteIdx++; score++;
-            document.getElementById('score').innerText = score;
-            tile.classList.add('pressed');
-            setTimeout(() => tile.remove(), 100);
+            document.getElementById('score-board').innerText = score;
+            t.classList.add('hit');
+            setTimeout(() => t.remove(), 150);
         };
-        tile.addEventListener('touchstart', hit);
-        tile.addEventListener('mousedown', hit);
-        document.getElementById('game-stage').appendChild(tile);
-        tiles.push(tile);
+
+        t.addEventListener('touchstart', hit);
+        t.addEventListener('mousedown', hit);
+        document.getElementById('game-stage').appendChild(t);
+        tiles.push(t);
     }
 
     function gameLoop() {
         if (!isPlaying) return;
         tiles.forEach((t, i) => {
-            let top = parseFloat(t.style.top) + selectedSong.speed;
+            let top = parseFloat(t.style.top) + selected.speed;
             t.style.top = top + 'px';
-            if (top > window.innerHeight - 50 && !t.classList.contains('pressed')) gameOver();
+            if (top > window.innerHeight - 60 && !t.classList.contains('hit')) gameOver();
             if (top > window.innerHeight) { t.remove(); tiles.splice(i, 1); }
         });
-        loopReq = requestAnimationFrame(gameLoop);
+        gameLoopReq = requestAnimationFrame(gameLoop);
     }
 
     function startGame() {
-        if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+        createAudio();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
         document.getElementById('home').style.display = 'none';
         document.getElementById('game-stage').style.display = 'block';
-        isPlaying = true; score = 0; noteIdx = 0;
+        isPlaying = true; score = 0; noteIdx = 0; tiles = [];
+        
         gameLoop();
-        spawnTimer = setInterval(createTile, 1000 / (selectedSong.speed / 4.5));
+        spawnInterval = setInterval(createTile, 1000 / (selected.speed / 4));
+        playBackgroundBeat(); // 배경 비트 시작
     }
 
     function gameOver() {
         isPlaying = false;
-        clearInterval(spawnTimer);
-        cancelAnimationFrame(loopReq);
-        alert(`공연 종료! 점수: ${score}`);
+        clearInterval(spawnInterval);
+        cancelAnimationFrame(gameLoopReq);
+        alert("PERFORMANCE OVER\nScore: " + score);
         location.reload();
     }
 </script>
