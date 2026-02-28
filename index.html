@@ -1,1 +1,131 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>미니 피아노 타일</title>
+    <style>
+        body { display: flex; flex-direction: column; align-items: center; background-color: #f5f5f5; font-family: sans-serif; margin-top: 50px; }
+        #game-container { width: 300px; height: 500px; background-color: #fff; position: relative; overflow: hidden; border: 3px solid #333; box-shadow: 0 10px 20px rgba(0,0,0,0.2); }
+        /* 4개의 건반 레일 */
+        .lane { width: 25%; height: 100%; float: left; border-right: 1px solid #ddd; box-sizing: border-box; pointer-events: none; }
+        .lane:last-child { border-right: none; }
+        /* 떨어지는 검은 타일 */
+        .tile { width: 25%; height: 120px; background-color: #111; position: absolute; top: -120px; cursor: pointer; border-radius: 4px; border-bottom: 4px solid #555;}
+        #score-board { font-size: 28px; font-weight: bold; margin-bottom: 20px; color: #333; }
+        /* 게임 오버 화면 */
+        #game-over { display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.85); color: white; padding: 30px 20px; text-align: center; width: 100%; box-sizing: border-box; }
+        button { padding: 10px 20px; font-size: 16px; margin-top: 15px; cursor: pointer; background: #fff; border: none; border-radius: 5px; font-weight: bold;}
+    </style>
+</head>
+<body>
 
+<div id="score-board">점수: <span id="score">0</span></div>
+
+<div id="game-container">
+    <div class="lane"></div><div class="lane"></div><div class="lane"></div><div class="lane"></div>
+    <div id="game-over">
+        <h2>게임 오버!</h2>
+        <button onclick="startGame()">다시 시작</button>
+    </div>
+</div>
+
+<script>
+    const gameContainer = document.getElementById('game-container');
+    const scoreElement = document.getElementById('score');
+    const gameOverScreen = document.getElementById('game-over');
+    
+    let score = 0;
+    let gameInterval;
+    let spawnInterval;
+    let tiles = [];
+    let speed = 4;
+    let isGameOver = false;
+
+    // 웹 오디오 API로 소리 생성 (C 마이너 코드: 도, 미b, 솔, 높은도)
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const notes = [261.63, 311.13, 392.00, 523.25]; 
+
+    function playTone(laneIndex) {
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const oscillator = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+        
+        oscillator.type = 'sine'; // 부드러운 소리
+        oscillator.frequency.value = notes[laneIndex];
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        
+        oscillator.start();
+        gainNode.gain.setValueAtTime(1, audioCtx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.6); // 소리가 서서히 사라짐
+        oscillator.stop(audioCtx.currentTime + 0.6);
+    }
+
+    function createTile() {
+        if (isGameOver) return;
+        const lane = Math.floor(Math.random() * 4); // 0~3 레인 중 랜덤
+        const tile = document.createElement('div');
+        tile.classList.add('tile');
+        tile.style.left = (lane * 25) + '%';
+        tile.dataset.lane = lane;
+        
+        // 타일을 클릭(터치)했을 때의 이벤트
+        tile.addEventListener('mousedown', function() {
+            if (isGameOver) return;
+            playTone(lane);
+            score += 10;
+            scoreElement.innerText = score;
+            tile.remove(); // 화면에서 지움
+            tiles = tiles.filter(t => t !== tile);
+            speed += 0.1; // 맞출 때마다 타일이 미세하게 빨라짐
+        });
+
+        gameContainer.appendChild(tile);
+        tiles.push(tile);
+    }
+
+    function updateGame() {
+        if (isGameOver) return;
+        
+        tiles.forEach(tile => {
+            let currentTop = parseFloat(tile.style.top || -120);
+            currentTop += speed;
+            tile.style.top = currentTop + 'px';
+
+            // 타일이 바닥(500px)에 닿으면 게임 오버
+            if (currentTop > 500) {
+                endGame();
+            }
+        });
+    }
+
+    function startGame() {
+        tiles.forEach(tile => tile.remove());
+        tiles = [];
+        score = 0;
+        speed = 4;
+        isGameOver = false;
+        scoreElement.innerText = score;
+        gameOverScreen.style.display = 'none';
+
+        gameInterval = setInterval(updateGame, 20); // 1초에 50번 화면 업데이트
+        spawnInterval = setInterval(createTile, 800); // 0.8초마다 새 타일 생성
+    }
+
+    function endGame() {
+        isGameOver = true;
+        clearInterval(gameInterval);
+        clearInterval(spawnInterval);
+        gameOverScreen.style.display = 'block';
+    }
+
+    // 브라우저 오디오 정책을 위한 첫 클릭 활성화
+    window.addEventListener('mousedown', () => {
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+    }, { once: true });
+
+    startGame();
+</script>
+</body>
+</html>
