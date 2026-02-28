@@ -3,28 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Piano Master: Ultimate</title>
+    <title>Piano Master: 3-Strikes</title>
     <style>
         :root { --neon: #00f2ff; --pink: #ff007b; --bg: #050508; --card: #1a1a1f; }
         * { -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; box-sizing: border-box; touch-action: none; }
         
+        /* 화면 잘림 방지를 위한 dvh(Dynamic Viewport Height) 사용 */
         body { 
             margin: 0; background: var(--bg); color: #fff; font-family: sans-serif;
-            height: 100vh; display: flex; flex-direction: column; overflow: hidden;
+            height: 100dvh; display: flex; flex-direction: column; overflow: hidden;
         }
 
-        /* 1. 홈 화면 레이아웃 최적화 */
         #home { 
             display: flex; flex-direction: column; height: 100%; width: 100%; 
             max-width: 500px; margin: 0 auto; background: var(--bg); position: relative;
         }
-        header { padding: 40px 20px 10px; text-align: center; flex-shrink: 0; }
+        header { padding: 30px 20px 10px; text-align: center; flex-shrink: 0; }
         header h1 { font-size: 28px; letter-spacing: 4px; color: var(--neon); text-shadow: 0 0 15px var(--neon); margin: 0; }
 
-        /* 곡 목록: 절대 잘리지 않고 부드럽게 스크롤됨 */
+        /* 곡 목록 영역: flex-grow로 남는 공간 차지, 스크롤 가능 */
         #song-list-scroll { 
-            flex: 1; overflow-y: auto; padding: 10px 20px 100px; 
-            -webkit-overflow-scrolling: touch; touch-action: pan-y;
+            flex: 1; overflow-y: auto; padding: 10px 20px 20px; 
+            -webkit-overflow-scrolling: touch; 
         }
         
         .card { 
@@ -34,29 +34,38 @@
         }
         .card.selected { border-color: var(--neon); background: rgba(0, 242, 255, 0.1); }
         .card h3 { margin: 0; font-size: 17px; }
-        .genre { font-size: 10px; color: var(--neon); font-weight: bold; margin-bottom: 4px; display: block; }
 
-        /* 하단 시작 버튼 (플로팅) */
+        /* 하단 버튼 영역: 절대 잘리지 않도록 flex-shrink 차단 */
         .footer { 
-            position: absolute; bottom: 0; width: 100%; padding: 20px; 
-            background: linear-gradient(to top, var(--bg) 70%, transparent); 
+            padding: 15px 20px 30px; background: var(--bg); 
+            border-top: 1px solid #222; flex-shrink: 0;
         }
         #start-btn { 
             width: 100%; padding: 18px; background: var(--neon); color: #000; 
             border: none; border-radius: 50px; font-size: 20px; font-weight: bold; 
-            box-shadow: 0 10px 25px rgba(0, 242, 255, 0.4); cursor: pointer;
+            box-shadow: 0 10px 25px rgba(0, 242, 255, 0.4);
         }
 
-        /* 2. 게임 스테이지 */
-        #stage { display: none; width: 100vw; max-width: 500px; height: 100vh; background: #000; position: relative; margin: 0 auto; }
-        .lane-guide { position: absolute; top: 0; width: 1px; height: 100%; background: rgba(255,255,255,0.05); pointer-events: none; }
+        /* 게임 스테이지 */
+        #stage { display: none; width: 100vw; max-width: 500px; height: 100%; background: #000; position: relative; margin: 0 auto; }
         .tile { 
             width: 25%; position: absolute; border-radius: 6px; 
-            border: 2px solid var(--neon); background: linear-gradient(135deg, #222, #000);
+            border: 2.5px solid var(--neon); background: linear-gradient(135deg, #222, #000);
             box-shadow: 0 0 15px rgba(0, 242, 255, 0.3);
         }
         .tile.pressed { background: var(--pink) !important; border-color: #fff; box-shadow: 0 0 40px var(--pink); opacity: 0; transform: scale(1.1); transition: 0.1s; }
-        #score { position: absolute; top: 60px; width: 100%; text-align: center; font-size: 60px; font-weight: 900; opacity: 0.2; pointer-events: none; }
+        
+        /* 점수 및 하트 표시 */
+        #hud { 
+            position: absolute; top: 40px; width: 100%; display: flex; 
+            flex-direction: column; align-items: center; pointer-events: none; z-index: 10; 
+        }
+        #score { font-size: 50px; font-weight: 900; opacity: 0.4; }
+        #lives { font-size: 24px; margin-top: 5px; color: var(--pink); letter-spacing: 5px; }
+        
+        /* 미스 시 화면 번쩍임 효과 */
+        .miss-flash { animation: flash 0.3s ease-out; }
+        @keyframes flash { 0% { background: rgba(255, 0, 0, 0); } 50% { background: rgba(255, 0, 0, 0.3); } 100% { background: rgba(255, 0, 0, 0); } }
     </style>
 </head>
 <body>
@@ -64,7 +73,7 @@
 <div id="home">
     <header>
         <h1>PIANO MASTER</h1>
-        <p style="font-size: 13px; color: #666; margin-top: 8px;">최적화된 터치와 사운드</p>
+        <p style="font-size: 13px; color: #666; margin-top: 8px;">3번의 기회, 끝까지 완주하세요!</p>
     </header>
     <div id="song-list-scroll"></div>
     <div class="footer">
@@ -73,32 +82,31 @@
 </div>
 
 <div id="stage">
-    <div id="score">0</div>
-    <div class="lane-guide" style="left:25%"></div>
-    <div class="lane-guide" style="left:50%"></div>
-    <div class="lane-guide" style="left:75%"></div>
+    <div id="hud">
+        <div id="score">0</div>
+        <div id="lives">❤️❤️❤️</div>
+    </div>
 </div>
 
 <script>
     const library = [
-        { g: "K-POP", t: "BTS - Dynamite", s: 8.5, n: [392, 392, 392, 392, 330, 294, 262, 330, 392, 440] },
-        { g: "K-POP", t: "NewJeans - Ditto", s: 7.5, n: [523, 659, 783, 1046, 783, 659, 523] },
-        { g: "POP", t: "Coldplay - Viva La Vida", s: 7, n: [659, 587, 523, 493, 440, 392, 440, 523] },
-        { g: "CLASSIC", t: "라흐마니노프 협주곡 2번", s: 11, n: [261, 311, 392, 523, 493, 392, 311, 261] },
-        { g: "CLASSIC", t: "차이코프스키 - 백조의 호수", s: 8.5, n: [493, 587, 659, 783, 739, 659, 587] },
-        { g: "CLASSIC", t: "엘리제를 위하여", s: 7, n: [659, 622, 659, 622, 659, 493, 587, 523, 440] }
+        { t: "엘리제를 위하여", s: 6.5, n: [659, 622, 659, 622, 659, 493, 587, 523, 440] },
+        { t: "라흐마니노프 협주곡 2번", s: 10, n: [261, 311, 392, 523, 493, 392, 311, 261] },
+        { t: "BTS - Dynamite", s: 8, n: [392, 392, 392, 392, 330, 294, 262, 330, 392] },
+        { t: "NewJeans - Ditto", s: 7.5, n: [523, 659, 783, 1046, 783, 659, 523] },
+        { t: "Coldplay - Viva La Vida", s: 7, n: [659, 587, 523, 493, 440, 392, 440] }
     ];
 
     let selected = library[0];
-    let audioCtx, isPlaying = false, score = 0, nIdx = 0, tiles = [];
+    let audioCtx, isPlaying = false, score = 0, lives = 3, nIdx = 0, tiles = [];
     let loopId, spawnId, stageHeight;
 
-    // UI 생성 및 스크롤 문제 해결
+    // UI 생성 (스크롤 가능하도록 배치)
     const list = document.getElementById('song-list-scroll');
     library.forEach((song, i) => {
         const card = document.createElement('div');
         card.className = `card ${i === 0 ? 'selected' : ''}`;
-        card.innerHTML = `<div><span class="genre">${song.g}</span><h3>${song.t}</h3></div><div style="color:var(--neon)">♬</div>`;
+        card.innerHTML = `<div><h3>${song.t}</h3></div><div style="color:var(--neon)">♬</div>`;
         card.onclick = () => {
             document.querySelectorAll('.card').forEach(c => c.classList.remove('selected'));
             card.classList.add('selected');
@@ -107,28 +115,21 @@
         list.appendChild(card);
     });
 
-    // 2. AudioContext 안정화
     function initAudio() {
         if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         if (audioCtx.state === 'suspended') audioCtx.resume();
     }
 
-    // 사운드 퀄리티 향상 (배음 합성)
     function playPiano(f) {
         const now = audioCtx.currentTime;
-        const createPart = (freq, vol, decay) => {
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.type = freq === f ? 'triangle' : 'sine';
-            osc.frequency.setValueAtTime(freq, now);
-            gain.gain.setValueAtTime(vol, now);
-            gain.gain.exponentialRampToValueAtTime(0.001, now + decay);
-            osc.connect(gain).connect(audioCtx.destination);
-            osc.start(); osc.stop(now + decay);
-        };
-        createPart(f, 0.5, 0.8);
-        createPart(f * 2, 0.15, 0.4);
-        if (nIdx % 4 === 0) createPart(f / 2, 0.2, 1.2); // 베이스 반주
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(f, now);
+        gain.gain.setValueAtTime(0.5, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.8);
+        osc.connect(gain).connect(audioCtx.destination);
+        osc.start(); osc.stop(now + 0.8);
     }
 
     function createTile() {
@@ -140,7 +141,6 @@
         t.style.top = '-200px';
         t.style.height = '160px';
 
-        // 5. pointerdown으로 통합 (터치 중복 방지)
         const onHit = (e) => {
             e.preventDefault();
             if (t.classList.contains('pressed')) return;
@@ -155,19 +155,35 @@
         tiles.push(t);
     }
 
-    // 1. 역순 for문으로 루프 안정성 확보
     function gameLoop() {
         if (!isPlaying) return;
+        stageHeight = document.getElementById('stage').clientHeight;
+
         for (let i = tiles.length - 1; i >= 0; i--) {
             const t = tiles[i];
             let top = parseFloat(t.style.top) + selected.s;
             t.style.top = top + 'px';
 
-            // 3. 고정된 stageHeight 기준으로 판정
-            if (top > stageHeight - 80 && !t.classList.contains('pressed')) {
-                endGame();
-                return;
+            // 판정선을 넘었는데 안 눌린 경우 (Miss)
+            if (top > stageHeight - 50 && !t.classList.contains('pressed')) {
+                lives--;
+                updateLivesDisplay();
+                
+                // 화면 번쩍임 효과
+                document.getElementById('stage').classList.add('miss-flash');
+                setTimeout(() => document.getElementById('stage').classList.remove('miss-flash'), 300);
+
+                t.remove();
+                tiles.splice(i, 1);
+
+                if (lives <= 0) {
+                    endGame();
+                    return;
+                }
+                continue;
             }
+
+            // 화면 밖으로 나간 타일 제거
             if (top > stageHeight) {
                 t.remove();
                 tiles.splice(i, 1);
@@ -176,14 +192,19 @@
         loopId = requestAnimationFrame(gameLoop);
     }
 
+    function updateLivesDisplay() {
+        const hearts = "❤️".repeat(lives) + "🖤".repeat(3 - lives);
+        document.getElementById('lives').innerText = hearts;
+    }
+
     function startGame() {
         initAudio();
         document.getElementById('home').style.display = 'none';
         document.getElementById('stage').style.display = 'block';
-        stageHeight = document.getElementById('stage').clientHeight;
-        isPlaying = true; score = 0; nIdx = 0; tiles = [];
+        isPlaying = true; score = 0; lives = 3; nIdx = 0; tiles = [];
+        updateLivesDisplay();
+        document.getElementById('score').innerText = '0';
         gameLoop();
-        // 4. 직관적인 스폰 공식 적용
         spawnId = setInterval(createTile, 600 / (selected.s / 8));
     }
 
@@ -191,7 +212,7 @@
         isPlaying = false;
         clearInterval(spawnId);
         cancelAnimationFrame(loopId);
-        alert(`공연 종료!\n최종 점수: ${score}`);
+        alert(`공연 종료!\n기회를 모두 소진했습니다.\n최종 점수: ${score}`);
         location.reload();
     }
 </script>
