@@ -1,54 +1,64 @@
-
 <!DOCTYPE html>
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>Grand Piano Tiles: Master Edition</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Fixed Piano Tiles</title>
     <style>
-        :root { --bg: #000; --accent: #00d4ff; }
+        :root { --bg: #0b0b0b; --accent: #00d4ff; }
+        * { 
+            /* 텍스트 선택 및 드래그 방지 */
+            -webkit-user-select: none; user-select: none; 
+            /* 터치 시 파란색 하이라이트 제거 */
+            -webkit-tap-highlight-color: transparent;
+            /* 브라우저 기본 터치 동작(확대, 스크롤) 차단 */
+            touch-action: none;
+        }
         body { 
             margin: 0; background: var(--bg); color: #fff; 
             display: flex; flex-direction: column; align-items: center;
             font-family: 'Pretendard', sans-serif; overflow: hidden; height: 100vh;
         }
-        /* 메인 UI */
+        
         #menu-screen { 
-            position: fixed; inset: 0; background: rgba(0,0,0,0.9); 
+            position: fixed; inset: 0; background: rgba(0,0,0,0.95); 
             display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 1000;
-            padding: 20px; text-align: center;
         }
-        .song-list { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin: 30px 0; width: 90%; max-width: 800px; }
+        .song-list { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 20px 0; width: 90%; }
         .song-card { 
-            background: #222; padding: 15px; border-radius: 12px; cursor: pointer; border: 2px solid transparent;
-            transition: 0.3s;
+            background: #1a1a1a; padding: 12px; border-radius: 10px; cursor: pointer; border: 1px solid #333;
+            text-align: center; font-size: 14px;
         }
-        .song-card:hover { transform: translateY(-5px); border-color: var(--accent); }
-        .song-card.active { background: var(--accent); color: #000; font-weight: bold; }
-        .diff-tag { font-size: 12px; padding: 3px 8px; border-radius: 20px; display: inline-block; margin-bottom: 5px; }
+        .song-card.active { border-color: var(--accent); background: rgba(0,212,255,0.2); }
+
+        #game-view { 
+            width: 100vw; max-width: 450px; height: 100vh; background: #000; 
+            position: relative; overflow: hidden; border-left: 1px solid #222; border-right: 1px solid #222;
+        }
+        .lane-line { position: absolute; top: 0; bottom: 0; width: 1px; background: rgba(255,255,255,0.1); pointer-events: none; }
         
-        /* 게임 뷰 */
-        #game-view { width: 360px; height: 100vh; background: #050505; position: relative; overflow: hidden; }
-        .lane-line { position: absolute; top: 0; bottom: 0; width: 1px; background: rgba(255,255,255,0.05); }
         .tile { 
-            width: 25%; position: absolute; border-radius: 4px; cursor: pointer;
-            box-shadow: inset 0 0 10px rgba(255,255,255,0.1);
+            width: 25%; position: absolute; border-radius: 2px;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
         }
-        .tile.hit { filter: brightness(2) !important; opacity: 0; transition: 0.2s; }
+        .tile.hit { opacity: 0; transform: scale(1.1); transition: 0.1s; }
         
-        #score-display { position: absolute; top: 40px; font-size: 50px; font-weight: 800; width: 100%; text-align: center; z-index: 5; opacity: 0.7; pointer-events: none; }
-        #start-btn { padding: 15px 60px; font-size: 24px; border-radius: 50px; border: none; background: #fff; cursor: pointer; font-weight: bold; }
+        #score-display { 
+            position: absolute; top: 50px; font-size: 60px; font-weight: 900; 
+            width: 100%; text-align: center; z-index: 5; opacity: 0.5; pointer-events: none; 
+        }
+        button { 
+            padding: 15px 50px; font-size: 20px; border-radius: 30px; border: none; 
+            background: var(--accent); color: #000; font-weight: bold; margin-top: 20px;
+        }
     </style>
 </head>
 <body>
 
 <div id="menu-screen">
-    <h1 style="font-size: 40px; margin-bottom: 10px;">GRAND PIANO</h1>
-    <p>곡을 선택하고 연주를 시작하세요</p>
-    
-    <div class="song-list" id="songs">
-        </div>
-    
-    <button id="start-btn" onclick="startGame()">PLAY</button>
+    <h1 style="color:var(--accent)">PIANO MASTER</h1>
+    <div class="song-list" id="songs"></div>
+    <button onclick="startGame()">연주 시작</button>
 </div>
 
 <div id="score-display">0</div>
@@ -60,17 +70,9 @@
 
 <script>
     const songData = [
-        { id:0, title: "작은 별", diff: "Easy", speed: 5, color: "#a8e6cf", notes: [261, 261, 392, 392, 440, 440, 392] },
-        { id:1, title: "학교종이 땡땡땡", diff: "Easy", speed: 5, color: "#dcedc1", notes: [392, 392, 440, 440, 392, 392, 329] },
-        { id:2, title: "아리랑", diff: "Easy", speed: 5.5, color: "#ffd3b6", notes: [440, 493, 523, 440, 392, 329, 392] },
-        
-        { id:3, title: "엘리제를 위하여", diff: "Normal", speed: 7, color: "#3498db", notes: [659, 622, 659, 622, 659, 493, 587, 523, 440] },
-        { id:4, title: "백조의 호수", diff: "Normal", speed: 7.5, color: "#9b59b6", notes: [493, 587, 659, 783, 739, 659, 587] },
-        { id:5, title: "터키 행진곡", diff: "Normal", speed: 8.5, color: "#1abc9c", notes: [493, 440, 415, 440, 523, 587, 523, 493, 440] },
-        
-        { id:6, title: "라흐마니노프 협주곡", diff: "Hard", speed: 11, color: "#e74c3c", notes: [261, 329, 392, 523, 493, 392, 329, 261, 220, 261] },
-        { id:7, title: "왕벌의 비행", diff: "Hard", speed: 14, color: "#f1c40f", notes: [440, 415, 392, 370, 349, 330, 311, 293, 277] },
-        { id:8, title: "쇼팽 - 혁명", diff: "Hard", speed: 12, color: "#c0392b", notes: [440, 220, 261, 329, 440, 523, 659, 880] }
+        { id:0, title: "작은 별", speed: 5, color: "#a8e6cf", notes: [261, 261, 392, 392, 440, 440, 392] },
+        { id:1, title: "차이코프스키", speed: 7.5, color: "#9b59b6", notes: [493, 587, 659, 783, 739, 659, 587] },
+        { id:2, title: "라흐마니노프", speed: 11, color: "#e74c3c", notes: [261, 329, 392, 523, 493, 392, 329, 261] }
     ];
 
     let currentSong = songData[0];
@@ -79,13 +81,13 @@
     let audioCtx;
     let noteIdx = 0;
     let tiles = [];
+    let spawnHandler;
 
-    // UI 초기화
     const songContainer = document.getElementById('songs');
     songData.forEach(song => {
         const div = document.createElement('div');
         div.className = `song-card ${song.id === 0 ? 'active' : ''}`;
-        div.innerHTML = `<span class="diff-tag" style="background:${song.color}; color:#000">${song.diff}</span><br>${song.title}`;
+        div.innerHTML = song.title;
         div.onclick = () => {
             document.querySelectorAll('.song-card').forEach(c => c.classList.remove('active'));
             div.classList.add('active');
@@ -98,13 +100,13 @@
         if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
-        osc.type = currentSong.diff === "Hard" ? "sawtooth" : "triangle";
+        osc.type = 'sine';
         osc.frequency.value = currentSong.notes[noteIdx % currentSong.notes.length];
         noteIdx++;
-        gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+        gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
         osc.connect(gain).connect(audioCtx.destination);
-        osc.start(); osc.stop(audioCtx.currentTime + 0.4);
+        osc.start(); osc.stop(audioCtx.currentTime + 0.3);
     }
 
     function createTile() {
@@ -113,17 +115,24 @@
         const tile = document.createElement('div');
         tile.className = 'tile';
         tile.style.left = (lane * 25) + '%';
-        tile.style.top = '-180px';
-        tile.style.height = (180 - currentSong.speed * 5) + 'px'; // 속도가 빠를수록 타일이 짧아짐
+        tile.style.top = '-200px';
+        tile.style.height = '180px';
         tile.style.background = currentSong.color;
-        tile.onmousedown = () => {
+
+        // 클릭과 터치 모두 대응하되, 중복 실행 방지
+        const handleHit = (e) => {
+            e.preventDefault(); // 화면 밀림 방지 핵심!
             if (tile.classList.contains('hit')) return;
             playSound();
             score++;
             document.getElementById('score-display').innerText = score;
             tile.classList.add('hit');
-            setTimeout(() => tile.remove(), 100);
+            setTimeout(() => { tile.remove(); }, 100);
         };
+
+        tile.addEventListener('touchstart', handleHit);
+        tile.addEventListener('mousedown', handleHit);
+
         document.getElementById('game-view').appendChild(tile);
         tiles.push(tile);
     }
@@ -142,17 +151,18 @@
     }
 
     function startGame() {
+        if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
         document.getElementById('menu-screen').style.display = 'none';
         isPlaying = true; score = 0; noteIdx = 0;
         document.getElementById('score-display').innerText = '0';
         gameLoop();
-        spawnHandler = setInterval(createTile, 1000 / (currentSong.speed / 4.5));
+        spawnHandler = setInterval(createTile, 1000 / (currentSong.speed / 4));
     }
 
     function endGame() {
         isPlaying = false;
         clearInterval(spawnHandler);
-        alert(`GAME OVER\n당신의 점수: ${score}`);
+        alert(`공연 종료! 점수: ${score}`);
         location.reload();
     }
 </script>
