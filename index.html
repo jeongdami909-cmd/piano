@@ -3,65 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Fixed Piano Tiles</title>
+    <title>Piano Master: Concert Hall</title>
     <style>
-        :root { --bg: #0b0b0b; --accent: #00d4ff; }
-        * { 
-            /* 텍스트 선택 및 드래그 방지 */
-            -webkit-user-select: none; user-select: none; 
-            /* 터치 시 파란색 하이라이트 제거 */
-            -webkit-tap-highlight-color: transparent;
-            /* 브라우저 기본 터치 동작(확대, 스크롤) 차단 */
-            touch-action: none;
-        }
+        :root { --bg: #050505; --accent: #ff00de; --gold: #ffd700; }
+        * { -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; touch-action: none; }
         body { 
-            margin: 0; background: var(--bg); color: #fff; 
-            display: flex; flex-direction: column; align-items: center;
-            font-family: 'Pretendard', sans-serif; overflow: hidden; height: 100vh;
+            margin: 0; background: var(--bg); color: #fff; font-family: 'Pretendard', sans-serif;
+            display: flex; flex-direction: column; align-items: center; height: 100vh; overflow: hidden;
         }
         
-        #menu-screen { 
-            position: fixed; inset: 0; background: rgba(0,0,0,0.95); 
-            display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 1000;
+        /* 메뉴 UI */
+        #menu { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .song-item { 
+            width: 85%; max-width: 400px; padding: 20px; margin: 10px; background: #1a1a1a; 
+            border-radius: 15px; border: 1px solid #333; cursor: pointer; transition: 0.2s;
         }
-        .song-list { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 20px 0; width: 90%; }
-        .song-card { 
-            background: #1a1a1a; padding: 12px; border-radius: 10px; cursor: pointer; border: 1px solid #333;
-            text-align: center; font-size: 14px;
-        }
-        .song-card.active { border-color: var(--accent); background: rgba(0,212,255,0.2); }
+        .song-item:active { transform: scale(0.98); background: #252525; }
+        .song-item.selected { border-color: var(--gold); box-shadow: 0 0 15px rgba(255,215,0,0.3); }
+        .diff { font-size: 12px; font-weight: bold; margin-bottom: 5px; color: var(--gold); }
+        .title { font-size: 18px; font-weight: bold; }
 
-        #game-view { 
-            width: 100vw; max-width: 450px; height: 100vh; background: #000; 
-            position: relative; overflow: hidden; border-left: 1px solid #222; border-right: 1px solid #222;
-        }
-        .lane-line { position: absolute; top: 0; bottom: 0; width: 1px; background: rgba(255,255,255,0.1); pointer-events: none; }
-        
-        .tile { 
-            width: 25%; position: absolute; border-radius: 2px;
-            box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
-        }
+        /* 게임 화면 */
+        #game-view { width: 100vw; max-width: 450px; height: 100vh; background: #000; position: relative; overflow: hidden; }
+        .lane-line { position: absolute; top: 0; bottom: 0; width: 1px; background: rgba(255,255,255,0.05); }
+        .tile { width: 25%; position: absolute; border-radius: 4px; border: 1px solid rgba(255,255,255,0.1); }
         .tile.hit { opacity: 0; transform: scale(1.1); transition: 0.1s; }
         
-        #score-display { 
-            position: absolute; top: 50px; font-size: 60px; font-weight: 900; 
-            width: 100%; text-align: center; z-index: 5; opacity: 0.5; pointer-events: none; 
-        }
-        button { 
-            padding: 15px 50px; font-size: 20px; border-radius: 30px; border: none; 
-            background: var(--accent); color: #000; font-weight: bold; margin-top: 20px;
-        }
+        #score { position: absolute; top: 60px; font-size: 70px; font-weight: 900; width: 100%; text-align: center; opacity: 0.3; pointer-events: none; z-index: 5; }
+        #play-btn { margin-top: 30px; padding: 15px 80px; font-size: 22px; border-radius: 50px; border: none; background: var(--gold); color: #000; font-weight: bold; cursor: pointer; }
     </style>
 </head>
 <body>
 
-<div id="menu-screen">
-    <h1 style="color:var(--accent)">PIANO MASTER</h1>
-    <div class="song-list" id="songs"></div>
-    <button onclick="startGame()">연주 시작</button>
+<div id="menu">
+    <h1 style="color:var(--gold); font-size: 32px; letter-spacing: 2px;">CONCERT HALL</h1>
+    <div id="song-list"></div>
+    <button id="play-btn" onclick="startGame()">CONCERT START</button>
 </div>
 
-<div id="score-display">0</div>
+<div id="score">0</div>
 <div id="game-view">
     <div class="lane-line" style="left: 25%;"></div>
     <div class="lane-line" style="left: 50%;"></div>
@@ -69,44 +49,78 @@
 </div>
 
 <script>
-    const songData = [
-        { id:0, title: "작은 별", speed: 5, color: "#a8e6cf", notes: [261, 261, 392, 392, 440, 440, 392] },
-        { id:1, title: "차이코프스키", speed: 7.5, color: "#9b59b6", notes: [493, 587, 659, 783, 739, 659, 587] },
-        { id:2, title: "라흐마니노프", speed: 11, color: "#e74c3c", notes: [261, 329, 392, 523, 493, 392, 329, 261] }
+    // 곡 데이터: 긴 멜로디와 반주 코드 데이터
+    const songs = [
+        { 
+            id: 0, title: "쇼팽 - 야상곡 (Op.9 No.2)", diff: "EASY", speed: 4.5, color: "#a8e6cf",
+            melody: [311, 466, 622, 587, 523, 466, 415, 392, 466, 311, 466, 622, 698, 783, 698, 622, 587, 523, 466],
+            chords: [155, 233, 311] // Eb Major 베이스 반주
+        },
+        { 
+            id: 1, title: "차이코프스키 - 백조의 호수", diff: "NORMAL", speed: 7, color: "#3498db",
+            melody: [493, 587, 659, 783, 739, 659, 587, 493, 392, 493, 587, 659, 783, 739, 659, 587, 880, 783, 739, 659],
+            chords: [196, 246, 293] // B Minor 베이스 반주
+        },
+        { 
+            id: 2, title: "라흐마니노프 - 협주곡 2번", diff: "HARD", speed: 11, color: "#e74c3c",
+            melody: [261, 311, 392, 523, 493, 392, 311, 261, 233, 261, 311, 392, 622, 587, 523, 493, 523, 392, 311, 261, 196, 261],
+            chords: [130, 155, 196] // C Minor 웅장한 베이스 반주
+        }
     ];
 
-    let currentSong = songData[0];
+    let currentSong = songs[0];
     let isPlaying = false;
     let score = 0;
     let audioCtx;
-    let noteIdx = 0;
+    let melodyIdx = 0;
     let tiles = [];
-    let spawnHandler;
+    let gameLoopId;
+    let spawnTimer;
 
-    const songContainer = document.getElementById('songs');
-    songData.forEach(song => {
-        const div = document.createElement('div');
-        div.className = `song-card ${song.id === 0 ? 'active' : ''}`;
-        div.innerHTML = song.title;
-        div.onclick = () => {
-            document.querySelectorAll('.song-card').forEach(c => c.classList.remove('active'));
-            div.classList.add('active');
-            currentSong = song;
+    // 메뉴 생성
+    const listDiv = document.getElementById('song-list');
+    songs.forEach(s => {
+        const item = document.createElement('div');
+        item.className = `song-item ${s.id === 0 ? 'selected' : ''}`;
+        item.innerHTML = `<div class="diff">${s.diff}</div><div class="title">${s.title}</div>`;
+        item.onclick = () => {
+            document.querySelectorAll('.song-item').forEach(el => el.classList.remove('selected'));
+            item.classList.add('selected');
+            currentSong = s;
         };
-        songContainer.appendChild(div);
+        listDiv.appendChild(item);
     });
 
-    function playSound() {
+    // 사운드 엔진 (반주 + 멜로디)
+    function playMelody() {
         if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
-        osc.type = 'sine';
-        osc.frequency.value = currentSong.notes[noteIdx % currentSong.notes.length];
-        noteIdx++;
-        gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+        
+        osc.type = 'triangle'; // 부드러운 피아노 느낌
+        osc.frequency.value = currentSong.melody[melodyIdx % currentSong.melody.length];
+        melodyIdx++;
+        
+        gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.6);
+        
         osc.connect(gain).connect(audioCtx.destination);
-        osc.start(); osc.stop(audioCtx.currentTime + 0.3);
+        osc.start(); osc.stop(audioCtx.currentTime + 0.6);
+    }
+
+    function playAccompaniment() {
+        if (!isPlaying) return;
+        // 일정한 간격으로 낮은 베이스 반주를 깔아줌
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = currentSong.chords[Math.floor(Math.random() * 3)];
+        gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 1.5);
+        osc.connect(gain).connect(audioCtx.destination);
+        osc.start(); osc.stop(audioCtx.currentTime + 1.5);
+        
+        setTimeout(playAccompaniment, 1000); // 1초마다 반주 반복
     }
 
     function createTile() {
@@ -117,52 +131,56 @@
         tile.style.left = (lane * 25) + '%';
         tile.style.top = '-200px';
         tile.style.height = '180px';
-        tile.style.background = currentSong.color;
+        tile.style.background = `linear-gradient(to bottom, ${currentSong.color}, #000)`;
+        tile.style.boxShadow = `0 0 15px ${currentSong.color}55`;
 
-        // 클릭과 터치 모두 대응하되, 중복 실행 방지
-        const handleHit = (e) => {
-            e.preventDefault(); // 화면 밀림 방지 핵심!
+        const hit = (e) => {
+            e.preventDefault();
             if (tile.classList.contains('hit')) return;
-            playSound();
+            playMelody();
             score++;
-            document.getElementById('score-display').innerText = score;
+            document.getElementById('score').innerText = score;
             tile.classList.add('hit');
-            setTimeout(() => { tile.remove(); }, 100);
+            setTimeout(() => tile.remove(), 100);
         };
 
-        tile.addEventListener('touchstart', handleHit);
-        tile.addEventListener('mousedown', handleHit);
-
+        tile.addEventListener('touchstart', hit);
+        tile.addEventListener('mousedown', hit);
         document.getElementById('game-view').appendChild(tile);
         tiles.push(tile);
     }
 
     function gameLoop() {
         if (!isPlaying) return;
-        tiles.forEach((tile, i) => {
-            let top = parseFloat(tile.style.top) + currentSong.speed;
-            tile.style.top = top + 'px';
+        tiles.forEach((t, i) => {
+            let top = parseFloat(t.style.top) + currentSong.speed;
+            t.style.top = top + 'px';
             if (top > window.innerHeight) {
-                if (!tile.classList.contains('hit')) endGame();
-                else { tile.remove(); tiles.splice(i, 1); }
+                if (!t.classList.contains('hit')) gameOver();
+                else { t.remove(); tiles.splice(i, 1); }
             }
         });
-        requestAnimationFrame(gameLoop);
+        gameLoopId = requestAnimationFrame(gameLoop);
     }
 
     function startGame() {
-        if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
-        document.getElementById('menu-screen').style.display = 'none';
-        isPlaying = true; score = 0; noteIdx = 0;
-        document.getElementById('score-display').innerText = '0';
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        
+        document.getElementById('menu').style.display = 'none';
+        isPlaying = true; score = 0; melodyIdx = 0;
+        document.getElementById('score').innerText = '0';
+        
         gameLoop();
-        spawnHandler = setInterval(createTile, 1000 / (currentSong.speed / 4));
+        spawnTimer = setInterval(createTile, 1000 / (currentSong.speed / 4));
+        playAccompaniment(); // 반주 시작
     }
 
-    function endGame() {
+    function gameOver() {
         isPlaying = false;
-        clearInterval(spawnHandler);
-        alert(`공연 종료! 점수: ${score}`);
+        clearInterval(spawnTimer);
+        cancelAnimationFrame(gameLoopId);
+        alert(`연주 종료!\n최종 점수: ${score}`);
         location.reload();
     }
 </script>
