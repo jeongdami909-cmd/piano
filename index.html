@@ -1,147 +1,160 @@
+
 <!DOCTYPE html>
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>✨ 블링블링 뮤직 타일</title>
+    <title>Grand Piano Tiles: Master Edition</title>
     <style>
+        :root { --bg: #000; --accent: #00d4ff; }
         body { 
-            display: flex; flex-direction: column; align-items: center; 
-            background: linear-gradient(135deg, #fceabb 0%, #f8b500 50%, #fceabb 100%);
-            font-family: 'Apple SD Gothic Neo', sans-serif; height: 100vh; margin: 0; overflow: hidden;
+            margin: 0; background: var(--bg); color: #fff; 
+            display: flex; flex-direction: column; align-items: center;
+            font-family: 'Pretendard', sans-serif; overflow: hidden; height: 100vh;
         }
-        #score-board { 
-            font-size: 40px; font-weight: 900; color: #fff; text-shadow: 2px 2px 10px rgba(0,0,0,0.2);
-            margin: 20px 0; z-index: 10;
+        /* 메인 UI */
+        #menu-screen { 
+            position: fixed; inset: 0; background: rgba(0,0,0,0.9); 
+            display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 1000;
+            padding: 20px; text-align: center;
         }
-        #game-container { 
-            width: 360px; height: 600px; background: rgba(255, 255, 255, 0.2); 
-            backdrop-filter: blur(10px); position: relative; overflow: hidden; 
-            border: 8px solid #fff; border-radius: 20px; box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+        .song-list { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin: 30px 0; width: 90%; max-width: 800px; }
+        .song-card { 
+            background: #222; padding: 15px; border-radius: 12px; cursor: pointer; border: 2px solid transparent;
+            transition: 0.3s;
         }
-        .lane { width: 25%; height: 100%; float: left; border-right: 1px solid rgba(255,255,255,0.3); box-sizing: border-box; }
+        .song-card:hover { transform: translateY(-5px); border-color: var(--accent); }
+        .song-card.active { background: var(--accent); color: #000; font-weight: bold; }
+        .diff-tag { font-size: 12px; padding: 3px 8px; border-radius: 20px; display: inline-block; margin-bottom: 5px; }
         
-        /* 블링블링 타일 디자인 */
+        /* 게임 뷰 */
+        #game-view { width: 360px; height: 100vh; background: #050505; position: relative; overflow: hidden; }
+        .lane-line { position: absolute; top: 0; bottom: 0; width: 1px; background: rgba(255,255,255,0.05); }
         .tile { 
-            width: 25%; height: 150px; position: absolute; top: -150px; cursor: pointer;
-            background: linear-gradient(to bottom, #ff9a9e 0%, #fecfef 100%);
-            border-radius: 10px; box-shadow: 0 0 15px #ff9a9e, inset 0 0 10px white;
-            transition: transform 0.1s;
+            width: 25%; position: absolute; border-radius: 4px; cursor: pointer;
+            box-shadow: inset 0 0 10px rgba(255,255,255,0.1);
         }
-        .tile:active { transform: scale(0.95); opacity: 0.8; }
-
-        #game-over { 
-            display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.75); color: white; flex-direction: column;
-            justify-content: center; align-items: center; z-index: 100;
-        }
-        button { 
-            padding: 15px 40px; font-size: 20px; border: none; border-radius: 50px;
-            background: #ff9a9e; color: white; font-weight: bold; cursor: pointer;
-            box-shadow: 0 5px 15px rgba(255,154,158,0.5);
-        }
+        .tile.hit { filter: brightness(2) !important; opacity: 0; transition: 0.2s; }
+        
+        #score-display { position: absolute; top: 40px; font-size: 50px; font-weight: 800; width: 100%; text-align: center; z-index: 5; opacity: 0.7; pointer-events: none; }
+        #start-btn { padding: 15px 60px; font-size: 24px; border-radius: 50px; border: none; background: #fff; cursor: pointer; font-weight: bold; }
     </style>
 </head>
 <body>
 
-<div id="score-board">00</div>
+<div id="menu-screen">
+    <h1 style="font-size: 40px; margin-bottom: 10px;">GRAND PIANO</h1>
+    <p>곡을 선택하고 연주를 시작하세요</p>
+    
+    <div class="song-list" id="songs">
+        </div>
+    
+    <button id="start-btn" onclick="startGame()">PLAY</button>
+</div>
 
-<div id="game-container">
-    <div class="lane"></div><div class="lane"></div><div class="lane"></div><div class="lane"></div>
-    <div id="game-over">
-        <h1 style="font-size: 40px;">GAME OVER</h1>
-        <p id="final-score" style="font-size: 24px;"></p>
-        <button onclick="startGame()">다시 도전! ✨</button>
-    </div>
+<div id="score-display">0</div>
+<div id="game-view">
+    <div class="lane-line" style="left: 25%;"></div>
+    <div class="lane-line" style="left: 50%;"></div>
+    <div class="lane-line" style="left: 75%;"></div>
 </div>
 
 <script>
-    const gameContainer = document.getElementById('game-container');
-    const scoreElement = document.getElementById('score-board');
-    const gameOverScreen = document.getElementById('game-over');
-    
+    const songData = [
+        { id:0, title: "작은 별", diff: "Easy", speed: 5, color: "#a8e6cf", notes: [261, 261, 392, 392, 440, 440, 392] },
+        { id:1, title: "학교종이 땡땡땡", diff: "Easy", speed: 5, color: "#dcedc1", notes: [392, 392, 440, 440, 392, 392, 329] },
+        { id:2, title: "아리랑", diff: "Easy", speed: 5.5, color: "#ffd3b6", notes: [440, 493, 523, 440, 392, 329, 392] },
+        
+        { id:3, title: "엘리제를 위하여", diff: "Normal", speed: 7, color: "#3498db", notes: [659, 622, 659, 622, 659, 493, 587, 523, 440] },
+        { id:4, title: "백조의 호수", diff: "Normal", speed: 7.5, color: "#9b59b6", notes: [493, 587, 659, 783, 739, 659, 587] },
+        { id:5, title: "터키 행진곡", diff: "Normal", speed: 8.5, color: "#1abc9c", notes: [493, 440, 415, 440, 523, 587, 523, 493, 440] },
+        
+        { id:6, title: "라흐마니노프 협주곡", diff: "Hard", speed: 11, color: "#e74c3c", notes: [261, 329, 392, 523, 493, 392, 329, 261, 220, 261] },
+        { id:7, title: "왕벌의 비행", diff: "Hard", speed: 14, color: "#f1c40f", notes: [440, 415, 392, 370, 349, 330, 311, 293, 277] },
+        { id:8, title: "쇼팽 - 혁명", diff: "Hard", speed: 12, color: "#c0392b", notes: [440, 220, 261, 329, 440, 523, 659, 880] }
+    ];
+
+    let currentSong = songData[0];
+    let isPlaying = false;
     let score = 0;
-    let gameInterval;
-    let spawnInterval;
+    let audioCtx;
+    let noteIdx = 0;
     let tiles = [];
-    let speed = 5;
-    let isGameOver = false;
-    let melodyIndex = 0;
 
-    // 멜로디 설정 (반짝반짝 작은별 주파수)
-    const melody = [261.6, 261.6, 392.0, 392.0, 440.0, 440.0, 392.0, 349.2, 349.2, 329.6, 329.6, 293.7, 293.7, 261.6];
+    // UI 초기화
+    const songContainer = document.getElementById('songs');
+    songData.forEach(song => {
+        const div = document.createElement('div');
+        div.className = `song-card ${song.id === 0 ? 'active' : ''}`;
+        div.innerHTML = `<span class="diff-tag" style="background:${song.color}; color:#000">${song.diff}</span><br>${song.title}`;
+        div.onclick = () => {
+            document.querySelectorAll('.song-card').forEach(c => c.classList.remove('active'));
+            div.classList.add('active');
+            currentSong = song;
+        };
+        songContainer.appendChild(div);
+    });
 
-    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-
-    function playMusicTone() {
-        if (audioCtx.state === 'suspended') audioCtx.resume();
+    function playSound() {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
-        
-        // 부드러운 전자기타/피아노 느낌 혼합
-        osc.type = 'triangle'; 
-        osc.frequency.value = melody[melodyIndex % melody.length];
-        melodyIndex++;
-
-        gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.8);
-        
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        osc.start();
-        osc.stop(audioCtx.currentTime + 0.8);
+        osc.type = currentSong.diff === "Hard" ? "sawtooth" : "triangle";
+        osc.frequency.value = currentSong.notes[noteIdx % currentSong.notes.length];
+        noteIdx++;
+        gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+        osc.connect(gain).connect(audioCtx.destination);
+        osc.start(); osc.stop(audioCtx.currentTime + 0.4);
     }
 
     function createTile() {
-        if (isGameOver) return;
+        if (!isPlaying) return;
         const lane = Math.floor(Math.random() * 4);
         const tile = document.createElement('div');
         tile.className = 'tile';
         tile.style.left = (lane * 25) + '%';
-        
-        // 클릭 시 이벤트
-        tile.onmousedown = (e) => {
-            e.stopPropagation();
-            playMusicTone();
+        tile.style.top = '-180px';
+        tile.style.height = (180 - currentSong.speed * 5) + 'px'; // 속도가 빠를수록 타일이 짧아짐
+        tile.style.background = currentSong.color;
+        tile.onmousedown = () => {
+            if (tile.classList.contains('hit')) return;
+            playSound();
             score++;
-            scoreElement.innerText = score < 10 ? '0' + score : score;
-            tile.remove();
-            tiles = tiles.filter(t => t !== tile);
-            if(score % 5 === 0) speed += 0.3; // 5점마다 조금씩 빨라짐
+            document.getElementById('score-display').innerText = score;
+            tile.classList.add('hit');
+            setTimeout(() => tile.remove(), 100);
         };
-
-        gameContainer.appendChild(tile);
+        document.getElementById('game-view').appendChild(tile);
         tiles.push(tile);
     }
 
-    function update() {
-        if (isGameOver) return;
-        tiles.forEach(tile => {
-            let top = parseFloat(tile.style.top || -150);
-            top += speed;
+    function gameLoop() {
+        if (!isPlaying) return;
+        tiles.forEach((tile, i) => {
+            let top = parseFloat(tile.style.top) + currentSong.speed;
             tile.style.top = top + 'px';
-            if (top > 600) endGame();
+            if (top > window.innerHeight) {
+                if (!tile.classList.contains('hit')) endGame();
+                else { tile.remove(); tiles.splice(i, 1); }
+            }
         });
+        requestAnimationFrame(gameLoop);
     }
 
     function startGame() {
-        tiles.forEach(t => t.remove());
-        tiles = []; score = 0; speed = 5; melodyIndex = 0;
-        isGameOver = false;
-        scoreElement.innerText = '00';
-        gameOverScreen.style.display = 'none';
-        gameInterval = setInterval(update, 20);
-        spawnInterval = setInterval(createTile, 700);
+        document.getElementById('menu-screen').style.display = 'none';
+        isPlaying = true; score = 0; noteIdx = 0;
+        document.getElementById('score-display').innerText = '0';
+        gameLoop();
+        spawnHandler = setInterval(createTile, 1000 / (currentSong.speed / 4.5));
     }
 
     function endGame() {
-        isGameOver = true;
-        clearInterval(gameInterval);
-        clearInterval(spawnInterval);
-        document.getElementById('final-score').innerText = "최종 점수: " + score;
-        gameOverScreen.style.display = 'flex';
+        isPlaying = false;
+        clearInterval(spawnHandler);
+        alert(`GAME OVER\n당신의 점수: ${score}`);
+        location.reload();
     }
-
-    startGame();
 </script>
 </body>
 </html>
