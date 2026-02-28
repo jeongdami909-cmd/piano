@@ -2,128 +2,144 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>미니 피아노 타일</title>
+    <title>✨ 블링블링 뮤직 타일</title>
     <style>
-        body { display: flex; flex-direction: column; align-items: center; background-color: #f5f5f5; font-family: sans-serif; margin-top: 50px; }
-        #game-container { width: 300px; height: 500px; background-color: #fff; position: relative; overflow: hidden; border: 3px solid #333; box-shadow: 0 10px 20px rgba(0,0,0,0.2); }
-        /* 4개의 건반 레일 */
-        .lane { width: 25%; height: 100%; float: left; border-right: 1px solid #ddd; box-sizing: border-box; pointer-events: none; }
-        .lane:last-child { border-right: none; }
-        /* 떨어지는 검은 타일 */
-        .tile { width: 25%; height: 120px; background-color: #111; position: absolute; top: -120px; cursor: pointer; border-radius: 4px; border-bottom: 4px solid #555;}
-        #score-board { font-size: 28px; font-weight: bold; margin-bottom: 20px; color: #333; }
-        /* 게임 오버 화면 */
-        #game-over { display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.85); color: white; padding: 30px 20px; text-align: center; width: 100%; box-sizing: border-box; }
-        button { padding: 10px 20px; font-size: 16px; margin-top: 15px; cursor: pointer; background: #fff; border: none; border-radius: 5px; font-weight: bold;}
+        body { 
+            display: flex; flex-direction: column; align-items: center; 
+            background: linear-gradient(135deg, #fceabb 0%, #f8b500 50%, #fceabb 100%);
+            font-family: 'Apple SD Gothic Neo', sans-serif; height: 100vh; margin: 0; overflow: hidden;
+        }
+        #score-board { 
+            font-size: 40px; font-weight: 900; color: #fff; text-shadow: 2px 2px 10px rgba(0,0,0,0.2);
+            margin: 20px 0; z-index: 10;
+        }
+        #game-container { 
+            width: 360px; height: 600px; background: rgba(255, 255, 255, 0.2); 
+            backdrop-filter: blur(10px); position: relative; overflow: hidden; 
+            border: 8px solid #fff; border-radius: 20px; box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+        }
+        .lane { width: 25%; height: 100%; float: left; border-right: 1px solid rgba(255,255,255,0.3); box-sizing: border-box; }
+        
+        /* 블링블링 타일 디자인 */
+        .tile { 
+            width: 25%; height: 150px; position: absolute; top: -150px; cursor: pointer;
+            background: linear-gradient(to bottom, #ff9a9e 0%, #fecfef 100%);
+            border-radius: 10px; box-shadow: 0 0 15px #ff9a9e, inset 0 0 10px white;
+            transition: transform 0.1s;
+        }
+        .tile:active { transform: scale(0.95); opacity: 0.8; }
+
+        #game-over { 
+            display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.75); color: white; flex-direction: column;
+            justify-content: center; align-items: center; z-index: 100;
+        }
+        button { 
+            padding: 15px 40px; font-size: 20px; border: none; border-radius: 50px;
+            background: #ff9a9e; color: white; font-weight: bold; cursor: pointer;
+            box-shadow: 0 5px 15px rgba(255,154,158,0.5);
+        }
     </style>
 </head>
 <body>
 
-<div id="score-board">점수: <span id="score">0</span></div>
+<div id="score-board">00</div>
 
 <div id="game-container">
     <div class="lane"></div><div class="lane"></div><div class="lane"></div><div class="lane"></div>
     <div id="game-over">
-        <h2>게임 오버!</h2>
-        <button onclick="startGame()">다시 시작</button>
+        <h1 style="font-size: 40px;">GAME OVER</h1>
+        <p id="final-score" style="font-size: 24px;"></p>
+        <button onclick="startGame()">다시 도전! ✨</button>
     </div>
 </div>
 
 <script>
     const gameContainer = document.getElementById('game-container');
-    const scoreElement = document.getElementById('score');
+    const scoreElement = document.getElementById('score-board');
     const gameOverScreen = document.getElementById('game-over');
     
     let score = 0;
     let gameInterval;
     let spawnInterval;
     let tiles = [];
-    let speed = 4;
+    let speed = 5;
     let isGameOver = false;
+    let melodyIndex = 0;
 
-    // 웹 오디오 API로 소리 생성 (C 마이너 코드: 도, 미b, 솔, 높은도)
+    // 멜로디 설정 (반짝반짝 작은별 주파수)
+    const melody = [261.6, 261.6, 392.0, 392.0, 440.0, 440.0, 392.0, 349.2, 349.2, 329.6, 329.6, 293.7, 293.7, 261.6];
+
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    const notes = [261.63, 311.13, 392.00, 523.25]; 
 
-    function playTone(laneIndex) {
+    function playMusicTone() {
         if (audioCtx.state === 'suspended') audioCtx.resume();
-        const oscillator = audioCtx.createOscillator();
-        const gainNode = audioCtx.createGain();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
         
-        oscillator.type = 'sine'; // 부드러운 소리
-        oscillator.frequency.value = notes[laneIndex];
+        // 부드러운 전자기타/피아노 느낌 혼합
+        osc.type = 'triangle'; 
+        osc.frequency.value = melody[melodyIndex % melody.length];
+        melodyIndex++;
+
+        gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.8);
         
-        oscillator.connect(gainNode);
-        gainNode.connect(audioCtx.destination);
-        
-        oscillator.start();
-        gainNode.gain.setValueAtTime(1, audioCtx.currentTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.6); // 소리가 서서히 사라짐
-        oscillator.stop(audioCtx.currentTime + 0.6);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.8);
     }
 
     function createTile() {
         if (isGameOver) return;
-        const lane = Math.floor(Math.random() * 4); // 0~3 레인 중 랜덤
+        const lane = Math.floor(Math.random() * 4);
         const tile = document.createElement('div');
-        tile.classList.add('tile');
+        tile.className = 'tile';
         tile.style.left = (lane * 25) + '%';
-        tile.dataset.lane = lane;
         
-        // 타일을 클릭(터치)했을 때의 이벤트
-        tile.addEventListener('mousedown', function() {
-            if (isGameOver) return;
-            playTone(lane);
-            score += 10;
-            scoreElement.innerText = score;
-            tile.remove(); // 화면에서 지움
+        // 클릭 시 이벤트
+        tile.onmousedown = (e) => {
+            e.stopPropagation();
+            playMusicTone();
+            score++;
+            scoreElement.innerText = score < 10 ? '0' + score : score;
+            tile.remove();
             tiles = tiles.filter(t => t !== tile);
-            speed += 0.1; // 맞출 때마다 타일이 미세하게 빨라짐
-        });
+            if(score % 5 === 0) speed += 0.3; // 5점마다 조금씩 빨라짐
+        };
 
         gameContainer.appendChild(tile);
         tiles.push(tile);
     }
 
-    function updateGame() {
+    function update() {
         if (isGameOver) return;
-        
         tiles.forEach(tile => {
-            let currentTop = parseFloat(tile.style.top || -120);
-            currentTop += speed;
-            tile.style.top = currentTop + 'px';
-
-            // 타일이 바닥(500px)에 닿으면 게임 오버
-            if (currentTop > 500) {
-                endGame();
-            }
+            let top = parseFloat(tile.style.top || -150);
+            top += speed;
+            tile.style.top = top + 'px';
+            if (top > 600) endGame();
         });
     }
 
     function startGame() {
-        tiles.forEach(tile => tile.remove());
-        tiles = [];
-        score = 0;
-        speed = 4;
+        tiles.forEach(t => t.remove());
+        tiles = []; score = 0; speed = 5; melodyIndex = 0;
         isGameOver = false;
-        scoreElement.innerText = score;
+        scoreElement.innerText = '00';
         gameOverScreen.style.display = 'none';
-
-        gameInterval = setInterval(updateGame, 20); // 1초에 50번 화면 업데이트
-        spawnInterval = setInterval(createTile, 800); // 0.8초마다 새 타일 생성
+        gameInterval = setInterval(update, 20);
+        spawnInterval = setInterval(createTile, 700);
     }
 
     function endGame() {
         isGameOver = true;
         clearInterval(gameInterval);
         clearInterval(spawnInterval);
-        gameOverScreen.style.display = 'block';
+        document.getElementById('final-score').innerText = "최종 점수: " + score;
+        gameOverScreen.style.display = 'flex';
     }
-
-    // 브라우저 오디오 정책을 위한 첫 클릭 활성화
-    window.addEventListener('mousedown', () => {
-        if (audioCtx.state === 'suspended') audioCtx.resume();
-    }, { once: true });
 
     startGame();
 </script>
