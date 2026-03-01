@@ -3,131 +3,83 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Crystal Piano - Smooth Melody</title>
+    <title>Crystal Piano - Rhythm Master</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
     <style>
         :root { --neon: #00f2ff; --pink: #ff00ea; --miss: #ff0055; }
         * { box-sizing: border-box; user-select: none; font-family: 'Pretendard', sans-serif; touch-action: none; }
         body { margin: 0; color: #fff; height: 100dvh; overflow: hidden; background: #000; }
 
-        #lobby { display: flex; flex-direction: column; height: 100%; width: 100%; max-width: 500px; margin: 0 auto; background: #000; z-index: 100; position: relative; padding: 20px 20px; overflow-y: auto; }
-        h1 { font-size: 28px; text-align: center; background: linear-gradient(to right, var(--neon), var(--pink)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 5px; }
+        #lobby { display: flex; flex-direction: column; height: 100%; width: 100%; max-width: 500px; margin: 0 auto; background: #000; z-index: 100; position: relative; padding: 20px; overflow-y: auto; }
+        h1 { font-size: 28px; text-align: center; background: linear-gradient(to right, var(--neon), var(--pink)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         
-        .section-title { font-size: 15px; font-weight: bold; color: #fff; margin: 20px 0 10px; border-left: 3px solid var(--neon); padding-left: 10px; }
-        
-        .upload-area { border: 2px dashed #444; padding: 20px; text-align: center; border-radius: 12px; cursor: pointer; transition: 0.3s; background: rgba(255,255,255,0.05); }
+        .upload-area { border: 2px dashed #444; padding: 30px; text-align: center; border-radius: 15px; cursor: pointer; background: rgba(255,255,255,0.05); margin: 20px 0; }
         .upload-area.active { border-color: var(--neon); background: rgba(0, 242, 255, 0.1); }
-        #file-status { color: #ccc; font-size: 14px; word-break: break-all; }
 
-        .key-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
-        .key-btn { padding: 12px 0; background: #111; border: 1px solid #333; color: #aaa; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer; }
+        .key-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; margin-bottom: 20px; }
+        .key-btn { padding: 12px 0; background: #111; border: 1px solid #333; color: #aaa; border-radius: 8px; font-weight: bold; cursor: pointer; }
         .key-btn.selected { background: var(--neon); color: #000; border-color: #fff; }
 
-        .diff-grid { display: flex; gap: 10px; }
-        .diff-btn { flex: 1; padding: 15px 0; background: #111; border: 1px solid #333; border-radius: 8px; color: #aaa; font-weight: bold; cursor: pointer; transition: 0.2s; }
-        .diff-btn.active { background: var(--pink); color: #fff; border-color: #fff; }
-
-        #start-btn { width: 100%; padding: 20px; border-radius: 50px; border: none; font-size: 18px; font-weight: bold; background: #222; color: #555; pointer-events: none; margin-top: 30px; transition: 0.3s; }
+        #start-btn { width: 100%; padding: 20px; border-radius: 50px; border: none; font-size: 18px; font-weight: bold; background: #222; color: #555; pointer-events: none; transition: 0.3s; }
         #start-btn.ready { background: linear-gradient(45deg, var(--neon), var(--pink)); color: #fff; pointer-events: auto; box-shadow: 0 0 20px rgba(255, 0, 234, 0.4); }
 
-        #game { display: none; width: 100vw; max-width: 500px; height: 100%; margin: 0 auto; position: relative; background: radial-gradient(circle at bottom, #0a0a20 0%, #000 100%); overflow: hidden; }
-        .lane { position: absolute; width: 25%; height: 100%; border-right: 1px dashed rgba(255,255,255,0.1); }
+        #game { display: none; width: 100vw; max-width: 500px; height: 100%; margin: 0 auto; position: relative; background: #000; overflow: hidden; }
+        .lane { position: absolute; width: 25%; height: 100%; border-right: 1px solid rgba(255,255,255,0.05); }
+        .tile { position: absolute; width: 24%; margin-left: 0.5%; height: 140px; border-radius: 8px; background: linear-gradient(to bottom, #fff, var(--neon)); box-shadow: 0 0 15px var(--neon); z-index: 10; }
+        .tile.pressed { transform: scale(1.3); opacity: 0; transition: 0.2s; background: #fff; }
+        .tile.missed { background: linear-gradient(to bottom, #550000, var(--miss)); opacity: 0.5; }
         
-        .tile { position: absolute; width: 24%; margin-left: 0.5%; height: 140px; border-radius: 8px; background: linear-gradient(to bottom, #fff, var(--neon)); box-shadow: 0 0 15px var(--neon); z-index: 10; transition: background 0.2s; }
-        .tile.pressed { transform: scale(1.3); opacity: 0; transition: 0.2s; background: #fff; box-shadow: 0 0 40px #fff; }
-        .tile.missed { background: linear-gradient(to bottom, #550000, var(--miss)); box-shadow: 0 0 15px var(--miss); opacity: 0.5; }
-        
-        #hit-line { position: absolute; bottom: 15%; width: 100%; height: 3px; background: rgba(255,255,255,0.5); z-index: 5; box-shadow: 0 0 10px #fff; }
-        
+        #hit-line { position: absolute; bottom: 15%; width: 100%; height: 3px; background: rgba(255,255,255,0.5); z-index: 5; }
         #score-container { position: absolute; top: 40px; width: 100%; text-align: center; z-index: 50; pointer-events: none; }
-        #score { font-size: 60px; font-weight: 900; text-shadow: 0 0 15px var(--neon); transition: color 0.2s; }
-        #feedback { font-size: 20px; font-weight: bold; height: 24px; color: var(--miss); opacity: 0; transition: 0.2s; }
+        #score { font-size: 60px; font-weight: 900; text-shadow: 0 0 15px var(--neon); }
+        #feedback { font-size: 20px; font-weight: bold; color: var(--miss); opacity: 0; }
     </style>
 </head>
 <body>
 
 <div id="lobby">
-    <h1>Crystal Piano</h1>
-    
-    <div class="section-title">1. 곡 선택 (MP3)</div>
+    <h1>Crystal Concert</h1>
     <div class="upload-area" id="drop-zone" onclick="document.getElementById('audio-upload').click()">
-        <span id="file-status">🎵 터치해서 파일을 선택하세요</span>
+        <span id="file-status">🎵 연주할 MP3를 선택하세요</span>
     </div>
     <input type="file" id="audio-upload" accept="audio/*" style="display:none;">
 
-    <div class="section-title">2. 배경음악 조(Key) 맞추기</div>
-    <p style="font-size: 12px; color: #888; margin-top: -5px; margin-bottom: 10px;">불협화음이 난다면 으뜸음을 바꿔보세요. 아름다운 선율이 유지됩니다.</p>
+    <p style="font-size: 14px; color: #888;">노래의 조(Key)를 선택하세요</p>
     <div class="key-grid" id="key-selector">
-        <button class="key-btn selected" data-key="C">C</button>
-        <button class="key-btn" data-key="Db">Db</button>
-        <button class="key-btn" data-key="D">D</button>
-        <button class="key-btn" data-key="Eb">Eb</button>
-        <button class="key-btn" data-key="E">E</button>
-        <button class="key-btn" data-key="F">F</button>
-        <button class="key-btn" data-key="Gb">Gb</button>
-        <button class="key-btn" data-key="G">G</button>
-        <button class="key-btn" data-key="Ab">Ab</button>
-        <button class="key-btn" data-key="A">A</button>
-        <button class="key-btn" data-key="Bb">Bb</button>
-        <button class="key-btn" data-key="B">B</button>
-    </div>
-
-    <div class="section-title">3. 난이도</div>
-    <div class="diff-grid">
-        <button class="diff-btn active" data-speed="6" data-spawn="700">Easy</button>
-        <button class="diff-btn" data-speed="10" data-spawn="450">Normal</button>
-        <button class="diff-btn" data-speed="15" data-spawn="300">Hard</button>
+        <button class="key-btn selected" data-key="C">C</button><button class="key-btn" data-key="Db">Db</button><button class="key-btn" data-key="D">D</button><button class="key-btn" data-key="Eb">Eb</button><button class="key-btn" data-key="E">E</button><button class="key-btn" data-key="F">F</button>
+        <button class="key-btn" data-key="Gb">Gb</button><button class="key-btn" data-key="G">G</button><button class="key-btn" data-key="Ab">Ab</button><button class="key-btn" data-key="A">A</button><button class="key-btn" data-key="Bb">Bb</button><button class="key-btn" data-key="B">B</button>
     </div>
 
     <button id="start-btn">PIANO LOADING...</button>
 </div>
 
 <div id="game">
-    <div id="score-container">
-        <div id="score">0</div>
-        <div id="feedback">MISS! -10</div>
-    </div>
+    <div id="score-container"><div id="score">0</div><div id="feedback">MISS! -10</div></div>
     <div id="hit-line"></div>
     <div class="lane" style="left:0%"></div><div class="lane" style="left:25%"></div><div class="lane" style="left:50%"></div><div class="lane" style="left:75%; border:none;"></div>
 </div>
 
 <script>
-    let piano, bgm, isPlaying = false, score = 0, tiles = [];
-    let loopId, spawnId, winTimeoutId;
-    let selectedRoot = "C";
-    let currentSpeed = 6;
-    let currentSpawnRate = 700;
-    
-    // 부드러운 선율을 위한 변수
-    let currentScale = [];
-    let noteIndex = 0;
+    let piano, bgm, analyser, isPlaying = false, score = 0, tiles = [];
+    let loopId, lastSpawnTime = 0, selectedRoot = "C";
+    let melodyIndex = 0, currentScale = [];
 
+    // 1. 고음질 피아노 샘플러
     piano = new Tone.Sampler({
         urls: { A0: "A0.mp3", C1: "C1.mp3", "D#1": "Ds1.mp3", "F#1": "Fs1.mp3", A1: "A1.mp3", C2: "C2.mp3", "D#2": "Ds2.mp3", "F#2": "Fs2.mp3", A2: "A2.mp3", C3: "C3.mp3", "D#3": "Ds3.mp3", "F#3": "Fs3.mp3", A3: "A3.mp3", C4: "C4.mp3", "D#4": "Ds4.mp3", "F#4": "Fs4.mp3", A4: "A4.mp3", C5: "C5.mp3", "D#5": "Ds5.mp3", "F#5": "Fs5.mp3", A5: "A5.mp3", C6: "C6.mp3", "D#6": "Ds6.mp3", "F#6": "Fs6.mp3", A6: "A6.mp3", C7: "C7.mp3", "D#7": "Ds7.mp3", "F#7": "Fs7.mp3", A7: "A7.mp3", C8: "C8.mp3" },
         baseUrl: "https://tonejs.github.io/audio/salamander/",
-        release: 2,
-        onload: () => { 
-            const startBtn = document.getElementById('start-btn');
-            if(startBtn.innerText === "PIANO LOADING...") startBtn.innerText = "곡을 먼저 선택해주세요"; 
-        }
+        release: 1.5,
+        onload: () => { if(document.getElementById('start-btn').innerText.includes("LOADING")) document.getElementById('start-btn').innerText = "파일을 선택해주세요"; }
     }).toDestination();
-    piano.volume.value = 5;
 
-    document.querySelectorAll('.diff-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('active'));
-            e.target.classList.add('active');
-            currentSpeed = parseInt(e.target.getAttribute('data-speed'));
-            currentSpawnRate = parseInt(e.target.getAttribute('data-spawn'));
-        });
-    });
+    // 2. 비트 분석기 (노래의 에너지 측정)
+    analyser = new Tone.Analyser("fft", 32);
 
     document.querySelectorAll('.key-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
+        btn.addEventListener('click', () => {
             document.querySelectorAll('.key-btn').forEach(b => b.classList.remove('selected'));
             btn.classList.add('selected');
             selectedRoot = btn.dataset.key;
-            updateScale();
         });
     });
 
@@ -135,29 +87,23 @@
         const file = e.target.files[0];
         if (!file) return;
         document.getElementById('file-status').innerText = "✅ " + file.name;
-        document.getElementById('drop-zone').classList.add('active');
-        
         const url = URL.createObjectURL(file);
         if(bgm) bgm.dispose();
-        
         bgm = new Tone.Player({
             url: url,
             onload: () => {
                 const startBtn = document.getElementById('start-btn');
-                startBtn.innerText = "콘서트 시작!";
+                startBtn.innerText = "연주 시작!";
                 startBtn.classList.add('ready');
             }
-        }).toDestination();
-        bgm.volume.value = -3; 
+        }).connect(analyser).toDestination();
     });
 
     function updateScale() {
         const notes = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"];
-        const intervals = [0, 2, 4, 7, 9]; // 아름다운 펜타토닉 스케일
+        const intervals = [0, 2, 4, 7, 9]; 
         const rootIdx = notes.indexOf(selectedRoot);
         currentScale = [];
-        
-        // 3옥타브~5옥타브까지 넓게 음계 생성
         for(let oct = 3; oct <= 5; oct++) {
             for(let i of intervals) {
                 let idx = (rootIdx + i) % 12;
@@ -165,113 +111,83 @@
                 currentScale.push(notes[idx] + outOct);
             }
         }
-        noteIndex = Math.floor(currentScale.length / 2); // 중간 음역대에서 시작
+        melodyIndex = Math.floor(currentScale.length / 2);
     }
 
     document.getElementById('start-btn').addEventListener('click', async () => {
-        if (!bgm || !bgm.loaded) return;
         await Tone.start();
-        
         document.getElementById('lobby').style.display = 'none';
         document.getElementById('game').style.display = 'block';
         isPlaying = true;
-        score = 0;
-        document.getElementById('score').innerText = '0';
-        
         updateScale();
         bgm.start();
-        
-        const duration = bgm.buffer.duration * 1000;
-        winTimeoutId = setTimeout(() => { if(isPlaying) win(); }, duration);
-
         gameLoop();
-        spawnId = setInterval(spawnTile, currentSpawnRate);
     });
 
-    function showMissFeedback() {
-        const fb = document.getElementById('feedback');
-        const sc = document.getElementById('score');
-        fb.style.opacity = 1;
-        sc.style.color = "var(--miss)";
-        setTimeout(() => { 
-            fb.style.opacity = 0; 
-            sc.style.color = "#fff";
-        }, 300);
+    function gameLoop() {
+        if (!isPlaying) return;
+
+        // 🌟 실시간 비트 감지: 노래의 에너지 분석
+        const values = analyser.getValue();
+        const energy = values.reduce((a, b) => a + b, 0) / values.length;
+        
+        const now = Date.now();
+        // 노래가 일정 크기(-35dB) 이상 울리고, 0.35초 이상 지났을 때만 타일 생성
+        if (energy > -35 && now - lastSpawnTime > 350) {
+            spawnTile();
+            lastSpawnTime = now;
+        }
+
+        const h = window.innerHeight;
+        const hitLineY = h * 0.85;
+
+        for (let i = tiles.length - 1; i >= 0; i--) {
+            const t = tiles[i];
+            let top = parseFloat(t.style.top || -140) + 8; // 속도 고정
+            t.style.top = top + 'px';
+
+            if (top > hitLineY + 20 && !t.classList.contains('pressed') && !t.classList.contains('missed')) {
+                t.classList.add('missed');
+                score -= 10;
+                document.getElementById('score').innerText = score;
+                showMissFeedback();
+            }
+            if (top > h + 100) { t.remove(); tiles.splice(i, 1); }
+        }
+        requestAnimationFrame(gameLoop);
     }
 
     function spawnTile() {
-        if (!isPlaying) return;
         const lane = Math.floor(Math.random() * 4);
         const t = document.createElement('div');
         t.className = 'tile';
         t.style.left = (lane * 25) + '%';
         t.style.top = '-140px';
 
-        const hit = (e) => {
+        t.addEventListener('pointerdown', (e) => {
             e.preventDefault();
             if (t.classList.contains('pressed') || t.classList.contains('missed')) return;
-            
-            const rect = t.getBoundingClientRect();
-            if (rect.bottom < window.innerHeight * 0.5) return; 
+            if (t.getBoundingClientRect().bottom < window.innerHeight * 0.5) return;
 
-            // 🎵 물결 선율 생성 핵심 로직
-            // 다음 음은 무조건 현재 음의 바로 옆이거나 한 칸 건너뛴 곳으로만 이동!
-            let step = Math.random() < 0.5 ? 1 : -1; // 위로 갈지 아래로 갈지 결정
-            if (Math.random() < 0.2) step = 0; // 20% 확률로 같은 음 반복
-            if (Math.random() < 0.1) step *= 2; // 10% 확률로 약간 큰 도약
-            
-            noteIndex += step;
-            
-            // 음계 범위를 벗어나지 않게 고정
-            if (noteIndex < 0) noteIndex = 1;
-            if (noteIndex >= currentScale.length) noteIndex = currentScale.length - 2;
-
-            const note = currentScale[noteIndex];
-            piano.triggerAttackRelease(note, "2n");
+            // 🎵 선율 알고리즘: 현재 음의 주변음으로 부드럽게 이동 (오르골)
+            let step = Math.random() < 0.5 ? 1 : -1;
+            melodyIndex = Math.max(0, Math.min(currentScale.length - 1, melodyIndex + step));
+            piano.triggerAttackRelease(currentScale[melodyIndex], "2n");
 
             t.classList.add('pressed');
             score += 10;
             document.getElementById('score').innerText = score;
-            
-            setTimeout(() => {
-                t.remove();
-                tiles = tiles.filter(item => item !== t);
-            }, 200);
-        };
+            setTimeout(() => { t.remove(); tiles = tiles.filter(item => item !== t); }, 200);
+        });
 
-        t.addEventListener('pointerdown', hit, {passive: false});
         document.getElementById('game').appendChild(t);
         tiles.push(t);
     }
 
-    function gameLoop() {
-        if (!isPlaying) return;
-        const h = window.innerHeight;
-        const hitLineY = h * 0.85; 
-        
-        for (let i = tiles.length - 1; i >= 0; i--) {
-            const t = tiles[i];
-            let top = parseFloat(t.style.top || -140) + currentSpeed;
-            t.style.top = top + 'px';
-            
-            if (top > hitLineY + 20 && !t.classList.contains('pressed') && !t.classList.contains('missed')) {
-                t.classList.add('missed'); 
-                score -= 10; 
-                document.getElementById('score').innerText = score;
-                showMissFeedback();
-            }
-            
-            if (top > h + 100) { 
-                t.remove(); 
-                tiles.splice(i, 1); 
-            }
-        }
-        loopId = requestAnimationFrame(gameLoop);
-    }
-
-    function win() {
-        isPlaying = false; clearInterval(spawnId); cancelAnimationFrame(loopId);
-        setTimeout(() => { alert(`✨ 완주 성공! ✨\n멋진 연주였습니다. 최종 점수: ${score}`); location.reload(); }, 500);
+    function showMissFeedback() {
+        const fb = document.getElementById('feedback');
+        fb.style.opacity = 1;
+        setTimeout(() => fb.style.opacity = 0, 300);
     }
 </script>
 </body>
