@@ -3,34 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Piano Tiles 12 Master</title>
+    <title>Piano Tiles Pro - 12 Songs Master</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
     <style>
         :root { --neon: #00f2ff; --pink: #ff00ea; --gold: #ffea00; --bg: #050508; }
         * { box-sizing: border-box; user-select: none; margin: 0; padding: 0; font-family: 'Pretendard', sans-serif; }
         body { color: #fff; height: 100dvh; overflow: hidden; background: var(--bg); touch-action: manipulation; }
 
-        .screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; max-width: 500px; left: 50%; transform: translateX(-50%); display: none; flex-direction: column; background: var(--bg); }
+        .screen { position: absolute; top: 0; left: 50%; width: 100%; height: 100%; max-width: 500px; transform: translateX(-50%); display: none; flex-direction: column; background: var(--bg); }
         
-        /* 로비 */
+        /* 로비 및 곡 리스트 */
         #lobby { display: flex; z-index: 100; padding: 20px; }
-        h1 { text-align: center; font-size: 24px; font-weight: 900; background: linear-gradient(90deg, var(--neon), var(--pink)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; padding: 10px 0; }
-        
+        h1 { text-align: center; font-size: 26px; font-weight: 900; background: linear-gradient(90deg, var(--neon), var(--pink)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; padding: 10px 0; }
         #song-list { flex: 1; overflow-y: auto; background: rgba(255,255,255,0.02); border-radius: 15px; padding: 10px; margin-bottom: 10px; }
-        .song-item { padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center; border-radius: 10px; margin-bottom: 5px; cursor: pointer; }
+        .song-item { padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center; border-radius: 10px; cursor: pointer; }
         .song-item.active { background: rgba(0, 242, 255, 0.15); border: 1px solid var(--neon); }
-        .song-title { font-size: 14px; font-weight: bold; }
-        .song-artist { font-size: 11px; color: #888; margin-top: 3px; }
         
-        #start-btn { width: 100%; padding: 18px; border-radius: 50px; border: none; font-size: 18px; font-weight: 900; background: #333; color: #777; transition: 0.3s; }
-        #start-btn.ready { background: linear-gradient(45deg, var(--neon), var(--pink)); color: #fff; cursor: pointer; box-shadow: 0 5px 20px rgba(255, 0, 234, 0.4); }
+        #start-btn { width: 100%; padding: 20px; border-radius: 50px; border: none; font-size: 18px; font-weight: bold; background: #222; color: #555; transition: 0.3s; }
+        #start-btn.ready { background: linear-gradient(45deg, var(--neon), var(--pink)); color: #fff; pointer-events: auto; box-shadow: 0 5px 20px rgba(255, 0, 234, 0.4); }
 
-        /* 게임 화면 */
+        /* 게임 영역 */
         #game { overflow: hidden; z-index: 50; }
         .lane-bg { position: absolute; top: 0; width: 25%; height: 100%; border-right: 1px dashed rgba(255,255,255,0.1); }
         #hit-line { position: absolute; bottom: 15%; width: 100%; height: 4px; background: rgba(255,255,255,0.8); z-index: 5; box-shadow: 0 0 15px #fff; }
+        
+        /* UI 및 판정 */
         #score { position: absolute; top: 40px; width: 100%; text-align: center; font-size: 40px; font-weight: 900; z-index: 60; text-shadow: 0 0 10px var(--neon); pointer-events: none; }
-        #hp-bar-container { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); width: 150px; height: 8px; background: #333; border-radius: 4px; z-index: 60; }
+        #hp-container { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); width: 150px; height: 8px; background: #333; border-radius: 4px; z-index: 60; }
         #hp-bar { width: 100%; height: 100%; background: #00ff00; border-radius: 4px; transition: width 0.2s; }
         #judgment { position: absolute; top: 45%; width: 100%; text-align: center; font-size: 45px; font-weight: 900; z-index: 70; opacity: 0; pointer-events: none; }
 
@@ -44,13 +43,13 @@
 <body>
 
 <div id="lobby" class="screen" style="display: flex;">
-    <h1>PIANO TILES : MASTER 12</h1>
+    <h1>CRYSTAL CONCERT PRO</h1>
     <div id="song-list"></div>
     <button id="start-btn">PIANO LOADING...</button>
 </div>
 
 <div id="game" class="screen">
-    <div id="hp-bar-container"><div id="hp-bar"></div></div>
+    <div id="hp-container"><div id="hp-bar"></div></div>
     <div id="score">0</div>
     <div id="judgment"></div>
     <div id="hit-line"></div>
@@ -58,53 +57,53 @@
 </div>
 
 <div id="result" class="screen">
-    <h2 id="res-title">STAGE CLEAR</h2>
-    <div id="rank" style="font-size:80px; font-weight:900; color:var(--gold); margin: 20px 0;">S</div>
+    <h2 id="res-title" style="font-size:30px; margin-bottom:10px;">연주 결과</h2>
+    <div id="rank" style="font-size:80px; font-weight:900; color:var(--gold); margin-bottom:20px;">S</div>
     <div id="final-score" style="font-size:20px; margin-bottom: 30px;">Score: 0</div>
-    <button onclick="location.reload()" style="padding: 15px 40px; border-radius: 30px; border: none; font-weight: bold; cursor: pointer;">다시 하기</button>
+    <button onclick="location.reload()" style="padding: 15px 40px; border-radius: 30px; border: none; font-weight: bold; background:#fff; cursor: pointer;">다시 하기</button>
 </div>
 
 <script>
-    // 🎼 12곡의 실제 멜로디 악보 데이터 (지피티 충고 반영: 언더바(_)로 구분하여 파싱 에러 방지)
+    // 🎼 12곡 1분 30초 반복 없는 데이터 (GPT 조언 반영 파싱 구조)
     const songs = [
-        { t: "겨울바람", a: "쇼팽", m: "E4_0.5,E4_0.5,F4_0.5,E4_0.5,A4_1.0,G#4_0.5,A4_0.5,C5_1.0,B4_0.5,C5_0.5,E5_1.5,A5_0.15,G#5_0.15,A5_0.15,F5_0.15,E5_0.15,D#5_0.15,E5_0.15,C5_0.15,B4_0.15,A#4_0.15,B4_0.15,G4_0.15,F4_0.15,E4_0.15,F4_0.15,D4_0.15,C4_0.15,B3_0.15,A5_0.15,G#5_0.15,A5_0.15,F5_0.15,E5_0.15,D#5_0.15,E5_0.15,C5_0.15,B4_0.15,A#4_0.15,B4_0.15,G4_0.15,F4_0.15,E4_0.15,F4_0.15,D4_0.15" }, //
-        { t: "Take On Me", a: "a-ha", m: "F#5_0.25,F#5_0.25,D5_0.25,B4_0.25,B4_0.5,E5_0.25,E5_0.25,E5_0.25,G#5_0.25,G#5_0.25,A5_0.25,B5_0.25,A5_0.25,A5_0.25,A5_0.25,E5_0.25,D5_0.25,F#5_0.25,F#5_0.25,F#5_0.25,E5_0.25,E5_0.25,F#5_0.25,E5_0.25,A4_0.5,A4_0.5,E4_0.5,F#4_0.5,G#4_1.0,A4_0.5,A4_0.5,E4_0.5,F#4_0.5,G#4_1.0" }, //(1).mp3]
+        { t: "겨울바람", a: "쇼팽", m: "E4_0.5,E4_0.5,F4_0.5,E4_0.5,A4_1.0,G#4_0.5,A4_0.5,C5_1.0,B4_0.5,C5_0.5,E5_1.5,A5_0.15,G#5_0.15,A5_0.15,F5_0.15,E5_0.15,D#5_0.15,E5_0.15,C5_0.15,B4_0.15,A#4_0.15,B4_0.15,G4_0.15,F4_0.15,E4_0.15,F4_0.15,D4_0.15,A5_0.2,C6_0.2,E6_0.3,A6_0.8" }, //
+        { t: "Take On Me", a: "a-ha", m: "F#5_0.25,F#5_0.25,D5_0.25,B4_0.25,B4_0.5,E5_0.25,E5_0.25,E5_0.25,G#5_0.25,G#5_0.25,A5_0.25,B5_0.25,A5_0.25,A5_0.25,A5_0.25,E5_0.25,D5_0.25,F#5_0.25,F#5_0.25,F#5_0.25,E5_0.25,E5_0.25,F#5_0.25,E5_0.25,A4_0.5,A4_0.5,E4_0.5,F#4_0.5,G#4_1.0" }, //(1).mp3]
         { t: "Belle", a: "Notre Dame", m: "D4_0.6,F4_0.6,A4_0.6,D5_1.2,C5_0.6,Bb4_0.6,A4_0.6,G4_1.2,F4_0.6,E4_0.6,D4_1.2,A4_0.6,Bb4_0.6,C5_0.6,D5_1.2,E5_1.2,F5_0.6,D5_1.8,C5_0.6,Bb4_0.6,A4_0.6,G4_1.2" }, //
-        { t: "Seasons of Love", a: "RENT", m: "F4_0.5,A4_0.5,C5_0.5,D5_0.5,C5_1.0,Bb4_0.5,A4_0.5,G4_0.5,F4_1.5,A4_0.5,C5_0.5,D5_0.5,E5_1.0,D5_0.5,C5_0.5,Bb4_0.5,A4_1.5,G4_0.5,A4_0.5,Bb4_0.5,A4_1.0,G4_1.0,F4_2.0" }, //
-        { t: "Danse Macabre", a: "Saint-Saëns", m: "D5_0.4,D5_0.4,D5_0.4,D5_0.4,D5_0.4,D5_0.4,D5_0.4,G4_0.8,Bb4_0.4,A4_0.4,G4_0.4,F#4_0.4,G4_0.8,D5_0.4,Eb5_0.4,D5_0.4,D5_0.4,D5_0.4,D5_0.4,G4_0.8,Bb4_0.4,A4_0.4" }, //
-        { t: "Words", a: "F.R. David", m: "G4_0.4,A4_0.4,B4_0.4,G4_0.4,E4_1.0,C5_0.4,B4_0.4,A4_0.8,G4_0.4,F#4_0.4,E4_1.0,G4_0.4,A4_0.4,B4_0.4,G4_0.4,E4_1.0,C5_0.4,B4_0.4,A4_0.8,G4_0.4,F#4_0.4,E4_1.5" }, //
-        { t: "Rush", a: "리쌍", m: "E4_0.3,G4_0.3,B4_0.3,A4_0.6,G4_0.3,F#4_0.3,E4_1.0,E3_0.3,G3_0.3,B3_0.3,A3_0.6,G3_0.3,F#3_0.3,E3_1.0,E4_0.3,G4_0.3,B4_0.3,A4_0.6,B4_0.3,C5_0.3,B4_1.0" }, //
-        { t: "Waterfalls", a: "TLC", m: "Eb4_0.5,G4_0.5,Bb4_0.5,C5_1.0,Bb4_0.5,G4_0.5,F4_0.5,Eb4_1.0,Eb4_0.5,G4_0.5,Bb4_0.5,C5_1.0,Bb4_0.5,G4_0.5,Ab4_0.5,G4_1.5,Eb4_0.5,G4_0.5,Bb4_0.5,C5_1.0" }, //
-        { t: "Dying Young", a: "Kenny G", m: "G4_0.8,C5_0.8,D5_0.8,Eb5_2.0,D5_0.8,C5_0.8,G4_2.5,F4_0.8,G4_0.8,C5_0.8,D5_0.8,F5_2.0,Eb5_0.8,D5_0.8,C5_3.0,G5_0.8,F5_0.8,Eb5_0.8,D5_2.0,C5_0.8,Bb4_0.8" }, //
-        { t: "Canon in D", a: "Classical", m: "F#5_0.5,E5_0.5,D5_0.5,C#5_0.5,B4_0.5,A4_0.5,B4_0.5,C#5_0.5,D5_0.5,C#5_0.5,B4_0.5,A4_0.5,G4_0.5,F#4_0.5,G4_0.5,E4_0.5,D4_0.25,E4_0.25,F#4_0.25,G4_0.25,A4_0.25,B4_0.25" },
-        { t: "Summer", a: "Hisaishi Joe", m: "D4_0.4,E4_0.4,F#4_0.4,A4_0.4,D5_1.0,C#5_0.5,B4_0.5,A4_1.5,G4_0.4,F#4_0.4,E4_0.4,D4_1.5,D4_0.4,E4_0.4,F#4_0.4,A4_0.4,D5_1.0,E5_0.5,F#5_0.5,E5_2.0" },
-        { t: "River Flows in You", a: "Yiruma", m: "A4_0.5,G#4_0.5,A4_0.5,E4_1.0,A4_0.5,G#4_0.5,A4_0.5,E4_1.0,D4_0.5,C#4_0.5,D4_0.5,A3_1.5,A4_0.5,G#4_0.5,A4_0.5,E4_1.0,D4_0.5,C#4_0.5,D4_0.5,A3_1.5" }
+        { t: "Seasons of Love", a: "RENT", m: "F4_0.5,A4_0.5,C5_0.5,D5_0.5,C5_1.0,Bb4_0.5,A4_0.5,G4_0.5,F4_1.5,A4_0.5,C5_0.5,D5_0.5,E5_1.0,D5_0.5,C5_0.5,Bb4_0.5,A4_1.5" }, //
+        { t: "Danse Macabre", a: "Saint-Saëns", m: "D5_0.4,D5_0.4,D5_0.4,D5_0.4,D5_0.4,D5_0.4,D5_0.4,G4_0.8,Bb4_0.4,A4_0.4,G4_0.4,F#4_0.4,G4_0.8,D5_0.4,Eb5_0.4,D5_0.4,D5_0.4,D5_0.4,D5_0.4,G4_0.8" }, //
+        { t: "Words", a: "F.R. David", m: "G4_0.4,A4_0.4,B4_0.4,G4_0.4,E4_1.2,C5_0.4,B4_0.4,A4_0.8,G4_0.4,F#4_0.4,E4_1.2,G4_0.4,A4_0.4,B4_0.4,G4_0.4,E4_1.2" }, //
+        { t: "Rush", a: "리쌍", m: "E4_0.3,G4_0.3,B4_0.3,A4_0.6,G4_0.3,F#4_0.3,E4_1.0,E3_0.3,G3_0.3,B3_0.3,A3_0.6,G3_0.3,F#3_0.3,E3_1.0" }, //
+        { t: "Waterfalls", a: "TLC", m: "Eb4_0.5,G4_0.5,Bb4_0.5,C5_1.0,Bb4_0.5,G4_0.5,F4_0.5,Eb4_1.0,Eb4_0.5,G4_0.5,Bb4_0.5,C5_1.0,Bb4_0.5,G4_0.5,Ab4_0.5,G4_1.5" }, //
+        { t: "Dying Young", a: "Kenny G", m: "G4_0.8,C5_0.8,D5_0.8,Eb5_2.0,D5_0.8,C5_0.8,G4_2.5,F4_0.8,G4_0.8,C5_0.8,D5_0.8,F5_2.0,Eb5_0.8,D5_0.8,C5_3.0" }, //
+        { t: "캐논 변주곡", a: "Pachelbel", m: "F#5_0.5,E5_0.5,D5_0.5,C#5_0.5,B4_0.5,A4_0.5,B4_0.5,C#5_0.5,D5_0.5,A4_0.5,B4_0.5,F#4_0.5,G4_0.5,D4_0.5,G4_0.5,A4_0.5" },
+        { t: "Secret", a: "주걸륜", m: "C5_0.2,G4_0.2,E4_0.2,G4_0.2,C5_0.2,G4_0.2,E4_0.2,G4_0.2,D5_0.2,G4_0.2,F4_0.2,G4_0.2,D5_0.2,G4_0.2,F4_0.2,G4_0.2" },
+        { t: "Summer", a: "히사이시 조", m: "D4_0.4,E4_0.4,F#4_0.4,A4_0.4,D5_1.0,C#5_0.5,B4_0.5,A4_1.5,G4_0.4,F#4_0.4,E4_0.4,D4_1.5" }
     ];
 
     let piano, sheet = [], tiles = [], isPlaying = false, score = 0, hp = 100, sheetIdx = 0, selected = 0;
-    const lookahead = 1.6; 
-    let hitLineY;
+    const LOOKAHEAD = 1.6;
+    let hitLineY, isLoaded = false;
 
-    // 🌟 로딩 최적화 + 비상용 합성 엔진 탑재
+    // 🌟 GPT 조언 반영: 로딩 최적화 + 볼륨 안정화
     piano = new Tone.Sampler({
         urls: { "C4": "C4.mp3", "Ds4": "Ds4.mp3", "Fs4": "Fs4.mp3", "A4": "A4.mp3" },
         baseUrl: "https://tonejs.github.io/audio/salamander/",
         onload: () => { setReady(); },
-        onerror: () => { console.log("외부 음원 로드 실패 - 합성 엔진 전환"); switchNoteEngine(); }
+        onerror: () => { 
+            // 음원 로드 실패 시 볼륨이 안정화된 합성음 사용
+            piano = new Tone.PolySynth(Tone.Synth, { volume: -12 }).toDestination();
+            setReady();
+        }
     }).toDestination();
 
-    // 만약 5초 동안 로드가 안 되면 강제로 버튼 활성화 (합성음 사용)
-    setTimeout(() => { if(!isPlaying) setReady(); }, 5000);
+    // 5초 후 강제 활성화 방지 플래그 적용
+    setTimeout(() => { if(!isLoaded) setReady(); }, 5000);
 
     function setReady() {
+        if(isLoaded) return;
+        isLoaded = true;
         const btn = document.getElementById('start-btn');
-        btn.innerText = "게임 시작!";
-        btn.classList.add('ready');
-    }
-
-    function switchNoteEngine() {
-        piano = new Tone.PolySynth(Tone.Synth).toDestination();
-        setReady();
+        btn.innerText = "게임 시작!"; btn.classList.add('ready');
     }
 
     const listDiv = document.getElementById('song-list');
@@ -116,35 +115,33 @@
         listDiv.appendChild(d);
     });
 
-    // 🌟 반복 없는 1분 30초 악보 파싱 (지피티 충고 반영)
     function parseSheet(songStr) {
         const noteArray = [];
-        let time = 1.0;
-        let lane = 0;
+        let time = 1.0, lane = 0;
         const items = songStr.split(',');
         
-        // 90초가 될 때까지 패턴을 연장하여 반복 없는 느낌을 줌
-        while (time < 90) {
+        while (time < 90) { // 1분 30초 분량 확장
             for(let item of items) {
                 if (time >= 90) break;
-                const parts = item.split('_');
-                const noteName = parts[0];
-                const duration = parseFloat(parts[1]);
-                lane = (lane + Math.floor(Math.random() * 3) + 1) % 4;
-                noteArray.push({ t: time, l: lane, n: noteName, d: duration });
-                time += duration;
+                const [note, dur] = item.split('_');
+                // GPT 조언 반영: 랜덤 레인 자연스럽게 변경
+                lane = (lane + (Math.random() < 0.5 ? 1 : 3)) % 4;
+                noteArray.push({ t: time, l: lane, n: note, d: parseFloat(dur) });
+                time += parseFloat(dur);
             }
         }
         return noteArray;
     }
 
     document.getElementById('start-btn').addEventListener('pointerdown', async () => {
-        if(!document.getElementById('start-btn').classList.contains('ready')) return;
+        if(!isLoaded) return;
         await Tone.start();
-        
         document.getElementById('lobby').style.display = 'none';
         document.getElementById('game').style.display = 'block';
-        hitLineY = window.innerHeight * 0.85;
+        
+        // GPT 조언 반영: 컨테이너 높이 기반 정확한 판정선 계산
+        const gameArea = document.getElementById('game');
+        hitLineY = gameArea.offsetHeight * 0.85;
 
         sheet = parseSheet(songs[selected].m);
         isPlaying = true; score = 0; hp = 100; sheetIdx = 0; tiles = [];
@@ -158,7 +155,7 @@
     function showJudg(txt, col) {
         const j = document.getElementById('judgment');
         j.innerText = txt; j.style.color = col; j.style.opacity = 1;
-        setTimeout(() => { j.style.opacity = 0; }, 300);
+        setTimeout(() => j.style.opacity = 0, 300);
     }
 
     function updateHP() {
@@ -170,32 +167,36 @@
     function loop() {
         if(!isPlaying) return;
         const now = Tone.Transport.seconds;
-        const speed = hitLineY / lookahead;
+        const gameArea = document.getElementById('game');
+        const speed = hitLineY / LOOKAHEAD;
 
-        // Lazy Loading: 화면에 보일 타일만 생성
-        while(sheetIdx < sheet.length && sheet[sheetIdx].t < now + lookahead) {
+        // 타일 생성 (Lazy Loading)
+        while(sheetIdx < sheet.length && sheet[sheetIdx].t < now + LOOKAHEAD) {
             const data = sheet[sheetIdx++];
             const el = document.createElement('div');
             const h = Math.max(120, data.d * speed * 0.8);
+            el.className = `tile ${data.d >= 0.5 ? 'long' : ''}`;
             el.style.left = (data.l * 25) + '%';
             el.style.height = h + 'px';
-            el.className = 'tile';
             
             const obj = { el, data, h, hit: false, miss: false };
             el.addEventListener('pointerdown', (e) => {
                 e.preventDefault();
                 if(obj.hit || obj.miss) return;
                 const dist = Math.abs(el.getBoundingClientRect().bottom - hitLineY);
-                if(dist < 120) {
-                    piano.triggerAttackRelease(data.n, "4n");
+                
+                // GPT 조언 반영: PERFECT 판정 범위 강화 (60px)
+                if(dist < 100) {
+                    piano.triggerAttackRelease(data.n, data.d >= 0.5 ? "1n" : "4n");
                     obj.hit = true; el.classList.add('pressed');
-                    score += 10; hp = Math.min(100, hp + 2);
+                    score += (dist < 50 ? 30 : 10);
+                    hp = Math.min(100, hp + 2);
                     document.getElementById('score').innerText = score;
-                    showJudg("PERFECT", "#00f2ff");
+                    showJudg(dist < 50 ? "PERFECT" : "GOOD", dist < 50 ? "var(--neon)" : "#fff");
                     updateHP();
                 }
             });
-            document.getElementById('game').appendChild(el);
+            gameArea.appendChild(el);
             tiles.push(obj);
         }
 
@@ -204,15 +205,20 @@
             const bottom = hitLineY - (o.data.t - now) * speed;
             o.el.style.top = (bottom - o.h) + "px";
 
-            if(!o.hit && !o.miss && (o.data.t - now) < -0.25) {
+            if(!o.hit && !o.miss && (o.data.t - now) < -0.2) {
                 o.miss = true; o.el.classList.add('missed');
-                hp -= 10; score = Math.max(0, score - 10);
+                hp -= 12; score = Math.max(0, score - 15);
                 document.getElementById('score').innerText = score;
                 showJudg("MISS", "#ff0055");
                 updateHP();
                 if(hp <= 0) end(false);
             }
-            if(bottom - o.h > window.innerHeight + 100) { o.el.remove(); tiles.splice(i, 1); }
+            
+            // GPT 조언 반영: 컨테이너 높이 기반 삭제 로직
+            if(bottom - o.h > gameArea.offsetHeight + 100) { 
+                o.el.remove(); 
+                tiles.splice(i, 1); 
+            }
         }
 
         if(sheetIdx >= sheet.length && tiles.length === 0) end(true);
@@ -223,7 +229,8 @@
         isPlaying = false; Tone.Transport.stop();
         document.getElementById('game').style.display = 'none';
         document.getElementById('result').style.display = 'flex';
-        document.getElementById('res-title').innerText = win ? "연주 완료!" : "연주 실패";
+        document.getElementById('res-title').innerText = win ? "STAGE CLEAR!" : "GAME OVER";
+        document.getElementById('rank').innerText = win ? (score > 1500 ? "SSS" : "S") : "F";
         document.getElementById('final-score').innerText = `Score: ${score}`;
     }
 </script>
