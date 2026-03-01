@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Piano Tiles - Harmony Master</title>
+    <title>Piano Tiles - 2014 Original Edition</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
     <style>
         :root { --neon: #00f2ff; --pink: #ff00ea; --gold: #ffea00; --bg: #050508; }
@@ -52,8 +52,8 @@
 <body>
 
 <div id="lobby" class="screen" style="display: flex;">
-    <h1>HARMONY & SUSTAIN</h1>
-    <p class="desc">화음 복원 및 페달 효과(Overlap)로 완벽한 음악성</p>
+    <h1>2014 ORIGINAL</h1>
+    <p class="desc">단단하고 날카로운 아케이드의 손맛</p>
     
     <div class="diff-group">
         <button class="diff-btn" data-diff="easy">하 (Easy)</button>
@@ -100,28 +100,43 @@
     let difficulty = "normal", speedMult = 1.0, hitLineY, isLoaded = false;
     const gameArea = document.getElementById('game');
 
-    // 🔥 4. 리버브 살짝 더 증가 (건조함 타파, 자연스러운 공간감)
-    const reverb = new Tone.Reverb({ decay: 0.8, wet: 0.22 }); 
-    
-    // 컴프레서 & EQ
-    const eq = new Tone.EQ3({ low: -8, mid: -2, high: 6 });
-    const comp = new Tone.Compressor({ threshold: -18, ratio: 4, attack: 0.003, release: 0.15 }).toDestination();
+    // 🔥 1. 리버브 최소화 (공간감 거의 제거, 아주 짧고 단단하게)
+    const reverb = new Tone.Reverb({
+        decay: 0.6,
+        wet: 0.14
+    });
 
+    // 🔥 2. EQ: 저음역 컷 & 고음역 폭발적 강조 (얇고 밝은 아케이드 톤)
+    const eq = new Tone.EQ3({
+        low: -10,
+        mid: -3,
+        high: 8
+    });
+
+    // 🔥 3. 컴프레서: 타격감을 압축해서 꽉 찬 소리로 만듦
+    const comp = new Tone.Compressor({
+        threshold: -20,
+        ratio: 5,
+        attack: 0.003,
+        release: 0.1
+    }).toDestination();
+
+    // 체인 연결
     reverb.connect(eq);
     eq.connect(comp);
 
     function useEmergencySynth() {
         if(isLoaded) return;
         if(piano) piano.dispose(); 
-        piano = new Tone.PolySynth(Tone.Synth, { volume: -4, envelope: { attack: 0.005, release: 0.28 } }).connect(reverb);
+        piano = new Tone.PolySynth(Tone.Synth, { volume: -4, envelope: { attack: 0.005, release: 0.23 } }).connect(reverb);
         setReady();
     }
 
-    // 🔥 3. 릴리즈 증가 (뚝 끊기지 않고 자연스럽게 꼬리가 남음)
+    // 🔥 4. Sampler: 릴리즈를 0.23초로 짧게 세팅하여 여운을 잘라냄 (2014 감성)
     piano = new Tone.Sampler({
         urls: { "C3": "C3.mp3", "C4": "C4.mp3", "C5": "C5.mp3", "C6": "C6.mp3" },
         baseUrl: "https://tonejs.github.io/audio/salamander/",
-        release: 0.28, 
+        release: 0.23, 
         attack: 0.005,
         volume: -2,
         onload: () => { if(!isLoaded) setReady(); },
@@ -145,7 +160,7 @@
         songs.forEach((s, idx) => {
             const item = document.createElement('div');
             item.className = `song-item ${idx === selected ? 'active' : ''}`;
-            item.innerHTML = `<div><div class="song-title">${s.t}</div><div class="song-artist">화성 복원 모드 (${s.a})</div></div>`;
+            item.innerHTML = `<div><div class="song-title">${s.t}</div><div class="song-artist">2014 오리지널 사운드 (${s.a})</div></div>`;
             item.onclick = () => { selected = idx; renderSongs(); };
             listDiv.appendChild(item);
         });
@@ -159,7 +174,7 @@
         });
     });
 
-    // 🔥 1. 화성 복원: 최고음 하나만 쓰는 게 아니라 2개까지 허용!
+    // 음악성 유지: 최고음 + 그 아래음 2개 동시 재생
     function parseSheet(songObj) {
         const noteArray = [];
         let time = 1.0;
@@ -178,11 +193,9 @@
                 const dur = parseFloat(durStr);
                 const notes = noteStr.split('+'); 
 
-                // 음정 순 정렬 후, 최고음 + 그 아래음 (최대 2개) 추출
                 notes.sort((a, b) => Tone.Frequency(b).toMidi() - Tone.Frequency(a).toMidi());
                 const playNotes = notes.slice(0, 2); 
 
-                // 최고음 기준으로 레인 배치
                 const midi = Tone.Frequency(playNotes[0]).toMidi();
                 let lane = isNaN(midi) ? Math.floor(Math.random() * 4) : midi % 4;
                 
@@ -251,8 +264,8 @@
 
             if (diff < 0.22) { 
                 
-                // 🔥 2. 배열(playNotes) 그대로 재생 + 재생 길이 0.3초 (살짝 겹치게 페달 효과) + 벨로시티 0.85
-                piano.triggerAttackRelease(o.data.n, 0.3, Tone.now(), 0.85);
+                // 🔥 5. 재생 로직: 길이를 0.24초로 고정하여 끊어치는 맛을 살리되 velocity(파워)는 0.9로 타격감 유지!
+                piano.triggerAttackRelease(o.data.n, 0.24, Tone.now(), 0.9);
                 
                 o.hit = true;
                 o.el.classList.add("pressed");
@@ -277,7 +290,7 @@
     function loop() {
         if(!isPlaying) return;
         const now = Tone.Transport.seconds; 
-        const LOOKAHEAD = 1.2; // 0지연 시각 싱크 유지
+        const LOOKAHEAD = 1.2; 
         const speed = hitLineY / LOOKAHEAD;
 
         while(sheetIdx < sheet.length && sheet[sheetIdx].t < now + LOOKAHEAD) {
