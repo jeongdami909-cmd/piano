@@ -1,231 +1,65 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Piano Tiles - V21 Ultimate Stable</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
-    <style>
-        :root { --neon: #00f2ff; --pink: #ff00ea; --gold: #ffea00; }
-        * { box-sizing: border-box; user-select: none; margin: 0; padding: 0; font-family: 'Pretendard', sans-serif; -webkit-tap-highlight-color: transparent; }
-        
-        body { color: #000; height: 100dvh; overflow: hidden; background: #fff; touch-action: none; }
-        
-        .screen { position: absolute; top: 0; left: 50%; width: 100%; height: 100%; max-width: 500px; transform: translateX(-50%); display: none; flex-direction: column; background: #fff; border-left: 1px solid #ddd; border-right: 1px solid #ddd; }
-        
-        #lobby { display: flex; z-index: 100; padding: 25px; background: #050508; color: #fff; }
-        h1 { text-align: center; font-size: 30px; font-weight: 900; background: linear-gradient(90deg, var(--neon), var(--pink)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; padding: 15px 0; }
-        
-        #song-list { flex: 1; overflow-y: auto; background: rgba(255,255,255,0.03); border-radius: 20px; padding: 10px; margin-bottom: 20px; border: 1px solid #222; }
-        .song-item { padding: 18px; border-bottom: 1px solid #222; border-radius: 12px; margin-bottom: 8px; cursor: pointer; background: rgba(255,255,255,0.02); }
-        .song-item.active { background: rgba(0,242,255,0.15); border: 1px solid var(--neon); }
-        .song-title { font-weight: 900; font-size: 16px; }
-        .song-artist { font-size: 12px; color: var(--gold); margin-top: 4px; }
+gameArea.addEventListener("pointerdown", (e) => {
+    // 1. 모바일 터치 간섭 및 스크롤 방지
+    e.preventDefault(); 
 
-        #start-btn { width: 100%; padding: 22px; border-radius: 50px; border: none; font-size: 20px; font-weight: 900; background: linear-gradient(45deg, var(--neon), var(--pink)); color: #fff; cursor: pointer; transition: 0.2s; }
-        #start-btn:active { transform: scale(0.98); }
+    if (!isPlaying || activeRows.length === 0) return;
 
-        #game { overflow: hidden; z-index: 50; position: relative; touch-action: none; background: #fff; }
-        
-        .lane-line { position: absolute; top: 0; width: 25%; height: 100%; border-right: 1px solid #ddd; pointer-events: none; }
-        
-        #score { position: absolute; top: 30px; width: 100%; text-align: center; font-size: 65px; font-weight: 900; z-index: 60; color: #ff0055; pointer-events: none; text-shadow: 3px 3px 0px #fff, -3px -3px 0px #fff, 0px 3px 0px #fff, 0px -3px 0px #fff; }
-
-        .row { position: absolute; width: 100%; height: 25%; transition: bottom 0.12s cubic-bezier(0.25, 0.46, 0.45, 0.94); }
-        
-        .tile { position: absolute; width: 25%; height: 100%; background: #111; border: 1px solid #000; box-shadow: inset 0 -4px 0 rgba(255,255,255,0.2); transition: background 0.1s; }
-        .tile.pressed { background: #bbb !important; }
-        .tile.missed { background: #ff0055 !important; animation: blink 0.2s infinite; }
-        
-        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
-
-        #result { justify-content: center; align-items: center; text-align: center; z-index: 200; background: rgba(0,0,0,0.95); color: #fff; }
-    </style>
-</head>
-<body>
-
-<div id="lobby" class="screen" style="display: flex;">
-    <h1>V21 MASTERPIECE</h1>
-    <p style="text-align:center; color:#aaa; font-size:12px; margin-bottom:15px;">단 1%의 버그도 허용하지 않는 완벽한 튜닝</p>
-    <div id="song-list"></div>
-    <button id="start-btn">그랜드 피아노 조율 중...</button>
-</div>
-
-<div id="game" class="screen">
-    <div class="lane-line" style="left:0%"></div>
-    <div class="lane-line" style="left:25%"></div>
-    <div class="lane-line" style="left:50%"></div>
-    <div class="lane-line" style="left:75%; border:none;"></div>
-    
-    <div id="score">0</div>
-</div>
-
-<div id="result" class="screen">
-    <h2 id="res-title" style="font-size:36px; margin-bottom:10px;">GAME OVER</h2>
-    <div id="rank" style="font-size:110px; font-weight:900; color:var(--gold); margin: 10px 0; text-shadow: 0 0 20px var(--gold);">S</div>
-    <div id="final-score" style="font-size:24px; color:#ccc; margin-bottom:40px;">Score: 0</div>
-    <button onclick="location.reload()" style="padding: 20px 60px; border-radius: 50px; border: none; font-weight: bold; background:#fff; font-size: 20px; cursor: pointer; color:#000;">다시 도전</button>
-</div>
-
-<script>
-    const songs = [
-        { t: "Canon in D", a: "Pachelbel", parts: { A: "F#5,E5,D5,C#5,B4,A4,B4,C#5", B: "D5,C#5,D5,E4,F#4,G4,A4,B4,A4,G4,F#4,E4,D4,E4,F#4", C: "G4,F#4,E4,D4,C#4,B3,A3,G3,F#3,E3,D3,E3,F#3,G3,A3,B3" } },
-        { t: "겨울바람", a: "Chopin", parts: { A: "E4,E4,F4,E4,A4,G#4,A4,C5,B4,C5,E5", B: "A5,G#5,A5,F5,E5,D#5,E5,C5,B4,A#4,B4,G4,F4,E4,F4,D4" } },
-        { t: "River Flows in You", a: "Yiruma", parts: { A: "F#4,E4,F#4,C#4,F#4,E4,F#4,C#4", B: "B3,A3,B3,F#3,F#4,E4,F#4,C#4" } },
-        { t: "Piano Concerto No.2", a: "Rachmaninoff", parts: { A: "C4,D4,Eb4,F4,G4,Ab4,G4", B: "G4,F4,G4,Ab4,G4,F4,Eb4" } },
-        { t: "Take On Me", a: "a-ha", parts: { A: "F#5,F#5,D5,B4,B4,E5,E5,E5,G#5,G#5,A5,B5,A5,A5,A5,E5,D5", B: "A4,A4,E4,F#4,G#4" } },
-        { t: "Still D.R.E.", a: "Dr. Dre", parts: { A: "E5,E5,E5,E5,E5,E5,E5", B: "B4,B4,B4,B4,B4,B4,B4" } }
-    ];
-
-    let piano, sheet = [], activeRows = [];
-    let isPlaying = false, score = 0, currentStep = 0, selected = 0;
-    const gameArea = document.getElementById('game');
-    
-    gameArea.style.touchAction = "none"; 
-
-    piano = new Tone.Sampler({
-        urls: {
-            A0: "A0.mp3", C1: "C1.mp3", "D#1": "Ds1.mp3", "F#1": "Fs1.mp3",
-            A1: "A1.mp3", C2: "C2.mp3", "D#2": "Ds2.mp3", "F#2": "Fs2.mp3",
-            A2: "A2.mp3", C3: "C3.mp3", "D#3": "Ds3.mp3", "F#3": "Fs3.mp3",
-            A3: "A3.mp3", C4: "C4.mp3", "D#4": "Ds4.mp3", "F#4": "Fs4.mp3",
-            A4: "A4.mp3", C5: "C5.mp3", "D#5": "Ds5.mp3", "F#5": "Fs5.mp3",
-            A5: "A5.mp3", C6: "C6.mp3", "D#6": "Ds6.mp3", "F#6": "Fs6.mp3",
-            A6: "A6.mp3", C7: "C7.mp3", A7: "A7.mp3", C8: "C8.mp3"
-        },
-        baseUrl: "https://tonejs.github.io/audio/salamander/",
-        release: 0.8,
-        attack: 0.003,
-        volume: 2,
-        onload: () => {
-            document.getElementById('start-btn').innerText = "게임 시작";
-        }
-    }).toDestination();
-
-    function renderSongs() {
-        const listDiv = document.getElementById('song-list');
-        listDiv.innerHTML = "";
-        songs.forEach((s, idx) => {
-            const item = document.createElement('div');
-            item.className = `song-item ${idx === selected ? 'active' : ''}`;
-            item.innerHTML = `<div class="song-title">${s.t}</div><div class="song-artist">${s.a}</div>`;
-            item.onclick = () => { selected = idx; renderSongs(); };
-            listDiv.appendChild(item);
-        });
-    }
-    renderSongs();
-
-    document.getElementById('start-btn').addEventListener('click', async () => {
-        if (document.getElementById('start-btn').innerText === "그랜드 피아노 조율 중...") return;
-        await Tone.start();
-        document.getElementById('lobby').style.display = 'none';
-        gameArea.style.display = 'block';
-
-        sheet = [];
-        const song = songs[selected];
-        const partKeys = Object.keys(song.parts);
-        for(let i=0; i<30; i++) {
-            const pk = partKeys[Math.floor(Math.random() * partKeys.length)];
-            const notes = song.parts[pk].split(',');
-            notes.forEach(note => {
-                let lane = Math.floor(Math.random() * 4); 
-                sheet.push({ lane, note });
-            });
-        }
-
-        isPlaying = true;
-        score = 0;
-        currentStep = 0;
-        activeRows = [];
-        document.getElementById('score').innerText = "0";
-
-        for(let i=0; i<5; i++) {
-            createRow(i);
-        }
+    // 🔥 V22 엔진: 배열 순서가 아니라 실제 화면의 'bottom' 위치로 맨 아래 줄을 찾음
+    const bottomRow = activeRows.reduce((lowest, r) => {
+        const currentBottom = parseFloat(r.rowEl.style.bottom);
+        const lowestBottom = parseFloat(lowest.rowEl.style.bottom);
+        return currentBottom < lowestBottom ? r : lowest;
     });
 
-    function createRow(offset) {
-        const sheetIdx = currentStep + offset;
-        if(sheetIdx >= sheet.length) return; 
+    // 중복 클릭 방지
+    if (bottomRow.locked) return;
 
-        const data = sheet[sheetIdx];
-        const rowEl = document.createElement('div');
-        rowEl.className = 'row';
-        rowEl.style.bottom = (offset * 25) + '%'; 
+    const rect = gameArea.getBoundingClientRect();
+    const touchX = e.clientX - rect.left;
+    
+    // 레인 계산 (0~3 범위 고정)
+    let clickedLane = Math.floor(touchX / (rect.width / 4));
+    clickedLane = Math.max(0, Math.min(3, clickedLane));
 
-        const tileEl = document.createElement('div');
-        tileEl.className = 'tile';
-        tileEl.style.left = (data.lane * 25) + '%';
-        
-        rowEl.appendChild(tileEl);
-        gameArea.appendChild(rowEl);
-        
-        // 🔥 지피티 패치 2: 연타 꼬임 방지를 위한 locked 플래그 추가
-        activeRows.push({ rowEl, tileEl, lane: data.lane, note: data.note, sheetIdx, locked: false });
-    }
-
-    gameArea.addEventListener("pointerdown", (e) => {
-        if (!isPlaying || activeRows.length === 0) return;
-
-        // 🔥 지피티 패치 2: 터치 연타 시 이중 처리 방지
-        const bottomRow = activeRows[0]; 
-        if (bottomRow.locked) return;
+    if (clickedLane === bottomRow.lane) {
+        // ✅ 정답 판정
         bottomRow.locked = true;
-
-        const rect = gameArea.getBoundingClientRect();
-        const touchX = e.clientX - rect.left;
+        piano.triggerAttackRelease(bottomRow.note, 0.5, Tone.now(), 1.0);
         
-        // 🔥 지피티 패치 3: 레인 계산 미세 오차 완벽 차단 (0~3 클램프)
-        let clickedLane = Math.floor(touchX / (rect.width / 4));
-        clickedLane = Math.max(0, Math.min(3, clickedLane));
-
-        if (clickedLane === bottomRow.lane) {
-            // ✅ 정답
-            piano.triggerAttackRelease(bottomRow.note, 0.5, Tone.now(), 1.0);
-            bottomRow.tile.classList.add('pressed');
-            
-            score++;
-            document.getElementById('score').innerText = score;
-            
-            const removedRow = activeRows.shift();
-            setTimeout(() => removedRow.rowEl.remove(), 120); 
-            
-            activeRows.forEach((r, idx) => {
-                r.rowEl.style.bottom = (idx * 25) + '%'; 
-            });
-            
-            currentStep++;
-            createRow(4);
-            
-            // 🔥 지피티 패치 1: 100% 확실한 곡 완료/클리어 조건
-            if(currentStep >= sheet.length && activeRows.length === 0) {
-                setTimeout(() => end(true), 300);
-            }
-
-        } else {
-            // ❌ 오답
-            const errTile = document.createElement('div');
-            errTile.className = 'tile missed';
-            errTile.style.left = (clickedLane * 25) + '%';
-            bottomRow.rowEl.appendChild(errTile);
-            
-            end(false);
+        // 오타 수정: tile -> tileEl
+        bottomRow.tileEl.classList.add('pressed');
+        
+        score++;
+        document.getElementById('score').innerText = score;
+        
+        // 화면 위치 기준으로 정확한 인덱스를 찾아 제거
+        const index = activeRows.indexOf(bottomRow);
+        if (index > -1) {
+            const removedRow = activeRows.splice(index, 1)[0];
+            // 자연스러운 사라짐 효과 후 삭제
+            setTimeout(() => removedRow.rowEl.remove(), 100); 
         }
-    });
-
-    function end(win) {
-        // 🔥 지피티 패치 4: 다중 실행 완벽 차단 (빨간 타일 중복 생성 방지)
-        if (!isPlaying) return;
-        isPlaying = false;
         
-        setTimeout(() => {
-            gameArea.style.display = 'none';
-            document.getElementById('result').style.display = 'flex';
-            document.getElementById('res-title').innerText = win ? "SONG CLEARED!" : "GAME OVER";
-            document.getElementById('rank').innerText = win ? "SSS" : (score > 150 ? "S" : (score > 50 ? "A" : "F"));
-            document.getElementById('final-score').innerText = `Score: ${score}`;
-        }, 500); 
+        // 나머지 줄들을 아래로 한 칸씩 이동
+        activeRows.forEach((r, idx) => {
+            r.rowEl.style.bottom = (idx * 25) + '%'; 
+        });
+        
+        currentStep++;
+        createRow(4); // 새로운 줄 생성
+        
+        // 모든 곡을 다 쳤을 때
+        if(currentStep >= sheet.length && activeRows.length === 0) {
+            setTimeout(() => end(true), 300);
+        }
+
+    } else {
+        // ❌ 오답 판정
+        const errTile = document.createElement('div');
+        errTile.className = 'tile missed';
+        errTile.style.left = (clickedLane * 25) + '%';
+        bottomRow.rowEl.appendChild(errTile);
+        
+        end(false);
     }
-</script>
-</body>
-</html>
+});
