@@ -67,7 +67,7 @@
 <div id="lobby">
     <header>
         <h1>Neon Concert</h1>
-        <p>원곡 플레이 & 하/중/상 난이도 선택</p>
+        <p>끝까지 연주하면 클리어!</p>
     </header>
     <div id="song-list"></div>
     <div class="footer">
@@ -95,16 +95,14 @@
 </div>
 
 <script>
-    // 🎧 여기에 네 MP3 파일 이름을 넣으면 돼! (예: "music1.mp3")
-    // 난이도(level)에 따라 떨어지는 속도(speed)와 생성주기(spawnRate)가 달라져.
+    // 🎧 네가 보내준 곡들을 세팅했어! 파일 이름을 똑같이 맞춰서 같은 폴더에 넣어줘.
     const library = [
-        { t: "너의 의미 (Easy)", level: "하", speed: 6, spawnRate: 800, audioUrl: "https://tonejs.github.io/audio/berklee/gong_1.mp3" }, // 임시 무료 음원 링크
-        { t: "밤주줄 (Normal)", level: "중", speed: 9, spawnRate: 500, audioUrl: "https://tonejs.github.io/audio/loop/FW3.mp3" },
-        { t: "쇼팽 하이라이트 (Hard)", level: "상", speed: 13, spawnRate: 300, audioUrl: "https://tonejs.github.io/audio/casio/A1.mp3" }
+        { t: "Seasons of Love (Easy)", level: "하", speed: 5, spawnRate: 800, audioUrl: "./easy.mp3" }, 
+        { t: "Take On Me (Normal)", level: "중", speed: 8, spawnRate: 500, audioUrl: "./normal.mp3" },
+        { t: "쇼팽 겨울바람 (Hard)", level: "상", speed: 12, spawnRate: 300, audioUrl: "./hard.mp3" }
     ];
 
-    let selected = 0, hitSynth, bgmPlayer, isPlaying = false, score = 0, lives = 6, tiles = [], loopId, spawnId;
-    const TARGET = 100;
+    let selected = 0, hitSynth, bgmPlayer, isPlaying = false, score = 0, lives = 6, tiles = [], loopId, spawnId, winTimeoutId;
     const MAX_LIVES = 6;
 
     const listDiv = document.getElementById('song-list');
@@ -128,7 +126,6 @@
         btn.innerText = "🎵 음원 로딩 중...";
         await Tone.start();
         
-        // 타격 효과음 (유저가 눌렀을 때 맑은 피아노/벨 소리가 남)
         if (!hitSynth) {
             hitSynth = new Tone.PolySynth(Tone.Synth, { 
                 oscillator: { type: "triangle" }, 
@@ -139,17 +136,26 @@
 
         const song = library[selected];
 
-        // 🎵 MP3 배경음악 플레이어 설정
-        if (bgmPlayer) { bgmPlayer.dispose(); } // 이전 곡 제거
-        bgmPlayer = new Tone.Player({
-            url: song.audioUrl,
-            loop: true,
-            autostart: false,
-            onload: () => {
-                startGame(song);
-            }
-        }).toDestination();
-        bgmPlayer.volume.value = -5; // BGM 볼륨 (너무 크면 타격음이 안 들림)
+        if (bgmPlayer) { bgmPlayer.dispose(); } 
+        
+        // 에러 처리 추가: 파일을 못 찾았을 때 안내
+        try {
+            bgmPlayer = new Tone.Player({
+                url: song.audioUrl,
+                loop: false, // 🔥 노래 반복 끄기 (한 번만 재생)
+                autostart: false,
+                onload: () => {
+                    startGame(song);
+                },
+                onerror: () => {
+                    alert("MP3 파일을 찾을 수 없습니다! HTML 파일과 같은 폴더에 파일(easy.mp3 등)이 있는지 확인해주세요.");
+                    btn.innerText = "PLAY NOW";
+                }
+            }).toDestination();
+            bgmPlayer.volume.value = -3; 
+        } catch(e) {
+            console.error(e);
+        }
     });
 
     function startGame(song) {
@@ -162,8 +168,13 @@
         // BGM 시작
         bgmPlayer.start();
 
+        // 🔥 노래 길이를 계산해서, 노래가 끝나는 시간에 맞춰 클리어(Win) 처리
+        const songDurationMs = bgmPlayer.buffer.duration * 1000;
+        winTimeoutId = setTimeout(() => {
+            if (isPlaying) win();
+        }, songDurationMs);
+
         gameLoop(song.speed);
-        // 난이도에 맞는 타일 생성 주기(spawnRate) 적용
         spawnId = setInterval(() => createTile(song.speed), song.spawnRate);
     }
 
@@ -171,11 +182,10 @@
         document.getElementById('lives').innerText = "❤️".repeat(lives) + "🖤".repeat(MAX_LIVES - lives);
     }
 
-    // 타격할 때 랜덤하게 어울리는 음계 재생 (원곡에 얹혀지는 느낌)
     const hitNotes = ["C5", "E5", "G5", "B5", "C6"];
 
     function createTile(speed) {
-        if (!isPlaying || score >= TARGET) return;
+        if (!isPlaying) return; // 목표 점수 도달 시 멈추는 로직 삭제
         const lane = Math.floor(Math.random() * 4);
         const t = document.createElement('div');
         t.className = 'tile';
@@ -190,17 +200,13 @@
             const hitLineY = stageHeight * 0.85; 
             const rect = t.getBoundingClientRect();
             
-            // 판정
             if (Math.abs((rect.top + rect.height / 2) - hitLineY) > 130) return;
 
-            // 타격음 재생
             const randomNote = hitNotes[Math.floor(Math.random() * hitNotes.length)];
             hitSynth.triggerAttackRelease(randomNote, "16n");
 
             t.classList.add('pressed');
             score++; document.getElementById('score').innerText = score;
-            
-            if(score >= TARGET) setTimeout(win, 500);
             
             setTimeout(() => {
                 const idx = tiles.indexOf(t);
@@ -237,13 +243,13 @@
     }
 
     function gameOver() {
-        isPlaying = false; clearInterval(spawnId); bgmPlayer.stop(); cancelAnimationFrame(loopId);
+        isPlaying = false; clearInterval(spawnId); bgmPlayer.stop(); cancelAnimationFrame(loopId); clearTimeout(winTimeoutId);
         setTimeout(() => { alert(`GAME OVER\n최종 점수: ${score}`); location.reload(); }, 100);
     }
 
     function win() {
         isPlaying = false; clearInterval(spawnId); bgmPlayer.stop(); cancelAnimationFrame(loopId);
-        setTimeout(() => { alert(`✨ 클리어! ✨\n완벽하게 연주했습니다!`); location.reload(); }, 100);
+        setTimeout(() => { alert(`✨ 곡 완주 성공! ✨\n완벽하게 연주했습니다! 최종 점수: ${score}`); location.reload(); }, 100);
     }
 </script>
 </body>
