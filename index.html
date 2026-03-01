@@ -1,265 +1,107 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Piano Tiles - V7 Ultimate 12</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
-    <style>
-        :root { --neon: #00f2ff; --pink: #ff00ea; --gold: #ffea00; --bg: #050508; }
-        * { box-sizing: border-box; user-select: none; margin: 0; padding: 0; font-family: 'Pretendard', sans-serif; -webkit-tap-highlight-color: transparent; }
-        body { color: #fff; height: 100dvh; overflow: hidden; background: var(--bg); }
-        button { touch-action: manipulation; }
-        .screen { position: absolute; top: 0; left: 50%; width: 100%; height: 100%; max-width: 500px; transform: translateX(-50%); display: none; flex-direction: column; background: var(--bg); border-left: 1px solid #111; border-right: 1px solid #111; }
-        #lobby { display: flex; z-index: 100; padding: 20px; }
-        h1 { text-align: center; font-size: 24px; font-weight: 900; background: linear-gradient(90deg, var(--neon), var(--pink)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; padding: 5px 0; }
-        .diff-group { display: flex; gap: 8px; margin-bottom: 12px; }
-        .diff-btn { flex: 1; padding: 10px; background: #111; border: 1px solid #333; border-radius: 8px; color: #888; font-weight: bold; cursor: pointer; }
-        .diff-btn.active { background: var(--pink); color: #fff; border-color: #fff; box-shadow: 0 0 10px var(--pink); }
-        #song-list { flex: 1; overflow-y: auto; background: rgba(255,255,255,0.02); border-radius: 15px; padding: 8px; margin-bottom: 10px; }
-        .song-item { padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); border-radius: 8px; margin-bottom: 5px; cursor: pointer; }
-        .song-item.active { background: rgba(0, 242, 255, 0.15); border: 1px solid var(--neon); }
-        #start-btn { width: 100%; padding: 16px; border-radius: 50px; border: none; font-size: 18px; font-weight: bold; background: linear-gradient(45deg, var(--neon), var(--pink)); color: #fff; cursor: pointer; box-shadow: 0 5px 20px rgba(255, 0, 234, 0.4); }
-        #game { overflow: hidden; z-index: 50; position: relative; touch-action: none; }
-        #hp-container { position: absolute; top: 15px; left: 20px; width: 100px; height: 10px; background: #333; border-radius: 5px; z-index: 60; }
-        #hp-bar { width: 100%; height: 100%; background: #00ff00; border-radius: 5px; transition: 0.3s; }
-        #score-container { position: absolute; top: 40px; width: 100%; text-align: center; z-index: 60; pointer-events: none; }
-        #score { font-size: 45px; font-weight: 900; text-shadow: 0 0 15px var(--neon); }
-        #judgment { position: absolute; top: 45%; width: 100%; text-align: center; font-size: 40px; font-weight: 900; z-index: 70; opacity: 0; pointer-events: none; }
-        .tile { position: absolute; width: 24.5%; border-radius: 4px; background: linear-gradient(to bottom, #fff, var(--neon)); z-index: 10; pointer-events: none; }
-        .tile.pressed { opacity: 0; transform: scale(1.1); transition: 0.2s; }
-        #result { justify-content: center; align-items: center; text-align: center; z-index: 200; background: rgba(0,0,0,0.98); }
-    </style>
-</head>
-<body>
+좋아 소희 👇
+지금 구조는 자동 연주 + 타일 판정 게임이야.
+네가 원하는 건:
+1️⃣ 건반 누르면 실제 그 음이 바로 연주되게
+2️⃣ 곡이 반복 없이 더 길게 전개되게
+둘 다 구조 조금만 바꾸면 해결됨 🔥
+🎹 1️⃣ 누르면 그 음이 실제로 나오게 만들기
+지금은 히트할 때 이 소리만 남:
+Js
+코드 복사
+hitSound.triggerAttackRelease("C4", "8n");
+이걸 이렇게 바꿔 👇
+✅ 수정 코드 (중요)
+pointerdown 안에서
+Js
+코드 복사
+if (diff < 0.25) { 
+    o.hit = true;
+    o.el.classList.add("pressed");
 
-<div id="lobby" class="screen" style="display: flex;">
-    <h1>PIANO MASTER 12</h1>
-    <div class="diff-group">
-        <button class="diff-btn" data-diff="easy">EASY</button>
-        <button class="diff-btn active" data-diff="normal">NORMAL</button>
-        <button class="diff-btn" data-diff="hard">HARD</button>
-    </div>
-    <div id="song-list"></div>
-    <button id="start-btn">연주 시작!</button>
-</div>
+    // 🔥 여기 수정
+    masterPiano.triggerAttackRelease(o.data.n, o.data.d * 0.8);
 
-<div id="game" class="screen">
-    <div id="hp-container"><div id="hp-bar"></div></div>
-    <div id="score-container"><div id="score">0</div></div>
-    <div id="judgment"></div>
-    <div id="hit-line" style="position:absolute; bottom:15%; width:100%; height:2px; background:rgba(255,255,255,0.2); pointer-events:none;"></div>
-    <div class="lane-bg" style="position:absolute; width:25%; height:100%; left:0; border-right:1px solid rgba(255,255,255,0.05);"></div>
-    <div class="lane-bg" style="position:absolute; width:25%; height:100%; left:25%; border-right:1px solid rgba(255,255,255,0.05);"></div>
-    <div class="lane-bg" style="position:absolute; width:25%; height:100%; left:50%; border-right:1px solid rgba(255,255,255,0.05);"></div>
-    <div class="lane-bg" style="position:absolute; width:25%; height:100%; left:75%;"></div>
-</div>
+    score += 20;
+    document.getElementById('score').innerText = score;
 
-<div id="result" class="screen">
-    <h2 id="res-title">GAME OVER</h2>
-    <div id="rank" style="font-size:80px; font-weight:900; color:var(--gold); margin: 20px 0;">S</div>
-    <div id="final-score" style="font-size:20px; margin-bottom: 30px;">Score: 0</div>
-    <button onclick="location.reload()" style="padding: 15px 40px; border-radius: 30px; border: none; font-weight: bold; background:#fff; cursor: pointer; color:#000;">로비로 돌아가기</button>
-</div>
-
-<script>
-    const songs = [
-        { t: "Canon in D", a: "Pachelbel", parts: { A: "F#5+D3_0.5,E5+A2_0.5,D5+B2_0.5,C#5+F#2_0.5,B4+G2_0.5,A4+D3_0.5,B4+G2_0.5,C#5+A2_0.5", B: "D5+D3_0.25,C#5_0.25,D5_0.25,D4_0.25,E4+A2_0.25,F#4_0.25,G4_0.25,A4_0.25,B4+B2_0.25,A4_0.25,G4_0.25,F#4_0.25", C: "G4+G2_0.25,F#4_0.25,E4_0.25,D4_0.25,C#4+D3_0.25,B3_0.25,A3_0.25,G3_0.25" }, seq: "A,A,B,B,C,C,A" },
-        { t: "Take On Me", a: "a-ha", parts: { A: "F#5+B3_0.2,F#5_0.2,D5_0.2,B4_0.2,B4+E3_0.4,E5_0.2,E5_0.2,E5_0.2,G#5+A3_0.2,G#5_0.2,A5_0.2,B5_0.2,A5+D3_0.2,A5_0.2,A5_0.2", B: "A4+D3_0.4,A4_0.4,E4_0.4,F#4_0.4,G#4+E3_0.8" }, seq: "A,A,B,B,A" },
-        { t: "겨울바람", a: "Chopin", parts: { A: "E4+A2_0.5,E4_0.5,F4_0.5,E4_0.5,A4+A2_1.0,G#4_0.5,A4_0.5,C5+A2_1.0,B4_0.5,C5_0.5,E5+A2_1.5", B: "A5+A2_0.15,G#5_0.15,A5_0.15,F5_0.15,E5+E2_0.15,D#5_0.15,E5_0.15,C5_0.15" }, seq: "A,B,B,A" },
-        { t: "For Tomorrow", a: "Blur", parts: { A: "E4+A2_0.4,E4_0.4,F#4_0.4,G4_0.4,A4+D3_0.8,G4_0.4,F#4_0.4,E4+A2_0.8", B: "A4+F#3_0.4,B4_0.4,C#5_0.4,D5+G3_0.8,C#5_0.4,B4_0.4,A4+A3_0.8" }, seq: "A,A,B,B,A" },
-        { t: "Waterfalls", a: "TLC", parts: { A: "Eb4+Eb2_0.5,G4_0.5,Bb4_0.5,C5+F2_1.0,Bb4_0.5,G4_0.5,F4_0.5,Eb4+Eb2_1.0", B: "Eb5+Eb2_0.5,D5_0.5,C5_0.5,Bb4+F2_1.0,G4_0.5,F4_0.5,Eb4_0.5,Eb4+Eb2_1.0" }, seq: "A,B,A,B" },
-        { t: "Purple Rain", a: "Prince", parts: { A: "Bb4+Bb2_0.8,C5_0.4,D5_0.4,F5+Eb3_1.2,D5_0.4,C5_0.4,Bb4+F2_1.6", B: "F5+Bb2_0.6,F5_0.6,G5_0.6,F5+Eb3_0.8,D5_0.4,C5_0.4,Bb4+F2_1.6" }, seq: "A,A,B,B,A" },
-        { t: "Piano Concerto No.2", a: "Rachmaninoff", parts: { A: "C3+C4_1.0,D3+D4_1.0,Eb3+Eb4_1.0,F3+F4_1.0,G3+G4_1.5,Ab3+Ab4_0.5,G3+G4_2.0", B: "G4+Eb3_0.5,F4_0.5,G4_0.5,Ab4+F3_1.0,G4_0.5,F4_0.5,Eb4+Eb3_1.5" }, seq: "A,B,B,A" },
-        { t: "Swan Lake", a: "Tchaikovsky", parts: { A: "A4+A2_0.6,D5_0.3,E5_0.3,F5_0.6,E5_0.3,D5_0.3,A4+A3_1.2", B: "F5+D3_0.6,A5_0.3,G5_0.3,F5_0.6,E5_0.3,D5_0.3,E5+A2_1.2" }, seq: "A,B,A,B" },
-        { t: "No Scrubs", a: "TLC", parts: { A: "G#4+G#2_0.4,G#4_0.4,B4_0.4,C#5+F#2_0.8,B4_0.4,G#4_0.4,F#4+E2_0.8", B: "B4+G#2_0.4,B4_0.4,B4_0.4,C#5+F#2_0.4,B4_0.4,G#4_0.4,G#4+E2_1.2" }, seq: "A,A,B,B,A" },
-        { t: "Driver's High", a: "L'Arc-en-Ciel", parts: { A: "E5+E3_0.2,E5_0.2,D5_0.2,B4_0.2,A4+A2_0.4,G4_0.2,A4_0.2,B4+B2_0.8", B: "B4+G3_0.4,B4_0.4,D5_0.4,E5+A3_0.8,D5_0.4,B4_0.4,A4+E3_0.8" }, seq: "A,A,B,B,A" },
-        { t: "Still D.R.E.", a: "Dr. Dre", parts: { A: "A4+C5+E5_0.2,A4+C5+E5_0.2,A4+C5+E5_0.2,A4+C5+E5_0.4,A4+C5+E5_0.2,A4+C5+E5_0.2,A4+C5+E5_0.2", B: "G4+B4+E5_0.2,G4+B4+E5_0.2,G4+B4+E5_0.2,G4+B4+E5_0.4,G4+B4+E5_0.2,G4+B4+E5_0.2,G4+B4+E5_0.2" }, seq: "A,B,A,B,A,B" },
-        { t: "Gymnopédie No.1", a: "Erik Satie", parts: { A: "F#4+D3_1.2,A4_1.2,C#5+A2_1.2,B4_1.2", B: "F#4+D3_1.2,A4_1.2,C#5+G2_1.2,E5_1.2" }, seq: "A,B,A,B" }
-    ];
-
-    let masterPiano, hitSound, sheet = [], tiles = [], isPlaying = false, score = 0, hp = 100, sheetIdx = 0, selected = 0;
-    let difficulty = "normal", speedMult = 1.0, hitLineY, gameStartTime = 0;
-    const gameArea = document.getElementById('game');
-
-    const reverb = new Tone.Reverb({ decay: 1.2, wet: 0.15 }).toDestination();
-    masterPiano = new Tone.PolySynth(Tone.Synth, { volume: -5, oscillator: { type: "triangle" }, envelope: { attack: 0.01, decay: 0.2, sustain: 0.4, release: 0.8 } }).connect(reverb);
-    hitSound = new Tone.MembraneSynth({ pitchDecay: 0.05, octaves: 10, envelope: { attack: 0.001, decay: 0.1, sustain: 0, release: 0.1 }, volume: -15 }).toDestination();
-
-    function renderSongs() {
-        const listDiv = document.getElementById('song-list');
-        listDiv.innerHTML = ""; 
-        songs.forEach((s, idx) => {
-            const item = document.createElement('div');
-            item.className = `song-item ${idx === selected ? 'active' : ''}`;
-            item.innerHTML = `<div style="font-weight:bold; font-size:14px;">${s.t}</div><div style="font-size:11px;color:var(--gold);">${s.a}</div>`;
-            item.onclick = () => { selected = idx; renderSongs(); };
-            listDiv.appendChild(item);
-        });
-    }
-    renderSongs();
-
-    document.querySelectorAll('.diff-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('active'));
-            e.target.classList.add('active');
-            difficulty = e.target.getAttribute('data-diff');
-        });
-    });
-
-    function parseAndSchedule(songObj) {
-        const noteArray = [];
-        let time = 1.5; 
-        const sequence = songObj.seq.split(',');
-        Tone.Transport.cancel(0); 
-        for (let partKey of sequence) {
-            const partStr = songObj.parts[partKey];
-            if (!partStr) continue;
-            const items = partStr.split(',');
-            for (let item of items) {
-                const [noteStr, durStr] = item.split('_');
-                const dur = parseFloat(durStr);
-                const notes = noteStr.split('+'); 
-                Tone.Transport.schedule((t) => { if(isPlaying) masterPiano.triggerAttackRelease(notes, dur * 0.8, t); }, time);
-                notes.sort((a, b) => Tone.Frequency(b).toMidi() - Tone.Frequency(a).toMidi());
-                const midi = Tone.Frequency(notes[0]).toMidi();
-                let lane = isNaN(midi) ? 0 : midi % 4;
-                noteArray.push({ t: time, l: lane, n: notes[0], d: dur });
-                time += dur;
-            }
-        }
-        return noteArray;
-    }
-
-    document.getElementById('start-btn').addEventListener('pointerdown', async (e) => {
-        e.preventDefault();
-        await Tone.start(); 
-        speedMult = difficulty === "easy" ? 0.7 : (difficulty === "hard" ? 1.4 : 1.0);
-        Tone.Transport.playbackRate = speedMult;
-        document.getElementById('lobby').style.display = 'none';
-        gameArea.style.display = 'block';
-        hitLineY = gameArea.offsetHeight * 0.85;
-
-        tiles.forEach(t => t.el.remove());
-        tiles = [];
-        sheet = parseAndSchedule(songs[selected]);
-        isPlaying = true; score = 0; hp = 100; sheetIdx = 0;
-        gameStartTime = Tone.now(); 
-        updateHPBar();
-        
-        document.getElementById('score').innerText = "0";
-        Tone.Transport.stop();
-        Tone.Transport.position = 0;
-        
-        setTimeout(() => {
-            Tone.Transport.start();
-            requestAnimationFrame(loop);
-        }, 200);
-    });
-
-    function updateHPBar() {
-        const bar = document.getElementById('hp-bar');
-        bar.style.width = hp + "%";
-        if(hp < 30) bar.style.background = "#ff0055";
-        else bar.style.background = "#00ff00";
-    }
-
-    function showJudg(txt, col) {
-        const j = document.getElementById('judgment');
-        j.innerText = txt; j.style.color = col; j.style.opacity = 1;
-        j.style.transform = "scale(1.2)";
-        setTimeout(() => { j.style.opacity = 0; j.style.transform = "scale(1)"; }, 250);
-    }
-
-    gameArea.addEventListener("pointerdown", (e) => {
-        if (!isPlaying) return;
-        if (Tone.now() - gameStartTime < 0.5) return;
-
-        const rect = gameArea.getBoundingClientRect();
-        const touchX = (e.clientX || (e.touches && e.touches[0].clientX)) - rect.left;
-        const lane = Math.floor(touchX / (rect.width / 4));
-        const now = Tone.Transport.seconds;
-
-        let hitSomething = false;
-        for (let i = 0; i < tiles.length; i++) {
-            const o = tiles[i];
-            if (o.hit || o.miss || o.data.l !== lane) continue; 
-
-            const diff = Math.abs(o.data.t - now);
-            if (diff < 0.25) { 
-                hitSound.triggerAttackRelease("C4", "8n");
-                o.hit = true;
-                o.el.classList.add("pressed");
-                score += 20;
-                document.getElementById('score').innerText = score;
-                showJudg(diff < 0.08 ? "PERFECT" : "GOOD", "var(--neon)");
-                hitSomething = true;
-                break; 
-            }
-        }
-
-        // 🔥 잘못된 곳을 눌렀을 때 체력 감소 (즉시 탈락 방지)
-        if (!hitSomething) {
-            const nearTile = tiles.find(o => !o.hit && !o.miss && Math.abs(o.data.t - now) < 0.3);
-            if (nearTile) {
-                hp -= 15;
-                updateHPBar();
-                if (hp <= 0) end(false);
-            }
-        }
-    });
-
-    function loop() {
-        if(!isPlaying) return;
-        const now = Tone.Transport.seconds; 
-        const speed = hitLineY / 1.3;
-
-        while(sheetIdx < sheet.length && sheet[sheetIdx].t < now + 1.3) {
-            const data = sheet[sheetIdx++];
-            const el = document.createElement('div');
-            const h = Math.max(70, data.d * speed * 0.9);
-            el.className = `tile ${data.d >= 0.6 ? 'long' : ''}`;
-            el.style.left = (data.l * 25) + '%';
-            el.style.height = h + 'px';
-            el.style.top = "-500px";
-            const obj = { el, data, h, hit: false, miss: false };
-            gameArea.appendChild(el);
-            tiles.push(obj);
-        }
-
-        for(let i = tiles.length - 1; i >= 0; i--) {
-            const o = tiles[i];
-            const bottom = hitLineY - (o.data.t - now) * speed;
-            o.el.style.top = (bottom - o.h) + "px";
-
-            // 🔥 타일을 놓쳤을 때 체력 대폭 감소
-            if(!o.hit && !o.miss && (o.data.t - now) < -0.3) {
-                o.miss = true; 
-                hp -= 25;
-                updateHPBar();
-                showJudg("MISS", "#ff0055");
-                if (hp <= 0) { end(false); return; }
-            }
-            if(bottom - o.h > gameArea.offsetHeight + 100) { 
-                o.el.remove(); 
-                tiles.splice(i, 1); 
-            }
-        }
-        if(sheetIdx >= sheet.length && tiles.length === 0) end(true);
-        else requestAnimationFrame(loop);
-    }
-
-    function end(win) {
-        if (!isPlaying) return;
-        isPlaying = false; 
-        Tone.Transport.pause(); 
-        masterPiano.releaseAll(); 
-        gameArea.style.display = 'none';
-        document.getElementById('result').style.display = 'flex';
-        document.getElementById('res-title').innerText = win ? "STAGE CLEAR!" : "GAME OVER";
-        document.getElementById('rank').innerText = win ? (score > 1000 ? "SSS" : "S") : "F";
-        document.getElementById('final-score').innerText = `Score: ${score}`;
-    }
-</script>
-</body>
-</html>
+    showJudg(diff < 0.08 ? "PERFECT" : "GOOD", "var(--neon)");
+    hitSomething = true;
+    break;
+}
+이렇게 하면:
+✔ 누른 타일의 실제 음이 연주됨
+✔ 피아노 타일 느낌 남
+✔ 자동 재생과 겹쳐도 자연스러움
+🔥 자동 연주 끄고 완전 수동으로 하고 싶으면
+parseAndSchedule() 안에서 이 줄 삭제:
+Js
+코드 복사
+Tone.Transport.schedule(...)
+그러면 자동 연주 안 되고
+플레이어가 쳐야만 음악이 완성됨
+진짜 리듬게임 구조 됨 🎹
+🎼 2️⃣ 곡이 반복 없이 전개되게 만들기
+지금은:
+Js
+코드 복사
+seq: "A,A,B,B,C,C,A"
+즉, 반복 구조야.
+✅ 해결 방법 1 (간단)
+seq를 늘려:
+Js
+코드 복사
+seq: "A,B,C,A,D,E,F,G"
+그리고 parts에 새로운 파트 추가.
+✅ 해결 방법 2 (진짜 발전형 🔥)
+반복 제거하고 랜덤 변주 만들기
+parseAndSchedule() 안에서:
+Js
+코드 복사
+for (let partKey of sequence) {
+이걸 이렇게 바꿔:
+Js
+코드 복사
+for (let i = 0; i < 12; i++) {  // 12마디 자동 생성
+    const partKeys = Object.keys(songObj.parts);
+    const partKey = partKeys[Math.floor(Math.random() * partKeys.length)];
+그러면:
+✔ 같은 곡이어도 매번 다르게 전개됨
+✔ 반복 느낌 거의 사라짐
+✔ 플레이마다 새 느낌
+🎹 3️⃣ 진짜 피아노 타일처럼 만들고 싶으면
+지금은 타일 위치가 MIDI % 4라서 랜덤 느낌임.
+더 자연스럽게 하려면:
+Js
+코드 복사
+let lane = 0;
+if (midi < 55) lane = 0;
+else if (midi < 65) lane = 1;
+else if (midi < 75) lane = 2;
+else lane = 3;
+그러면:
+왼쪽 = 저음
+오른쪽 = 고음
+진짜 피아노 구조처럼 됨.
+💎 정리
+기능
+지금
+수정 후
+누르면 나는 소리
+C4 고정
+실제 음
+자동 연주
+있음
+선택 가능
+곡 구조
+반복
+랜덤 전개 가능
+레인 배치
+MIDI % 4
+음역대 기반
+🎯 다음 단계 제안
+원하면:
+🎹 하단에 4개 빛나는 가짜 건반 추가
+💥 PERFECT는 화면 반짝임
+🎼 2~3분짜리 진짜 완성형 곡 생성 코드
+🧠 AI 멜로디 자동 생성기 추가
+어디까지 업그레이드할까 소희 😎🔥
