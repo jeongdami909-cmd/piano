@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Piano Tiles - Pure MIDI Test</title>
+    <title>Piano Tiles - Pro Digital Synth</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
     <style>
         :root { --neon: #00f2ff; --pink: #ff00ea; --gold: #ffea00; --bg: #050508; }
@@ -15,7 +15,7 @@
         .screen { position: absolute; top: 0; left: 50%; width: 100%; height: 100%; max-width: 500px; transform: translateX(-50%); display: none; flex-direction: column; background: var(--bg); border-left: 1px solid #111; border-right: 1px solid #111; }
         
         #lobby { display: flex; z-index: 100; padding: 20px; }
-        h1 { text-align: center; font-size: 28px; font-weight: 900; background: linear-gradient(90deg, var(--neon), var(--pink)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; padding: 5px 0; }
+        h1 { text-align: center; font-size: 26px; font-weight: 900; background: linear-gradient(90deg, var(--neon), var(--pink)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; padding: 5px 0; }
         .desc { text-align: center; color: #aaa; font-size: 13px; margin-bottom: 15px; }
 
         .diff-group { display: flex; gap: 10px; margin-bottom: 15px; }
@@ -28,8 +28,7 @@
         .song-title { font-size: 15px; font-weight: bold; }
         .song-artist { font-size: 11px; color: var(--gold); margin-top: 3px; }
         
-        #start-btn { width: 100%; padding: 18px; border-radius: 50px; border: none; font-size: 18px; font-weight: bold; background: #222; color: #555; transition: 0.3s; }
-        #start-btn.ready { background: linear-gradient(45deg, var(--neon), var(--pink)); color: #fff; pointer-events: auto; box-shadow: 0 5px 20px rgba(255, 0, 234, 0.4); cursor: pointer;}
+        #start-btn { width: 100%; padding: 18px; border-radius: 50px; border: none; font-size: 18px; font-weight: bold; background: linear-gradient(45deg, var(--neon), var(--pink)); color: #fff; box-shadow: 0 5px 20px rgba(255, 0, 234, 0.4); cursor: pointer;}
 
         #game { overflow: hidden; z-index: 50; position: relative; touch-action: none; }
         
@@ -52,8 +51,8 @@
 <body>
 
 <div id="lobby" class="screen" style="display: flex;">
-    <h1>PURE MIDI TEST</h1>
-    <p class="desc">이펙터 0% / 원초적인 디지털 톤 실험</p>
+    <h1>PRO DIGITAL ENGINE</h1>
+    <p class="desc">부드럽고 맑은 프로 리듬게임용 신디사이저 탑재</p>
     
     <div class="diff-group">
         <button class="diff-btn" data-diff="easy">하 (Easy)</button>
@@ -62,7 +61,7 @@
     </div>
 
     <div id="song-list"></div>
-    <button id="start-btn" class="ready">게임 시작!</button>
+    <button id="start-btn">게임 시작!</button>
 </div>
 
 <div id="game" class="screen">
@@ -84,25 +83,36 @@
     const songs = [
         { t: "Canon in D", a: "Pachelbel", parts: { A: "F#5+D3_0.5,E5+A2_0.5,D5+B2_0.5,C#5+F#2_0.5,B4+G2_0.5,A4+D3_0.5,B4+G2_0.5,C#5+A2_0.5", B: "D5+D3_0.25,C#5_0.25,D5_0.25,D4_0.25,E4+A2_0.25,F#4_0.25,G4_0.25,A4_0.25,B4+B2_0.25,A4_0.25,G4_0.25,F#4_0.25,E4+F#2_0.25,D4_0.25,E4_0.25,F#4_0.25", C: "G4+G2_0.25,F#4_0.25,E4_0.25,D4_0.25,C#4+D3_0.25,B3_0.25,A3_0.25,G3_0.25,F#3+G2_0.25,E3_0.25,D3_0.25,E3_0.25,F#3+A2_0.25,G3_0.25,A3_0.25,B3_0.25", D: "D5+D3_0.5,F#5_0.5,A5+A2_0.5,G5_0.5,F#5+B2_0.5,D5_0.5,F#5+F#2_0.5,E5_0.5,D5+G2_0.5,B4_0.5,D5+D3_0.5,A4_0.5,G4+G2_0.5,B4_0.5,A4+A2_0.5,C#5_0.5" }, seq: "A,A,B,B,C,C,D,D,B,A" },
         { t: "Take On Me", a: "a-ha", parts: { A: "F#5+B3_0.2,F#5_0.2,D5_0.2,B4_0.2,B4+E3_0.4,E5_0.2,E5_0.2,E5_0.2,G#5+A3_0.2,G#5_0.2,A5_0.2,B5_0.2,A5+D3_0.2,A5_0.2,A5_0.2,E5_0.2,D5_0.2,F#5+B3_0.2,F#5_0.2,F#5_0.2,E5_0.2,E5_0.2,F#5_0.2,E5_0.2", B: "A4+D3_0.4,A4_0.4,E4_0.4,F#4_0.4,G#4+E3_0.8,A4+D3_0.4,A4_0.4,E4_0.4,F#4_0.4,G#4+E3_0.8", C: "B4+B2_0.3,B4_0.3,E5_0.4,C#5+A2_0.4,C#5_0.3,G#4+E2_0.8,G#4_0.3,C#5+D3_0.4,C#5_0.4,C#5_0.4,E5_0.4,E5_0.4,E5_0.4,B4+B2_1.2", D: "A4+D3_0.4,B4_0.4,C#5_0.4,D5_0.4,E5+A2_0.8,D5_0.4,C#5_0.4,B4+E3_1.6" }, seq: "A,A,B,B,C,C,D,A,A" },
-        { t: "겨울바람", a: "쇼팽", parts: { A: "E4+A2_0.5,E4_0.5,F4_0.5,E4_0.5,A4+A2_1.0,G#4_0.5,A4_0.5,C5+A2_1.0,B4_0.5,C5_0.5,E5+A2_1.5", B: "A5+A2_0.15,G#5_0.15,A5_0.15,F5_0.15,E5+E2_0.15,D#5_0.15,E5_0.15,C5_0.15,B4+B2_0.15,A#4_0.15,B4_0.15,G4_0.15,F4+F2_0.15,E4_0.15,F4_0.15,D4_0.15", C: "C4+A2_0.15,B3_0.15,C4_0.15,A3_0.15,G#3+E2_0.15,G3_0.15,G#3_0.15,E3_0.15,A4+A2_0.15,B4_0.15,C5_0.15,D5_0.15,E5+E2_0.15,F5_0.15,G5_0.15,A5_0.15", D: "C6+A2_0.15,B5_0.15,C6_0.15,A5_0.15,G#5+E2_0.15,G5_0.15,G#5_0.15,E5_0.15,C5+A2_0.15,B4_0.15,C5_0.15,A4_0.15,E4+E2_0.15,D#4_0.15,E4_0.15,C4_0.15" }, seq: "A,B,C,B,D,C,B,D,A" }
+        { t: "겨울바람", a: "쇼팽", parts: { A: "E4+A2_0.5,E4_0.5,F4_0.5,E4_0.5,A4+A2_1.0,G#4_0.5,A4_0.5,C5+A2_1.0,B4_0.5,C5_0.5,E5+A2_1.5", B: "A5+A2_0.15,G#5_0.15,A5_0.15,F5_0.15,E5+E2_0.15,D#5_0.15,E5_0.15,C5_0.15,B4+B2_0.15,A#4_0.15,B4_0.15,G4_0.15,F4+F2_0.15,E4_0.15,F4_0.15,D4_0.15", C: "C4+A2_0.15,B3_0.15,C4_0.15,A3_0.15,G#3+E2_0.15,G3_0.15,G#3_0.15,E3_0.15,A4+A2_0.15,B4_0.15,C5_0.15,D5_0.15,E5+E2_0.15,F5_0.15,G5_0.15,A5_0.15", D: "C6+A2_0.15,B5_0.15,C6_0.15,A5_0.15,G#5+E2_0.15,G5_0.15,G#5_0.15,E5_0.15,C5+A2_0.15,B4_0.15,C5_0.15,A4_0.15,E4+E2_0.15,D#4_0.15,E4_0.15,C4_0.15" }, seq: "A,B,C,B,D,C,B,D,A" },
+        { t: "Seasons of Love", a: "RENT", parts: { A: "F4+Bb2_0.5,A4_0.5,C5+F2_0.5,D5_0.5,C5+Eb2_1.0,Bb4_0.5,A4_0.5,G4+Bb2_0.5,F4_1.0", B: "F4+Bb2_0.5,A4_0.5,C5+F2_0.5,D5_0.5,E5+Eb2_1.0,D5_0.5,C5_0.5,Bb4+Bb2_0.5,A4_1.5", C: "A4+F2_0.5,Bb4_0.5,C5+F2_0.5,D5_0.5,F5+Eb2_1.0,D5_0.5,C5_0.5,Bb4+Bb2_0.5,A4_1.5" }, seq: "A,B,A,C,A,B,C" },
+        { t: "Summer", a: "히사이시 조", parts: { A: "D4+D3_0.4,E4+A3_0.4,F#4+D3_0.4,A4+A3_0.4,D5+D3_1.0,C#5+A3_0.5,B4_0.5,A4+D3_1.5,G4+G2_0.4,F#4+D3_0.4,E4+A2_0.4,D4+D3_1.5", B: "D4+G2_0.4,E4_0.4,F#4_0.4,A4_0.4,D5+D3_1.0,E5+A2_0.5,F#5_0.5,E5+A2_2.0", C: "B4+G2_0.4,C#5_0.4,D5_0.4,E5_0.4,F#5+D3_1.0,E5+A2_0.5,D5_0.5,C#5+A2_2.0" }, seq: "A,A,B,C,A,B,C,A" },
+        { t: "Secret", a: "주걸륜", parts: { A: "C5+C3_0.25,G4_0.25,E4_0.25,G4_0.25,C5+B2_0.25,G4_0.25,E4_0.25,G4_0.25,D5+A2_0.25,A4_0.25,F4_0.25,A4_0.25,D5+G2_0.25,G4_0.25,F4_0.25,G4_0.25", B: "E5+F2_0.25,C5_0.25,A4_0.25,C5_0.25,E5+E2_0.25,C5_0.25,A4_0.25,C5_0.25,F5+D2_0.25,D5_0.25,A4_0.25,D5_0.25,F5+G2_0.25,D5_0.25,B4_0.25,D5_0.25" }, seq: "A,A,B,B,A,B,A,B,A" },
+        { t: "Rush", a: "리쌍", parts: { A: "E4+E3_0.3,G4_0.3,B4+E3_0.3,A4_0.6,G4_0.3,F#4_0.3,E4+E3_1.0", B: "E3+E2_0.3,G3_0.3,B3+E2_0.3,A3_0.6,G3_0.3,F#3_0.3,E3+E2_1.0", C: "E5+E3_0.3,D5_0.3,B4+E3_0.3,A4_0.6,G4_0.3,F#4_0.3,E4+E3_1.0" }, seq: "A,A,B,B,C,C,A,B,C,A" },
+        { t: "Dying Young", a: "Kenny G", parts: { A: "G4+C3_0.8,C5_0.8,D5_0.8,Eb5+G2_2.0,D5_0.8,C5_0.8,G4+C3_2.5,F4_0.8,G4_0.8,C5_0.8,D5_0.8", B: "F5+F2_2.0,Eb5_0.8,D5_0.8,C5+C3_3.0,G5+Eb3_0.8,F5_0.8,Eb5_0.8,D5+Bb2_2.0,C5_0.8,Bb4_0.8,C5+C3_3.0" }, seq: "A,B,A,B,A,B" },
+        { t: "River Flows in You", a: "이루마", parts: { A: "F#4+F#2_0.5,E4_0.5,F#4_0.5,C#4+A2_1.0,F#4+F#2_0.5,E4_0.5,F#4_0.5,C#4+A2_1.0", B: "B3+D3_0.5,A3_0.5,B3_0.5,F#3+E3_1.5,F#4+F#2_0.5,E4_0.5,F#4_0.5,C#4+A2_1.0", C: "A4+F#2_0.4,G#4_0.4,A4_0.4,E5+D3_0.8,A4_0.4,G#4_0.4,A4_0.4,E5+E3_0.8" }, seq: "A,B,A,C,B,C,A,C" },
+        { t: "Danse Macabre", a: "Saint-Saëns", parts: { A: "D5+G3_0.4,D5_0.4,D5_0.4,D5_0.4,D5_0.4,D5_0.4,D5_0.4,G4+G2_0.8,Bb4_0.4,A4_0.4,G4+D3_0.4,F#4_0.4,G4+G2_0.8", B: "D5+G3_0.4,Eb5_0.4,D5_0.4,D5_0.4,D5_0.4,D5_0.4,G4+G2_0.8,Bb4_0.4,A4_0.4,G4+D3_0.4,F#4_0.4,G4+G2_0.8" }, seq: "A,B,A,B,A,B,A,B" },
+        { t: "Waterfalls", a: "TLC", parts: { A: "Eb4+Eb3_0.5,G4_0.5,Bb4_0.5,C5+F3_1.0,Bb4_0.5,G4_0.5,F4_0.5,Eb4+Eb3_1.0,Eb4_0.5,G4_0.5,Bb4_0.5,C5+F3_1.0,Bb4_0.5,G4_0.5,Ab4_0.5,G4+Eb3_1.5", B: "Eb5+Eb3_0.5,D5_0.5,C5_0.5,Bb4+F3_1.0,G4_0.5,F4_0.5,Eb4_0.5,Eb4+Eb3_1.0,C5_0.5,Bb4_0.5,G4_0.5,F4+F3_1.0,Eb4_0.5,C4_0.5,Eb4+Eb3_1.5" }, seq: "A,B,A,B,A,B" },
+        { t: "Words", a: "F.R. David", parts: { A: "G4+G3_0.4,A4_0.4,B4_0.4,G4_0.4,E4+C3_1.0,C5_0.4,B4_0.4,A4+D3_0.8,G4_0.4,F#4_0.4,E4+G3_1.0", B: "D5+D3_0.4,C5_0.4,B4_0.4,G4_0.4,E5+C3_1.0,D5_0.4,C5_0.4,B4+G3_1.0" }, seq: "A,A,B,A,B,A,A,B" }
     ];
 
     let piano, sheet = [], tiles = [], isPlaying = false, score = 0, hp = 100, sheetIdx = 0, selected = 0;
     let difficulty = "normal", speedMult = 1.0, hitLineY;
     const gameArea = document.getElementById('game');
 
-    // 🔥 모든 이펙트(Reverb, Compressor, EQ) 제거! 순수 신디사이저의 민낯!
-    // 지피티가 제안한 Square 파형 채택 (옛날 오락기, 피쳐폰 벨소리의 그 질감)
+    // 🔥 전자레인지 쇳소리(Square), 비트크러셔 전면 폐기!! 
+    // 🔥 지피티 피드백 적용: 맑고 영롱한 Triangle 파형 + 부드러운 Envelope 구성
     piano = new Tone.PolySynth(Tone.Synth, {
-        oscillator: { type: "square" }, // 아주 거칠고 디지털적인 기본 파형
+        volume: -4,
+        oscillator: { 
+            type: "triangle" // 듣기 좋은 맑은 디지털 피아노/벨 소리
+        }, 
         envelope: { 
-            attack: 0.001, // 누르는 즉시
-            decay: 0.1, 
-            sustain: 0.1, 
-            release: 0.1   // 떼자마자 칼같이 끊김
-        },
-        volume: -8
-    }).toDestination(); // 스피커로 바로 직결!
+            attack: 0.01,  // 딱딱함을 줄이고 부드럽게 시작
+            decay: 0.2,    
+            sustain: 0.3,  // 소리가 자연스럽게 유지됨
+            release: 0.4   // 뚝 끊기지 않고 잔향이 남게 처리
+        }
+    }).toDestination(); // 스피커 직결 (딜레이 제로)
 
     function renderSongs() {
         const listDiv = document.getElementById('song-list');
@@ -110,7 +120,7 @@
         songs.forEach((s, idx) => {
             const item = document.createElement('div');
             item.className = `song-item ${idx === selected ? 'active' : ''}`;
-            item.innerHTML = `<div><div class="song-title">${s.t}</div><div class="song-artist">Pure Square MIDI Test</div></div>`;
+            item.innerHTML = `<div><div class="song-title">${s.t}</div><div class="song-artist">프로 디지털 신스 톤</div></div>`;
             item.onclick = () => { selected = idx; renderSongs(); };
             listDiv.appendChild(item);
         });
@@ -125,7 +135,7 @@
         });
     });
 
-    // 화성 유지 파싱
+    // 지피티 피드백: "음악성을 파괴하지 마라" -> 화성 2개음 유지 파싱
     function parseSheet(songObj) {
         const noteArray = [];
         let time = 1.0;
@@ -158,7 +168,7 @@
     }
 
     document.getElementById('start-btn').addEventListener('pointerdown', async () => {
-        await Tone.start(); // 로딩 체크(isLoaded) 필요 없음. 즉시 실행!
+        await Tone.start(); 
         
         if (difficulty === "easy") speedMult = 0.7;
         else if (difficulty === "hard") speedMult = 1.5;
@@ -214,8 +224,9 @@
 
             if (diff < 0.22) { 
                 
-                // 🔥 오리지널 실험: 악보 길이 무시하고 무조건 0.1초 동안만 재생!
-                piano.triggerAttackRelease(o.data.n, 0.1, Tone.now(), 1);
+                // 🔥 지피티 피드백 적용: 강제 0.1초 고정 해제!
+                // 악보 본연의 길이(o.data.d * 0.9)를 존중하고, 벨로시티를 0.8로 부드럽게 세팅
+                piano.triggerAttackRelease(o.data.n, o.data.d * 0.9, Tone.now(), 0.8);
                 
                 o.hit = true;
                 o.el.classList.add("pressed");
