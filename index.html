@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Piano Tiles - V22 Ultimate Stable</title>
+    <title>Piano Tiles - V22.1 Turbo</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
     <style>
         :root { --neon: #00f2ff; --pink: #ff00ea; --gold: #ffea00; }
@@ -11,16 +11,16 @@
         body { color: #000; height: 100dvh; overflow: hidden; background: #fff; touch-action: none; }
         .screen { position: absolute; top: 0; left: 50%; width: 100%; height: 100%; max-width: 500px; transform: translateX(-50%); display: none; flex-direction: column; background: #fff; border-left: 1px solid #ddd; border-right: 1px solid #ddd; }
         #lobby { display: flex; z-index: 100; padding: 25px; background: #050508; color: #fff; }
-        h1 { text-align: center; font-size: 30px; font-weight: 900; background: linear-gradient(90deg, var(--neon), var(--pink)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; padding: 15px 0; }
+        h1 { text-align: center; font-size: 28px; font-weight: 900; background: linear-gradient(90deg, var(--neon), var(--pink)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; padding: 15px 0; }
         #song-list { flex: 1; overflow-y: auto; background: rgba(255,255,255,0.03); border-radius: 20px; padding: 10px; margin-bottom: 20px; border: 1px solid #222; }
-        .song-item { padding: 18px; border-bottom: 1px solid #222; border-radius: 12px; margin-bottom: 8px; cursor: pointer; background: rgba(255,255,255,0.02); }
+        .song-item { padding: 15px; border-bottom: 1px solid #222; border-radius: 12px; margin-bottom: 8px; cursor: pointer; background: rgba(255,255,255,0.02); }
         .song-item.active { background: rgba(0,242,255,0.15); border: 1px solid var(--neon); }
-        #start-btn { width: 100%; padding: 22px; border-radius: 50px; border: none; font-size: 20px; font-weight: 900; background: linear-gradient(45deg, var(--neon), var(--pink)); color: #fff; cursor: pointer; }
+        #start-btn { width: 100%; padding: 20px; border-radius: 50px; border: none; font-size: 18px; font-weight: 900; background: linear-gradient(45deg, var(--neon), var(--pink)); color: #fff; cursor: pointer; }
         #game { overflow: hidden; z-index: 50; position: relative; background: #fff; }
         .lane-line { position: absolute; top: 0; width: 25%; height: 100%; border-right: 1px solid #ddd; pointer-events: none; }
-        #score { position: absolute; top: 30px; width: 100%; text-align: center; font-size: 65px; font-weight: 900; z-index: 60; color: #ff0055; pointer-events: none; text-shadow: 2px 2px 0#fff, -2px -2px 0#fff; }
+        #score { position: absolute; top: 30px; width: 100%; text-align: center; font-size: 60px; font-weight: 900; z-index: 60; color: #ff0055; pointer-events: none; text-shadow: 2px 2px 0#fff, -2px -2px 0#fff; }
         .row { position: absolute; width: 100%; height: 25%; transition: bottom 0.1s linear; }
-        .tile { position: absolute; width: 25%; height: 100%; background: #111; border: 1px solid #000; }
+        .tile { position: absolute; width: 25%; height: 100%; background: #111; border: 1px solid #000; box-shadow: inset 0 -4px 0 rgba(255,255,255,0.1); }
         .tile.pressed { background: #bbb !important; }
         .tile.missed { background: #ff0055 !important; animation: blink 0.2s infinite; }
         @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
@@ -30,7 +30,7 @@
 <body>
 
 <div id="lobby" class="screen">
-    <h1>V22 STABLE</h1>
+    <h1>V22.1 TURBO</h1>
     <div id="song-list"></div>
     <button id="start-btn">그랜드 피아노 조율 중...</button>
 </div>
@@ -45,19 +45,29 @@
 
 <div id="result" class="screen">
     <h2 id="res-title">GAME OVER</h2>
-    <div id="rank" style="font-size:110px; font-weight:900; color:var(--gold);">S</div>
+    <div id="rank" style="font-size:100px; font-weight:900; color:var(--gold);">S</div>
     <div id="final-score">Score: 0</div>
-    <button onclick="location.reload()" style="padding: 20px 60px; border-radius: 50px; background:#fff; font-size: 20px; font-weight: bold;">다시 도전</button>
+    <button onclick="location.reload()" style="padding: 15px 50px; border-radius: 50px; background:#fff; font-size: 18px; font-weight: bold;">다시 도전</button>
 </div>
 
 <script>
     const songs = [
-        { t: "Canon in D", a: "Pachelbel", parts: { A: "F#5,E5,D5,C#5,B4,A4,B4,C#5" } },
-        { t: "Still D.R.E.", a: "Dr. Dre", parts: { A: "E5,E5,E5,E5,E5,E5,E5", B: "B4,B4,B4,B4,B4,B4,B4" } }
+        { t: "Piano Concerto No.2", a: "Rachmaninoff", p: "C4,Eb4,G4,C5,G4,Eb4,C4,G3" },
+        { t: "Winter Wind", a: "Chopin", p: "E4,E4,F4,E4,A4,G#4,A4,C5,B4,C5,E5" },
+        { t: "Still D.R.E.", a: "Dr. Dre", p: "E5,E5,E5,E5,E5,E5,E5,B4,B4,B4,B4" },
+        { t: "Purple Rain", a: "Prince", p: "Bb3,F4,G4,F4,Bb3,F4,G4,F4" },
+        { t: "For Tomorrow", a: "Blur", p: "G4,A4,B4,D5,B4,A4,G4,E4" },
+        { t: "Honey", a: "L'Arc-en-Ciel", p: "E4,F#4,G#4,A4,B4,A4,G#4,F#4" },
+        { t: "No Scrubs", a: "TLC", p: "G#4,F#4,E4,F#4,G#4,G#4,G#4" },
+        { t: "Canon in D", a: "Pachelbel", p: "F#5,E5,D5,C#5,B4,A4,B4,C#5" },
+        { t: "River Flows in You", a: "Yiruma", p: "F#4,E4,F#4,C#4,F#4,E4,F#4,C#4" },
+        { t: "Swan Lake", a: "Tchaikovsky", p: "A4,E5,D5,C5,B4,A4,B4,C5" },
+        { t: "Nocturne Op.9 No.2", a: "Chopin", p: "G4,G5,F5,G5,Eb5,D5,C5,Bb4" },
+        { t: "Take On Me", a: "a-ha", p: "F#5,F#5,D5,B4,B4,E5,E5,E5,G#5,G#5" }
     ];
 
     let piano, sheet = [], activeRows = [];
-    let isPlaying = false, score = 0, currentStep = 0, selected = 0;
+    let isPlaying = false, score = 0, currentStep = 0, selected = 0, canClick = false;
     const gameArea = document.getElementById('game');
 
     piano = new Tone.Sampler({
@@ -72,29 +82,34 @@
         songs.forEach((s, idx) => {
             const item = document.createElement('div');
             item.className = `song-item ${idx === selected ? 'active' : ''}`;
-            item.innerHTML = `<strong>${s.t}</strong><br><small>${s.a}</small>`;
+            item.innerHTML = `<strong>${s.t}</strong><br><small style="color:#aaa">${s.a}</small>`;
             item.onclick = () => { selected = idx; renderSongs(); };
             listDiv.appendChild(item);
         });
     }
     renderSongs();
 
-    document.getElementById('start-btn').addEventListener('click', async () => {
-        if (isPlaying) return;
+    document.getElementById('start-btn').addEventListener('click', async (e) => {
+        e.stopPropagation(); // 버튼 클릭 이벤트가 게임 영역으로 전파되는 것 방지
+        if (isPlaying || document.getElementById('start-btn').innerText === "조율 중...") return;
+        
         await Tone.start();
         document.getElementById('lobby').style.display = 'none';
         gameArea.style.display = 'block';
 
         const song = songs[selected];
         sheet = [];
-        for(let i=0; i<50; i++) {
-            const notes = song.parts.A.split(',');
-            notes.forEach(note => sheet.push({ lane: Math.floor(Math.random()*4), note }));
+        const notes = song.p.split(',');
+        for(let i=0; i<100; i++) {
+            sheet.push({ lane: Math.floor(Math.random()*4), note: notes[i % notes.length] });
         }
 
-        isPlaying = true; score = 0; currentStep = 0; activeRows = [];
+        isPlaying = true; score = 0; currentStep = 0; activeRows = []; canClick = false;
         document.getElementById('score').innerText = "0";
         for(let i=0; i<5; i++) createRow(i);
+        
+        // 시작 직후 즉사 방지를 위한 0.1초 딜레이
+        setTimeout(() => { canClick = true; }, 100);
     });
 
     function createRow(offset) {
@@ -113,15 +128,14 @@
         rowEl.appendChild(tileEl);
         gameArea.appendChild(rowEl);
         
-        // 보관 시 변수명 통일: tileEl
         activeRows.push({ rowEl, tileEl, lane: data.lane, note: data.note, locked: false });
     }
 
     gameArea.addEventListener("pointerdown", (e) => {
         e.preventDefault();
-        if (!isPlaying || activeRows.length === 0) return;
+        if (!isPlaying || !canClick || activeRows.length === 0) return;
 
-        // 🎯 1. 위치 기반으로 가장 아래 줄 찾기 (안전장치 포함)
+        // 실제 bottom 위치 기준으로 가장 아래 줄 탐색
         const bottomRow = activeRows.reduce((lowest, r) => {
             const currentBottom = parseFloat(r.rowEl.style.bottom || "0");
             const lowestBottom = parseFloat(lowest.rowEl.style.bottom || "0");
@@ -137,9 +151,9 @@
 
         if (clickedLane === bottomRow.lane) {
             bottomRow.locked = true;
-            piano.triggerAttackRelease(bottomRow.note, 0.5);
+            piano.triggerAttackRelease(bottomRow.note, 0.4);
             
-            // 🎯 2. tileEl 존재 여부 확인 후 클래스 추가
+            // tile -> tileEl 오타 완벽 수정
             if (bottomRow.tileEl) bottomRow.tileEl.classList.add('pressed');
             
             score++;
@@ -148,7 +162,7 @@
             const index = activeRows.indexOf(bottomRow);
             if (index > -1) {
                 const removedRow = activeRows.splice(index, 1)[0];
-                setTimeout(() => removedRow.rowEl.remove(), 100);
+                setTimeout(() => removedRow.rowEl.remove(), 80);
             }
             
             activeRows.forEach((r, idx) => {
@@ -162,6 +176,7 @@
                 setTimeout(() => end(true), 300);
             }
         } else {
+            // 오답 시 빨간색 표시 후 종료
             const errTile = document.createElement('div');
             errTile.className = 'tile missed';
             errTile.style.left = (clickedLane * 25) + '%';
@@ -176,10 +191,10 @@
         setTimeout(() => {
             gameArea.style.display = 'none';
             document.getElementById('result').style.display = 'flex';
-            document.getElementById('res-title').innerText = win ? "CLEAR!" : "GAME OVER";
-            document.getElementById('rank').innerText = win ? "SSS" : (score > 50 ? "A" : "F");
+            document.getElementById('res-title').innerText = win ? "PERFECT!" : "GAME OVER";
+            document.getElementById('rank').innerText = win ? "SSS" : (score > 80 ? "S" : (score > 30 ? "B" : "F"));
             document.getElementById('final-score').innerText = `Score: ${score}`;
-        }, 500);
+        }, 400);
     }
 </script>
 </body>
