@@ -97,7 +97,6 @@
     let currentSpeed = 5;
     let currentSpawnRate = 800;
 
-    // 난이도 버튼 클릭 이벤트
     document.querySelectorAll('.diff-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('active'));
@@ -107,7 +106,6 @@
         });
     });
 
-    // 파일 선택 이벤트
     document.getElementById('audio-upload').addEventListener('change', async (event) => {
         const file = event.target.files[0];
         if (!file) return;
@@ -117,7 +115,6 @@
         startBtn.classList.remove('ready');
         startBtn.innerText = "음원 처리 중...";
 
-        // 브라우저에서 파일을 임시 URL로 변환 (서버 업로드 안 함!)
         const objectUrl = URL.createObjectURL(file);
 
         if (bgmPlayer) bgmPlayer.dispose();
@@ -136,20 +133,21 @@
                 startBtn.innerText = "곡을 다시 선택해주세요";
             }
         }).toDestination();
-        bgmPlayer.volume.value = -3;
+        bgmPlayer.volume.value = -2; // BGM 볼륨 조절
     });
 
     document.getElementById('start-btn').addEventListener('click', async () => {
         if (!bgmPlayer || !bgmPlayer.loaded) return;
         
-        await Tone.start(); // 모바일 브라우저 오디오 권한 허용
+        await Tone.start(); 
         
+        // 🔥 음계(멜로디)가 있는 소리 대신 리듬게임용 '착!' 하는 타격음(NoiseSynth)으로 변경!
         if (!hitSynth) {
-            hitSynth = new Tone.PolySynth(Tone.Synth, { 
-                oscillator: { type: "triangle" }, 
-                envelope: { attack: 0.01, decay: 0.2, sustain: 0.1, release: 0.5 } 
+            hitSynth = new Tone.NoiseSynth({
+                noise: { type: "pink" },
+                envelope: { attack: 0.001, decay: 0.1, sustain: 0 }
             }).toDestination();
-            hitSynth.volume.value = -2;
+            hitSynth.volume.value = -3; // 타격음 볼륨 조절
         }
 
         startGame();
@@ -175,8 +173,6 @@
         document.getElementById('lives').innerText = "❤️".repeat(lives) + "🖤".repeat(MAX_LIVES - lives);
     }
 
-    const hitNotes = ["C5", "E5", "G5", "B5", "C6"];
-
     function createTile() {
         if (!isPlaying) return;
         const lane = Math.floor(Math.random() * 4);
@@ -195,8 +191,8 @@
             
             if (Math.abs((rect.top + rect.height / 2) - hitLineY) > 130) return;
 
-            const randomNote = hitNotes[Math.floor(Math.random() * hitNotes.length)];
-            hitSynth.triggerAttackRelease(randomNote, "16n");
+            // 🔥 음계를 빼고 깔끔한 짧은 타격음만 발생
+            hitSynth.triggerAttackRelease("32n");
 
             t.classList.add('pressed');
             score++; document.getElementById('score').innerText = score;
