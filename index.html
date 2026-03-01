@@ -118,7 +118,8 @@
         listDiv.appendChild(d);
     });
 
-    document.getElementById('start-btn').addEventListener('pointerdown', async () => {
+    // ✅ 해결: pointerdown 대신 click 사용 (모바일 AudioContext 활성화 이슈 해결)
+    document.getElementById('start-btn').addEventListener('click', async () => {
         const btn = document.getElementById('start-btn');
         if (btn.innerText === "로딩 중...") return;
         btn.innerText = "로딩 중...";
@@ -128,14 +129,16 @@
             bgmSynth = new Tone.PolySynth(Tone.Synth, { oscillator: { type: "sine" }, envelope: { attack: 0.8, release: 2 } }).connect(reverb);
             bgmSynth.volume.value = -12;
             melodySynth = new Tone.PolySynth(Tone.Synth, { oscillator: { type: "triangle" }, envelope: { attack: 0.01, decay: 0.4, sustain: 0.1, release: 0.8 } }).connect(reverb);
-            melodySynth.volume.value = 4;
+            // ✅ 해결: 클리핑 방지 볼륨 하향
+            melodySynth.volume.value = -2;
         }
         startGame();
     });
 
     function spark(x, y, color) {
         const stage = document.getElementById('game');
-        for(let i=0; i<12; i++) {
+        // ✅ 해결: 파티클 8개로 최적화
+        for(let i=0; i<8; i++) {
             const p = document.createElement('div');
             p.className = 'particle';
             p.style.left = x + 'px'; p.style.top = y + 'px';
@@ -149,6 +152,11 @@
     }
 
     function startGame() {
+        // ✅ 해결: 이전 루프 초기화 방어 (중복 실행 방지)
+        if (loopId) cancelAnimationFrame(loopId);
+        if (spawnId) clearInterval(spawnId);
+        if (bgmLoop) clearInterval(bgmLoop);
+
         document.getElementById('lobby').style.display = 'none';
         document.getElementById('game').style.display = 'block';
         isPlaying = true; score = 0; lives = 3; nIdx = 0; tiles = [];
@@ -164,7 +172,9 @@
         }, 1000);
 
         gameLoop();
-        spawnId = setInterval(createTile, 600 / (data.s / 8));
+        // ✅ 해결: 스폰 속도 공식 안정화
+        const interval = Math.max(250, 700 - data.s * 40);
+        spawnId = setInterval(createTile, interval);
     }
 
     function createTile() {
@@ -180,22 +190,37 @@
         const onHit = (e) => {
             e.preventDefault();
             if (t.classList.contains('pressed')) return;
+
+            // ✅ 해결: 관대한 판정 수정 (판정선 근처에서만 Hit 인정)
+            const stageHeight = document.getElementById('game').clientHeight;
+            const hitLineY = stageHeight * 0.85; 
+            const rect = t.getBoundingClientRect();
+            const tileBottom = rect.top + rect.height;
+
+            // 오차 범위 120px 밖이면 무시
+            if (Math.abs(tileBottom - hitLineY) > 120) return;
+
             melodySynth.triggerAttackRelease(note, "8n");
             
-            // 시각 효과
-            const rect = t.getBoundingClientRect();
-            spark(rect.left + rect.width/2, rect.top + rect.height/2, Math.random() > 0.5 ? '#00e5ff' : '#ff00ea');
             const flash = document.getElementById(`flash-${lane}`);
+            spark(rect.left + rect.width/2, rect.top + rect.height/2, Math.random() > 0.5 ? '#00e5ff' : '#ff00ea');
             flash.style.opacity = '0.5';
             setTimeout(() => flash.style.opacity = '0', 100);
 
             t.classList.add('pressed');
             score++; document.getElementById('score').innerText = score;
             if(score >= TARGET) setTimeout(win, 800);
-            setTimeout(() => t.remove(), 150);
+            
+            // ✅ 해결: DOM 삭제뿐 아니라 tiles 배열에서도 완벽하게 제거
+            setTimeout(() => {
+                const idx = tiles.indexOf(t);
+                if (idx > -1) tiles.splice(idx, 1);
+                t.remove();
+            }, 150);
         };
 
-        t.addEventListener('pointerdown', onHit);
+        // ✅ 해결: passive: false 옵션 추가로 터치 지연 방지
+        t.addEventListener('pointerdown', onHit, { passive: false });
         document.getElementById('game').appendChild(t);
         tiles.push(t);
         nIdx++;
@@ -220,6 +245,7 @@
                     setTimeout(() => stage.style.boxShadow = "none", 200);
                     if(lives <= 0) { gameOver(); return; }
                 }
+                // 화면을 벗어나면 DOM과 배열에서 모두 즉시 제거
                 t.remove(); tiles.splice(i, 1);
             }
         }
