@@ -3,17 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Piano Tiles - V19 Original Classic</title>
+    <title>Piano Tiles - V20 Ultimate Classic</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
     <style>
         :root { --neon: #00f2ff; --pink: #ff00ea; --gold: #ffea00; }
         * { box-sizing: border-box; user-select: none; margin: 0; padding: 0; font-family: 'Pretendard', sans-serif; -webkit-tap-highlight-color: transparent; }
-        /* 오리지널 피아노 타일 감성: 하얀 배경 */
+        
+        /* 🔥 지피티 패치 2: 이중 터치 방지 (완벽한 모바일 최적화) */
         body { color: #000; height: 100dvh; overflow: hidden; background: #fff; touch-action: none; }
         
         .screen { position: absolute; top: 0; left: 50%; width: 100%; height: 100%; max-width: 500px; transform: translateX(-50%); display: none; flex-direction: column; background: #fff; border-left: 1px solid #ddd; border-right: 1px solid #ddd; }
         
-        /* 로비 (다크 모드 유지) */
         #lobby { display: flex; z-index: 100; padding: 25px; background: #050508; color: #fff; }
         h1 { text-align: center; font-size: 28px; font-weight: 900; background: linear-gradient(90deg, var(--neon), var(--pink)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; padding: 15px 0; }
         
@@ -25,18 +25,16 @@
 
         #start-btn { width: 100%; padding: 22px; border-radius: 50px; border: none; font-size: 20px; font-weight: 900; background: linear-gradient(45deg, var(--neon), var(--pink)); color: #fff; cursor: pointer; }
 
-        /* 게임 화면 (오리지널 화이트 테마) */
+        /* 🔥 지피티 패치 2: 게임 영역 터치 액션 강제 차단 */
         #game { overflow: hidden; z-index: 50; position: relative; touch-action: none; background: #fff; }
         
-        /* 4개 레인 선 */
-        .lane-line { position: absolute; top: 0; width: 25%; height: 100%; border-right: 1px solid #ccc; pointer-events: none; }
+        .lane-line { position: absolute; top: 0; width: 25%; height: 100%; border-right: 1px solid #ddd; pointer-events: none; }
         
         #score { position: absolute; top: 30px; width: 100%; text-align: center; font-size: 60px; font-weight: 900; z-index: 60; color: #ff0055; pointer-events: none; text-shadow: 2px 2px 0px #fff, -2px -2px 0px #fff; }
 
-        /* 스텝 스크롤을 위한 Row 컨테이너 */
-        .row { position: absolute; width: 100%; height: 25%; transition: bottom 0.1s ease-out; }
+        /* 🔥 60fps 부드러운 애니메이션: cubic-bezier로 쫀득한 하강 스크롤 구현 */
+        .row { position: absolute; width: 100%; height: 25%; transition: bottom 0.12s cubic-bezier(0.25, 0.46, 0.45, 0.94); }
         
-        /* 검은 타일 */
         .tile { position: absolute; width: 25%; height: 100%; background: #111; border: 1px solid #000; box-shadow: inset 0 -4px 0 rgba(255,255,255,0.2); transition: background 0.1s; }
         .tile.pressed { background: #bbb !important; }
         .tile.missed { background: #ff0055 !important; animation: blink 0.2s infinite; }
@@ -49,10 +47,10 @@
 <body>
 
 <div id="lobby" class="screen" style="display: flex;">
-    <h1>CLASSIC ARCADE V19</h1>
-    <p style="text-align:center; color:#888; font-size:12px; margin-bottom:15px;">자동 연주 제거. 오직 당신의 탭으로 진행됩니다.</p>
+    <h1>ULTIMATE CLASSIC V20</h1>
+    <p style="text-align:center; color:#888; font-size:12px; margin-bottom:15px;">전체 음역대 복원 및 60fps 스크롤 안정화</p>
     <div id="song-list"></div>
-    <button id="start-btn">사운드 로딩 중...</button>
+    <button id="start-btn">그랜드 피아노 조율 중...</button>
 </div>
 
 <div id="game" class="screen">
@@ -62,7 +60,7 @@
     <div class="lane-line" style="left:75%; border:none;"></div>
     
     <div id="score">0</div>
-    </div>
+</div>
 
 <div id="result" class="screen">
     <h2 id="res-title" style="font-size:32px;">GAME OVER</h2>
@@ -74,26 +72,30 @@
 <script>
     const songs = [
         { t: "Canon in D", a: "Pachelbel", parts: { A: "F#5,E5,D5,C#5,B4,A4,B4,C#5", B: "D5,C#5,D5,E4,F#4,G4,A4,B4,A4,G4,F#4,E4,D4,E4,F#4", C: "G4,F#4,E4,D4,C#4,B3,A3,G3,F#3,E3,D3,E3,F#3,G3,A3,B3" } },
-        { t: "Driver's High", a: "L'Arc-en-Ciel", parts: { A: "E5,E5,D5,B4,A4,G4,A4,B4", B: "B4,B4,D5,E5,D5,B4,A4" } },
-        { t: "For Tomorrow", a: "Blur", parts: { A: "E4,E4,F#4,G4,A4,G4,F#4,E4", B: "A4,B4,C#5,D5,C#5,B4,A4" } },
         { t: "겨울바람", a: "Chopin", parts: { A: "E4,E4,F4,E4,A4,G#4,A4,C5,B4,C5,E5", B: "A5,G#5,A5,F5,E5,D#5,E5,C5,B4,A#4,B4,G4,F4,E4,F4,D4" } },
-        { t: "Still D.R.E.", a: "Dr. Dre", parts: { A: "E5,E5,E5,E5,E5,E5,E5", B: "B4,B4,B4,B4,B4,B4,B4" } },
-        { t: "No Scrubs", a: "TLC", parts: { A: "G#4,G#4,B4,C#5,B4,G#4,F#4", B: "B4,B4,B4,C#5,B4,G#4,G#4" } },
-        { t: "Waterfalls", a: "TLC", parts: { A: "Eb4,G4,Bb4,C5,Bb4,G4,F4,Eb4", B: "Eb5,D5,C5,Bb4,G4,F4,Eb4,Eb4" } },
-        { t: "Purple Rain", a: "Prince", parts: { A: "Bb4,C5,D5,F5,D5,C5,Bb4", B: "F5,F5,G5,F5,D5,C5,Bb4" } },
         { t: "River Flows in You", a: "Yiruma", parts: { A: "F#4,E4,F#4,C#4,F#4,E4,F#4,C#4", B: "B3,A3,B3,F#3,F#4,E4,F#4,C#4" } },
         { t: "Piano Concerto No.2", a: "Rachmaninoff", parts: { A: "C4,D4,Eb4,F4,G4,Ab4,G4", B: "G4,F4,G4,Ab4,G4,F4,Eb4" } },
-        { t: "Swan Lake", a: "Tchaikovsky", parts: { A: "A4,D5,E5,F5,E5,D5,A4", B: "F5,A5,G5,F5,E5,D5,E5" } },
-        { t: "Gymnopédie No.1", a: "Erik Satie", parts: { A: "F#4,A4,C#5,B4", B: "F#4,A4,C#5,E5" } }
+        { t: "Take On Me", a: "a-ha", parts: { A: "F#5,F#5,D5,B4,B4,E5,E5,E5,G#5,G#5,A5,B5,A5,A5,A5,E5,D5" } },
+        { t: "Still D.R.E.", a: "Dr. Dre", parts: { A: "E5,E5,E5,E5,E5,E5,E5", B: "B4,B4,B4,B4,B4,B4,B4" } }
     ];
 
     let piano, sheet = [], activeRows = [];
     let isPlaying = false, score = 0, currentStep = 0, selected = 0;
     const gameArea = document.getElementById('game');
+    
+    gameArea.style.touchAction = "none"; // 모바일 씹힘 2중 차단
 
-    // 🔥 V19: 극강의 건조함. 이펙트 제로! 순정 샘플러로 즉각 반응.
+    // 🔥 지피티 패치 1: Salamander 샘플 전체 음역대 로드 (무음 버그 완벽 해결)
     piano = new Tone.Sampler({
-        urls: { "C4": "C4.mp3", "C5": "C5.mp3", "C6": "C6.mp3" },
+        urls: {
+            A0: "A0.mp3", C1: "C1.mp3", "D#1": "Ds1.mp3", "F#1": "Fs1.mp3",
+            A1: "A1.mp3", C2: "C2.mp3", "D#2": "Ds2.mp3", "F#2": "Fs2.mp3",
+            A2: "A2.mp3", C3: "C3.mp3", "D#3": "Ds3.mp3", "F#3": "Fs3.mp3",
+            A3: "A3.mp3", C4: "C4.mp3", "D#4": "Ds4.mp3", "F#4": "Fs4.mp3",
+            A4: "A4.mp3", C5: "C5.mp3", "D#5": "Ds5.mp3", "F#5": "Fs5.mp3",
+            A5: "A5.mp3", C6: "C6.mp3", "D#6": "Ds6.mp3", "F#6": "Fs6.mp3",
+            A6: "A6.mp3", C7: "C7.mp3", A7: "A7.mp3", C8: "C8.mp3"
+        },
         baseUrl: "https://tonejs.github.io/audio/salamander/",
         release: 0.8,
         attack: 0.003,
@@ -117,12 +119,11 @@
     renderSongs();
 
     document.getElementById('start-btn').addEventListener('click', async () => {
-        if (document.getElementById('start-btn').innerText === "사운드 로딩 중...") return;
+        if (document.getElementById('start-btn').innerText === "그랜드 피아노 조율 중...") return;
         await Tone.start();
         document.getElementById('lobby').style.display = 'none';
         gameArea.style.display = 'block';
 
-        // 곡 전개 생성 (약 200타일 분량)
         sheet = [];
         const song = songs[selected];
         const partKeys = Object.keys(song.parts);
@@ -130,8 +131,7 @@
             const pk = partKeys[Math.floor(Math.random() * partKeys.length)];
             const notes = song.parts[pk].split(',');
             notes.forEach(note => {
-                const m = Tone.Frequency(note).toMidi();
-                let lane = Math.floor(Math.random() * 4); // 원작의 랜덤 레인 맛
+                let lane = Math.floor(Math.random() * 4); 
                 sheet.push({ lane, note });
             });
         }
@@ -142,21 +142,19 @@
         activeRows = [];
         document.getElementById('score').innerText = "0";
 
-        // 화면에 5개의 Row(줄)를 미리 깔아둠
         for(let i=0; i<5; i++) {
             createRow(i);
         }
     });
 
-    // 화면에 타일 한 줄 생성 (offset: 0이 맨 아래, 4가 맨 위)
     function createRow(offset) {
         const sheetIdx = currentStep + offset;
-        if(sheetIdx >= sheet.length) return; 
+        if(sheetIdx >= sheet.length) return; // 악보가 끝나면 생성 중지
 
         const data = sheet[sheetIdx];
         const rowEl = document.createElement('div');
         rowEl.className = 'row';
-        rowEl.style.bottom = (offset * 25) + '%'; // 화면을 4등분 (5번째는 화면 밖 대기)
+        rowEl.style.bottom = (offset * 25) + '%'; 
 
         const tileEl = document.createElement('div');
         tileEl.className = 'tile';
@@ -168,50 +166,42 @@
         activeRows.push({ rowEl, tileEl, lane: data.lane, note: data.note, sheetIdx });
     }
 
-    // 🔥 핵심: 타일이 아닌 게임판 전체 터치 감지 -> 하단(0번 줄) 레인 판정
     gameArea.addEventListener("pointerdown", (e) => {
+        // 🔥 지피티 패치 4: 이중 종료(빨간 타일 중복) 방지
         if (!isPlaying || activeRows.length === 0) return;
 
         const rect = gameArea.getBoundingClientRect();
         const touchX = e.clientX - rect.left;
         const clickedLane = Math.floor(touchX / (rect.width / 4));
 
-        const bottomRow = activeRows[0]; // 무조건 맨 아래 줄을 쳐야 함
+        const bottomRow = activeRows[0]; 
 
         if (clickedLane === bottomRow.lane) {
-            // ✅ 정답! (검은 타일 터치)
-            
-            // 1. 소리 재생
+            // ✅ 정답
             piano.triggerAttackRelease(bottomRow.note, 0.5, Tone.now(), 1.0);
-            
-            // 2. 타일 회색으로 변경 (눌림 표시)
             bottomRow.tile.classList.add('pressed');
             
-            // 3. 점수 증가
             score++;
             document.getElementById('score').innerText = score;
             
-            // 4. 보드 한 칸 내리기 (배열 스위프팅)
             const removedRow = activeRows.shift();
-            setTimeout(() => removedRow.rowEl.remove(), 100); // 부드러운 삭제
+            setTimeout(() => removedRow.rowEl.remove(), 120); 
             
+            // 60fps 부드러운 스크롤 애니메이션
             activeRows.forEach((r, idx) => {
-                r.rowEl.style.bottom = (idx * 25) + '%'; // CSS Transition으로 스르륵 내려옴
+                r.rowEl.style.bottom = (idx * 25) + '%'; 
             });
             
-            // 5. 맨 위에 새 줄 추가
             currentStep++;
             createRow(4);
             
-            // 6. 곡 완료 확인
-            if(currentStep >= sheet.length - 4) {
-                setTimeout(() => end(true), 500);
+            // 🔥 지피티 패치 3: 완벽한 곡 종료 조건 (화면에 남은 타일이 0이 될 때)
+            if(activeRows.length === 0) {
+                setTimeout(() => end(true), 300);
             }
 
         } else {
-            // ❌ 오답! (하얀 배경 터치)
-            
-            // 내가 누른 하얀 공간에 빨간 타일 생성 (직관적 피드백)
+            // ❌ 오답
             const errTile = document.createElement('div');
             errTile.className = 'tile missed';
             errTile.style.left = (clickedLane * 25) + '%';
@@ -222,14 +212,17 @@
     });
 
     function end(win) {
+        // 🔥 지피티 패치 4: 다중 실행 완벽 차단
+        if (!isPlaying) return;
         isPlaying = false;
+        
         setTimeout(() => {
             gameArea.style.display = 'none';
             document.getElementById('result').style.display = 'flex';
             document.getElementById('res-title').innerText = win ? "SONG CLEARED!" : "GAME OVER";
-            document.getElementById('rank').innerText = win ? "SSS" : (score > 100 ? "S" : (score > 50 ? "A" : "F"));
+            document.getElementById('rank').innerText = win ? "SSS" : (score > 150 ? "S" : (score > 50 ? "A" : "F"));
             document.getElementById('final-score').innerText = `Score: ${score}`;
-        }, 500); // 0.5초 딜레이 후 결과창 (실패한 타일 깜빡임 보여주기 위함)
+        }, 600); // 실패한 타일의 깜빡임을 충분히 보여주고 결과창 띄움
     }
 </script>
 </body>
