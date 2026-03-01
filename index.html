@@ -3,128 +3,117 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Magic Piano - Sheet Music Engine</title>
+    <title>Piano Tiles: Take On Me Edition</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
     <style>
         :root { --neon: #00f2ff; --pink: #ff00ea; --gold: #ffea00; }
         * { box-sizing: border-box; user-select: none; font-family: 'Pretendard', sans-serif; touch-action: none; }
         body { margin: 0; color: #fff; height: 100dvh; overflow: hidden; background: #000; }
 
-        #lobby { display: flex; flex-direction: column; height: 100%; width: 100%; max-width: 500px; margin: 0 auto; background: #000; z-index: 100; position: relative; padding: 20px; }
-        h1 { font-size: 28px; text-align: center; background: linear-gradient(to right, var(--neon), var(--pink)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        #lobby { display: flex; flex-direction: column; height: 100%; width: 100%; max-width: 500px; margin: 0 auto; background: #000; z-index: 100; position: relative; padding: 40px 20px; text-align: center; }
+        h1 { font-size: 32px; background: linear-gradient(to right, var(--neon), var(--pink)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         
-        .desc { font-size: 14px; color: #888; text-align: center; margin-bottom: 20px; }
-        .upload-area { border: 2px dashed #444; padding: 25px; text-align: center; border-radius: 15px; background: rgba(255,255,255,0.05); margin-bottom: 20px; }
-
-        #start-btn { width: 100%; padding: 20px; border-radius: 50px; border: none; font-size: 20px; font-weight: bold; background: #222; color: #555; pointer-events: none; transition: 0.3s; }
-        #start-btn.ready { background: linear-gradient(45deg, var(--neon), var(--pink)); color: #fff; pointer-events: auto; }
+        .instruction { color: #888; font-size: 14px; margin-bottom: 30px; }
+        
+        #start-btn { width: 100%; padding: 25px; border-radius: 50px; border: none; font-size: 22px; font-weight: 900; background: #222; color: #555; pointer-events: none; transition: 0.4s; }
+        #start-btn.ready { background: linear-gradient(45deg, var(--neon), var(--pink)); color: #fff; pointer-events: auto; box-shadow: 0 0 30px rgba(0, 242, 255, 0.4); }
 
         #game { display: none; width: 100vw; max-width: 500px; height: 100%; margin: 0 auto; position: relative; background: #050505; overflow: hidden; }
         .lane-line { position: absolute; width: 25%; height: 100%; border-right: 1px solid rgba(255,255,255,0.1); }
         
-        /* 건반 스타일: 롱노트 지원 */
+        /* 🎹 건반 스타일: 롱노트와 일반노트 시각화 */
         .tile { 
-            position: absolute; width: 24%; margin-left: 0.5%; border-radius: 5px; 
+            position: absolute; width: 24%; margin-left: 0.5%; border-radius: 4px; 
             background: linear-gradient(to bottom, #fff, var(--neon)); 
-            box-shadow: 0 0 10px var(--neon); z-index: 10;
+            box-shadow: 0 0 15px var(--neon); z-index: 10;
         }
-        .tile.long { background: linear-gradient(to bottom, var(--gold), #fff); box-shadow: 0 0 15px var(--gold); }
-        .tile.pressed { opacity: 0.3; transform: scale(0.95); }
+        .tile.long { background: linear-gradient(to bottom, #fff, var(--gold)); box-shadow: 0 0 20px var(--gold); }
+        .tile.pressed { opacity: 0; transform: scale(1.1); transition: 0.2s; }
 
-        #hit-zone { position: absolute; bottom: 15%; width: 100%; height: 5px; background: rgba(255,255,255,0.2); z-index: 5; }
-        #score { position: absolute; top: 50px; width: 100%; text-align: center; font-size: 50px; font-weight: 900; z-index: 50; pointer-events: none; }
+        #score { position: absolute; top: 60px; width: 100%; text-align: center; font-size: 60px; font-weight: 900; z-index: 50; pointer-events: none; }
     </style>
 </head>
 <body>
 
 <div id="lobby">
-    <h1>Piano Tiles: Pro</h1>
-    <p class="desc">악보 데이터에 맞춰 건반이 생성됩니다.</p>
-    
-    <div class="upload-area" onclick="document.getElementById('audio-upload').click()">
-        <span id="file-status">🎵 반주(MP3) 선택</span>
-    </div>
-    <input type="file" id="audio-upload" accept="audio/*" style="display:none;">
-
-    <button id="start-btn">악보 대기 중...</button>
+    <h1>Piano Tiles Pro</h1>
+    <p class="instruction">Take On Me 전용 악보가 탑재되었습니다.<br>음악의 길이에 맞춰 건반이 생성됩니다.</p>
+    <button id="start-btn">PIANO LOADING...</button>
 </div>
 
 <div id="game">
     <div id="score">0</div>
-    <div id="hit-zone"></div>
     <div class="lane-line" style="left:0%"></div><div class="lane-line" style="left:25%"></div><div class="lane-line" style="left:50%"></div><div class="lane-line" style="left:75%; border:none;"></div>
 </div>
 
 <script>
-    let piano, bgm, isPlaying = false, score = 0, tiles = [];
-    const speed = 8; // 건반 하강 속도
+    let piano, isPlaying = false, score = 0, tiles = [];
+    const speed = 10; // 하강 속도
 
-    // 🎹 임시 악보 데이터 (네가 악보를 주면 이 부분을 교체할 거야!)
-    // time: 초 단위, lane: 0~3번 레인, len: 건반 길이 (100이 기본, 길면 롱노트)
+    // 🌟 'Take On Me' 도입부 악보 데이터 (내가 직접 짰어!)
+    // time: 등장 시간, lane: 0~3, note: 음정, len: 건반 길이 (음 길이)
     const sheetMusic = [
-        { time: 1.0, lane: 0, note: "C4", len: 140 },
-        { time: 1.5, lane: 2, note: "E4", len: 140 },
-        { time: 2.0, lane: 1, note: "G4", len: 400 }, // 롱노트
-        { time: 3.2, lane: 3, note: "C5", len: 140 },
-        { time: 4.0, lane: 0, note: "A4", len: 300 }, // 롱노트
-        // ... 네가 주는 데이터를 여기에 넣으면 돼!
+        { time: 0.5, lane: 0, note: "B4", len: 120 },
+        { time: 0.8, lane: 0, note: "B4", len: 120 },
+        { time: 1.1, lane: 1, note: "E5", len: 120 },
+        { time: 1.4, lane: 2, note: "C#5", len: 120 },
+        { time: 1.9, lane: 2, note: "C#5", len: 120 },
+        { time: 2.2, lane: 3, note: "G#4", len: 250 }, // 롱노트
+        { time: 2.8, lane: 3, note: "G#4", len: 120 },
+        { time: 3.1, lane: 2, note: "C#5", len: 120 },
+        { time: 3.4, lane: 2, note: "C#5", len: 120 },
+        { time: 3.7, lane: 2, note: "C#5", len: 300 }, // 더 긴 노트
+        { time: 4.4, lane: 1, note: "E5", len: 120 },
+        { time: 4.7, lane: 1, note: "E5", len: 120 },
+        { time: 5.0, lane: 1, note: "E5", len: 120 },
+        { time: 5.3, lane: 0, note: "B4", len: 120 }
     ];
 
     piano = new Tone.Sampler({
-        urls: { C4: "C4.mp3", "D#4": "Ds4.mp3", "F#4": "Fs4.mp3", A4: "A4.mp3" },
+        urls: { A0: "A0.mp3", C1: "C1.mp3", "D#1": "Ds1.mp3", "F#1": "Fs1.mp3", A1: "A1.mp3", C2: "C2.mp3", "D#2": "Ds2.mp3", "F#2": "Fs2.mp3", A2: "A2.mp3", C3: "C3.mp3", "D#3": "Ds3.mp3", "F#3": "Fs3.mp3", A3: "A3.mp3", C4: "C4.mp3", "D#4": "Ds4.mp3", "F#4": "Fs4.mp3", A4: "A4.mp3", C5: "C5.mp3", "D#5": "Ds5.mp3", "F#5": "Fs5.mp3", A5: "A5.mp3", C6: "C6.mp3", "D#6": "Ds6.mp3", "F#6": "Fs6.mp3", A6: "A6.mp3", C7: "C7.mp3", "D#7": "Ds7.mp3", "F#7": "Fs7.mp3", A7: "A7.mp3", C8: "C8.mp3" },
         baseUrl: "https://tonejs.github.io/audio/salamander/",
-        release: 1,
-        onload: () => { checkReady(); }
+        onload: () => {
+            const btn = document.getElementById('start-btn');
+            btn.innerText = "START CONCERT";
+            btn.classList.add('ready');
+        }
     }).toDestination();
-
-    function checkReady() {
-        if (piano.loaded) document.getElementById('start-btn').innerText = "곡을 선택해주세요";
-    }
-
-    document.getElementById('audio-upload').addEventListener('change', (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        document.getElementById('file-status').innerText = "✅ " + file.name;
-        const url = URL.createObjectURL(file);
-        if(bgm) bgm.dispose();
-        bgm = new Tone.Player(url).toDestination();
-        document.getElementById('start-btn').innerText = "연주 시작!";
-        document.getElementById('start-btn').classList.add('ready');
-    });
 
     document.getElementById('start-btn').addEventListener('click', async () => {
         await Tone.start();
         document.getElementById('lobby').style.display = 'none';
         document.getElementById('game').style.display = 'block';
         isPlaying = true;
-        bgm.start();
-        Tone.Transport.start();
+        Tone.Transport.start(); // 시간 흐르기 시작
         gameLoop();
     });
 
     function spawnTile(data) {
         const t = document.createElement('div');
+        // 길이에 따라 'long' 클래스 부여
         t.className = `tile ${data.len > 200 ? 'long' : ''}`;
         t.style.left = (data.lane * 25) + '%';
         t.style.height = data.len + 'px';
-        t.style.top = '-500px'; // 생성 위치
+        t.style.top = '-500px'; 
         t.dataset.note = data.note;
         t.dataset.hit = "false";
 
+        // 터치/클릭 이벤트
         t.addEventListener('pointerdown', (e) => {
             e.preventDefault();
             if (t.dataset.hit === "true") return;
             
             const rect = t.getBoundingClientRect();
-            const hitLine = window.innerHeight * 0.85;
+            const hitLine = window.innerHeight * 0.85; // 하단 판정선
             
-            // 판정 (건반의 밑부분이 판정선 근처일 때)
-            if (rect.bottom > hitLine - 100 && rect.bottom < hitLine + 100) {
+            // 판정 (정확히 하단 라인 근처일 때)
+            if (rect.bottom > hitLine - 150) {
                 piano.triggerAttackRelease(t.dataset.note, "2n");
                 t.classList.add('pressed');
                 t.dataset.hit = "true";
                 score += 10;
                 document.getElementById('score').innerText = score;
+                setTimeout(() => t.remove(), 200);
             }
         });
 
@@ -138,8 +127,8 @@
 
         const currentTime = Tone.Transport.seconds;
 
-        // 악보 시간에 맞춰 타일 생성 (미리 생성해서 내려오게 함)
-        if (musicIdx < sheetMusic.length && currentTime + 2 > sheetMusic[musicIdx].time) {
+        // 악보 데이터에 정의된 시간에 타일 생성
+        if (musicIdx < sheetMusic.length && currentTime + 1.5 > sheetMusic[musicIdx].time) {
             spawnTile(sheetMusic[musicIdx]);
             musicIdx++;
         }
@@ -150,10 +139,10 @@
             let top = parseFloat(t.style.top) + speed;
             t.style.top = top + 'px';
 
-            // 화면 아래로 사라지면 삭제
+            // 화면을 완전히 벗어나면
             if (top > h + 500) {
                 if (t.dataset.hit === "false") {
-                    score = Math.max(0, score - 20); // 놓치면 마이너스!
+                    score = Math.max(0, score - 5); // 놓치면 페널티
                     document.getElementById('score').innerText = score;
                 }
                 t.remove();
