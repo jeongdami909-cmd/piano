@@ -3,35 +3,44 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Crystal Piano - Harmony Edition</title>
+    <title>Crystal Piano - Final</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
     <style>
         :root { --neon: #00f2ff; --pink: #ff00ea; }
         * { box-sizing: border-box; user-select: none; font-family: 'Pretendard', sans-serif; touch-action: none; }
         body { margin: 0; color: #fff; height: 100dvh; overflow: hidden; background: #000; }
 
-        #lobby { display: flex; flex-direction: column; height: 100%; width: 100%; max-width: 500px; margin: 0 auto; background: #000; z-index: 100; position: relative; padding: 30px 20px; overflow-y: auto; }
-        h1 { font-size: 28px; text-align: center; background: linear-gradient(to right, var(--neon), var(--pink)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 10px; }
+        #lobby { display: flex; flex-direction: column; height: 100%; width: 100%; max-width: 500px; margin: 0 auto; background: #000; z-index: 100; position: relative; padding: 20px 20px; overflow-y: auto; }
+        h1 { font-size: 28px; text-align: center; background: linear-gradient(to right, var(--neon), var(--pink)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 5px; }
         
-        .section-title { font-size: 14px; color: #888; margin: 20px 0 10px; border-left: 3px solid var(--neon); padding-left: 10px; }
+        .section-title { font-size: 15px; font-weight: bold; color: #fff; margin: 20px 0 10px; border-left: 3px solid var(--neon); padding-left: 10px; }
         
-        .upload-area { border: 2px dashed #333; padding: 25px; text-align: center; border-radius: 15px; cursor: pointer; transition: 0.3s; }
-        .upload-area.active { border-color: var(--neon); background: rgba(0, 242, 255, 0.05); }
+        .upload-area { border: 2px dashed #444; padding: 20px; text-align: center; border-radius: 12px; cursor: pointer; transition: 0.3s; background: rgba(255,255,255,0.05); }
+        .upload-area.active { border-color: var(--neon); background: rgba(0, 242, 255, 0.1); }
+        #file-status { color: #ccc; font-size: 14px; word-break: break-all; }
 
         /* 조성 선택 버튼 스타일 */
-        .key-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 5px; }
-        .key-btn { padding: 10px 0; background: #111; border: 1px solid #333; color: #fff; border-radius: 5px; font-size: 12px; cursor: pointer; }
-        .key-btn.selected { background: var(--neon); color: #000; border-color: #fff; font-weight: bold; }
+        .key-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
+        .key-btn { padding: 12px 0; background: #111; border: 1px solid #333; color: #aaa; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer; }
+        .key-btn.selected { background: var(--neon); color: #000; border-color: #fff; }
 
-        #start-btn { width: 100%; padding: 18px; border-radius: 50px; border: none; font-size: 18px; font-weight: bold; background: #222; color: #555; pointer-events: none; margin-top: 30px; }
-        #start-btn.ready { background: linear-gradient(45deg, var(--neon), var(--pink)); color: #fff; pointer-events: auto; box-shadow: 0 0 20px var(--neon); }
+        /* 난이도 버튼 스타일 */
+        .diff-grid { display: flex; gap: 10px; }
+        .diff-btn { flex: 1; padding: 15px 0; background: #111; border: 1px solid #333; border-radius: 8px; color: #aaa; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .diff-btn.active { background: var(--pink); color: #fff; border-color: #fff; }
+
+        #start-btn { width: 100%; padding: 20px; border-radius: 50px; border: none; font-size: 18px; font-weight: bold; background: #222; color: #555; pointer-events: none; margin-top: 30px; transition: 0.3s; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
+        #start-btn.ready { background: linear-gradient(45deg, var(--neon), var(--pink)); color: #fff; pointer-events: auto; box-shadow: 0 0 20px rgba(255, 0, 234, 0.4); }
 
         #game { display: none; width: 100vw; max-width: 500px; height: 100%; margin: 0 auto; position: relative; background: radial-gradient(circle at bottom, #0a0a20 0%, #000 100%); overflow: hidden; }
-        .lane { position: absolute; width: 25%; height: 100%; border-right: 1px solid rgba(255,255,255,0.03); }
-        .tile { position: absolute; width: 24%; margin-left: 0.5%; height: 150px; border-radius: 10px; background: linear-gradient(to bottom, #fff, var(--neon)); box-shadow: 0 0 15px var(--neon); z-index: 10; }
-        .tile.pressed { transform: scale(1.3); opacity: 0; transition: 0.2s; background: #fff; box-shadow: 0 0 30px #fff; }
+        .lane { position: absolute; width: 25%; height: 100%; border-right: 1px dashed rgba(255,255,255,0.1); }
         
-        #score { position: absolute; top: 40px; width: 100%; text-align: center; font-size: 50px; font-weight: 900; z-index: 50; pointer-events: none; }
+        .tile { position: absolute; width: 24%; margin-left: 0.5%; height: 140px; border-radius: 8px; background: linear-gradient(to bottom, #fff, var(--neon)); box-shadow: 0 0 15px var(--neon); z-index: 10; }
+        .tile.pressed { transform: scale(1.3); opacity: 0; transition: 0.2s; background: #fff; box-shadow: 0 0 40px #fff; }
+        
+        /* 판정 선 (시각적 가이드) */
+        #hit-line { position: absolute; bottom: 15%; width: 100%; height: 2px; background: rgba(255,255,255,0.3); z-index: 5; }
+        #score { position: absolute; top: 40px; width: 100%; text-align: center; font-size: 50px; font-weight: 900; z-index: 50; pointer-events: none; text-shadow: 0 0 15px var(--neon); }
     </style>
 </head>
 <body>
@@ -39,14 +48,14 @@
 <div id="lobby">
     <h1>Crystal Piano</h1>
     
-    <div class="section-title">1. 연주할 노래(MP3) 선택</div>
+    <div class="section-title">1. 곡 선택 (MP3)</div>
     <div class="upload-area" id="drop-zone" onclick="document.getElementById('audio-upload').click()">
-        <span id="file-status">파일을 선택하세요</span>
+        <span id="file-status">🎵 터치해서 파일을 선택하세요</span>
     </div>
     <input type="file" id="audio-upload" accept="audio/*" style="display:none;">
 
-    <div class="section-title">2. 노래의 조(Key) 맞추기 (불협화음 방지)</div>
-    <p style="font-size: 12px; color: #666; margin-bottom: 10px;">노래와 건반 소리가 안 맞으면 아래 알파벳을 하나씩 눌러보세요.</p>
+    <div class="section-title">2. 노래 조(Key) 맞추기</div>
+    <p style="font-size: 12px; color: #888; margin-top: -5px; margin-bottom: 10px;">노래와 피아노 소리가 안 어울리면 다른 알파벳을 눌러보세요.</p>
     <div class="key-grid" id="key-selector">
         <button class="key-btn selected" data-key="C">C</button>
         <button class="key-btn" data-key="Db">Db</button>
@@ -62,27 +71,50 @@
         <button class="key-btn" data-key="B">B</button>
     </div>
 
+    <div class="section-title">3. 난이도</div>
+    <div class="diff-grid">
+        <button class="diff-btn active" data-speed="6" data-spawn="700">Easy</button>
+        <button class="diff-btn" data-speed="10" data-spawn="450">Normal</button>
+        <button class="diff-btn" data-speed="15" data-spawn="300">Hard</button>
+    </div>
+
     <button id="start-btn">PIANO LOADING...</button>
 </div>
 
 <div id="game">
     <div id="score">0</div>
+    <div id="hit-line"></div>
     <div class="lane" style="left:0%"></div><div class="lane" style="left:25%"></div><div class="lane" style="left:50%"></div><div class="lane" style="left:75%; border:none;"></div>
 </div>
 
 <script>
-    let piano, bgm, analyser, isPlaying = false, score = 0, tiles = [], lastSpawn = 0;
+    let piano, bgm, isPlaying = false, score = 0, tiles = [];
+    let loopId, spawnId, winTimeoutId;
     let selectedRoot = "C";
+    let currentSpeed = 6;
+    let currentSpawnRate = 700;
     
-    // 1. 고품질 샘플러 (음색 개선)
+    // 1. 고품질 피아노 샘플러 로딩
     piano = new Tone.Sampler({
         urls: { A0: "A0.mp3", C1: "C1.mp3", "D#1": "Ds1.mp3", "F#1": "Fs1.mp3", A1: "A1.mp3", C2: "C2.mp3", "D#2": "Ds2.mp3", "F#2": "Fs2.mp3", A2: "A2.mp3", C3: "C3.mp3", "D#3": "Ds3.mp3", "F#3": "Fs3.mp3", A3: "A3.mp3", C4: "C4.mp3", "D#4": "Ds4.mp3", "F#4": "Fs4.mp3", A4: "A4.mp3", C5: "C5.mp3", "D#5": "Ds5.mp3", "F#5": "Fs5.mp3", A5: "A5.mp3", C6: "C6.mp3", "D#6": "Ds6.mp3", "F#6": "Fs6.mp3", A6: "A6.mp3", C7: "C7.mp3", "D#7": "Ds7.mp3", "F#7": "Fs7.mp3", A7: "A7.mp3", C8: "C8.mp3" },
         baseUrl: "https://tonejs.github.io/audio/salamander/",
         release: 1.5,
-        onload: () => { document.getElementById('start-btn').innerText = "파일을 선택해주세요"; }
+        onload: () => { 
+            const startBtn = document.getElementById('start-btn');
+            if(startBtn.innerText === "PIANO LOADING...") startBtn.innerText = "곡을 먼저 선택해주세요"; 
+        }
     }).toDestination();
+    piano.volume.value = 5; // 피아노 소리 키움
 
-    analyser = new Tone.Analyser("fft", 32);
+    // 난이도 버튼 클릭
+    document.querySelectorAll('.diff-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('active'));
+            e.target.classList.add('active');
+            currentSpeed = parseInt(e.target.getAttribute('data-speed'));
+            currentSpawnRate = parseInt(e.target.getAttribute('data-spawn'));
+        });
+    });
 
     // 조성 버튼 클릭
     document.querySelectorAll('.key-btn').forEach(btn => {
@@ -109,22 +141,35 @@
                 startBtn.innerText = "콘서트 시작!";
                 startBtn.classList.add('ready');
             }
-        }).connect(analyser).toDestination();
+        }).toDestination();
+        bgm.volume.value = -3; // BGM 소리 살짝 줄임 (건반 소리가 잘 들리게)
     });
 
     document.getElementById('start-btn').addEventListener('click', async () => {
+        if (!bgm || !bgm.loaded) return;
         await Tone.start();
+        
         document.getElementById('lobby').style.display = 'none';
         document.getElementById('game').style.display = 'block';
         isPlaying = true;
+        score = 0;
+        document.getElementById('score').innerText = '0';
+        
         bgm.start();
-        updateGame();
+        
+        // 곡 끝나면 클리어 처리
+        const duration = bgm.buffer.duration * 1000;
+        winTimeoutId = setTimeout(() => { if(isPlaying) win(); }, duration);
+
+        gameLoop();
+        // 타일 무조건 생성 (오류 발생하던 비트분석 제거!)
+        spawnId = setInterval(spawnTile, currentSpawnRate);
     });
 
-    // 선택된 조(Key)에 맞춰 펜타토닉 스케일 생성
+    // 선택된 조(Key)에 맞춰 조화로운 음계(펜타토닉) 계산
     function getScale(root) {
         const notes = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"];
-        const intervals = [0, 2, 4, 7, 9]; // 메이저 펜타토닉 간격
+        const intervals = [0, 2, 4, 7, 9]; 
         const rootIdx = notes.indexOf(root);
         return intervals.map(i => {
             const idx = (rootIdx + i) % 12;
@@ -133,28 +178,8 @@
         });
     }
 
-    function updateGame() {
-        if (!isPlaying) return;
-        const values = analyser.getValue();
-        const energy = values.slice(0, 8).reduce((a, b) => a + b, 0) / 8;
-        
-        const now = Date.now();
-        if (energy > -40 && now - lastSpawn > 250) {
-            spawnTile();
-            lastSpawn = now;
-        }
-
-        const h = window.innerHeight;
-        for (let i = tiles.length - 1; i >= 0; i--) {
-            const t = tiles[i];
-            let top = parseFloat(t.style.top || -150) + 7;
-            t.style.top = top + 'px';
-            if (top > h) { t.remove(); tiles.splice(i, 1); }
-        }
-        requestAnimationFrame(updateGame);
-    }
-
     function spawnTile() {
+        if (!isPlaying) return;
         const lane = Math.floor(Math.random() * 4);
         const t = document.createElement('div');
         t.className = 'tile';
@@ -164,22 +189,51 @@
         const hit = (e) => {
             e.preventDefault();
             if (t.classList.contains('pressed')) return;
-            if (t.getBoundingClientRect().bottom < window.innerHeight * 0.65) return;
+            
+            // 화면 하단쯤 왔을 때만 쳐지도록 판정
+            const rect = t.getBoundingClientRect();
+            if (rect.bottom < window.innerHeight * 0.5) return; 
 
-            // 현재 선택된 조에 맞는 음계 연주
+            // 선택한 조(Key)에 맞는 아름다운 피아노 연주
             const currentScale = getScale(selectedRoot);
             const note = currentScale[Math.floor(Math.random() * currentScale.length)];
             piano.triggerAttackRelease(note, "2n");
 
             t.classList.add('pressed');
-            score++;
+            score += 10;
             document.getElementById('score').innerText = score;
-            setTimeout(() => t.remove(), 200);
+            setTimeout(() => {
+                t.remove();
+                tiles = tiles.filter(item => item !== t);
+            }, 200);
         };
 
-        t.addEventListener('pointerdown', hit);
+        t.addEventListener('pointerdown', hit, {passive: false});
         document.getElementById('game').appendChild(t);
         tiles.push(t);
+    }
+
+    function gameLoop() {
+        if (!isPlaying) return;
+        const h = window.innerHeight;
+        
+        for (let i = tiles.length - 1; i >= 0; i--) {
+            const t = tiles[i];
+            let top = parseFloat(t.style.top || -150) + currentSpeed;
+            t.style.top = top + 'px';
+            
+            // 화면 밖으로 나가면 삭제
+            if (top > h + 50) { 
+                t.remove(); 
+                tiles.splice(i, 1); 
+            }
+        }
+        loopId = requestAnimationFrame(gameLoop);
+    }
+
+    function win() {
+        isPlaying = false; clearInterval(spawnId); cancelAnimationFrame(loopId);
+        setTimeout(() => { alert(`✨ 완주 성공! ✨\n멋진 연주였습니다. 점수: ${score}`); location.reload(); }, 500);
     }
 </script>
 </body>
