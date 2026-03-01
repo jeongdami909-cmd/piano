@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Piano Tiles - 2014 Original Clone</title>
+    <title>Piano Tiles - Harmony Master</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
     <style>
         :root { --neon: #00f2ff; --pink: #ff00ea; --gold: #ffea00; --bg: #050508; }
@@ -31,7 +31,6 @@
         #start-btn { width: 100%; padding: 18px; border-radius: 50px; border: none; font-size: 18px; font-weight: bold; background: #222; color: #555; transition: 0.3s; }
         #start-btn.ready { background: linear-gradient(45deg, var(--neon), var(--pink)); color: #fff; pointer-events: auto; box-shadow: 0 5px 20px rgba(255, 0, 234, 0.4); cursor: pointer;}
 
-        /* 게임 화면 터치 최적화 */
         #game { overflow: hidden; z-index: 50; position: relative; touch-action: none; }
         
         .lane-bg { position: absolute; top: 0; width: 25%; height: 100%; border-right: 1px dashed rgba(255,255,255,0.1); pointer-events: none; }
@@ -53,8 +52,8 @@
 <body>
 
 <div id="lobby" class="screen" style="display: flex;">
-    <h1>2014 YOUTUBE CLONE</h1>
-    <p class="desc">미세한 공간감과 완벽한 모바일 터치 싱크로율</p>
+    <h1>HARMONY & SUSTAIN</h1>
+    <p class="desc">화음 복원 및 페달 효과(Overlap)로 완벽한 음악성</p>
     
     <div class="diff-group">
         <button class="diff-btn" data-diff="easy">하 (Easy)</button>
@@ -82,7 +81,6 @@
 </div>
 
 <script>
-    // 🎼 12곡 멜로디 파츠
     const songs = [
         { t: "Canon in D", a: "Pachelbel", parts: { A: "F#5+D3_0.5,E5+A2_0.5,D5+B2_0.5,C#5+F#2_0.5,B4+G2_0.5,A4+D3_0.5,B4+G2_0.5,C#5+A2_0.5", B: "D5+D3_0.25,C#5_0.25,D5_0.25,D4_0.25,E4+A2_0.25,F#4_0.25,G4_0.25,A4_0.25,B4+B2_0.25,A4_0.25,G4_0.25,F#4_0.25,E4+F#2_0.25,D4_0.25,E4_0.25,F#4_0.25", C: "G4+G2_0.25,F#4_0.25,E4_0.25,D4_0.25,C#4+D3_0.25,B3_0.25,A3_0.25,G3_0.25,F#3+G2_0.25,E3_0.25,D3_0.25,E3_0.25,F#3+A2_0.25,G3_0.25,A3_0.25,B3_0.25", D: "D5+D3_0.5,F#5_0.5,A5+A2_0.5,G5_0.5,F#5+B2_0.5,D5_0.5,F#5+F#2_0.5,E5_0.5,D5+G2_0.5,B4_0.5,D5+D3_0.5,A4_0.5,G4+G2_0.5,B4_0.5,A4+A2_0.5,C#5_0.5" }, seq: "A,A,B,B,C,C,D,D,B,A" },
         { t: "Take On Me", a: "a-ha", parts: { A: "F#5+B3_0.2,F#5_0.2,D5_0.2,B4_0.2,B4+E3_0.4,E5_0.2,E5_0.2,E5_0.2,G#5+A3_0.2,G#5_0.2,A5_0.2,B5_0.2,A5+D3_0.2,A5_0.2,A5_0.2,E5_0.2,D5_0.2,F#5+B3_0.2,F#5_0.2,F#5_0.2,E5_0.2,E5_0.2,F#5_0.2,E5_0.2", B: "A4+D3_0.4,A4_0.4,E4_0.4,F#4_0.4,G#4+E3_0.8,A4+D3_0.4,A4_0.4,E4_0.4,F#4_0.4,G#4+E3_0.8", C: "B4+B2_0.3,B4_0.3,E5_0.4,C#5+A2_0.4,C#5_0.3,G#4+E2_0.8,G#4_0.3,C#5+D3_0.4,C#5_0.4,C#5_0.4,E5_0.4,E5_0.4,E5_0.4,B4+B2_1.2", D: "A4+D3_0.4,B4_0.4,C#5_0.4,D5_0.4,E5+A2_0.8,D5_0.4,C#5_0.4,B4+E3_1.6" }, seq: "A,A,B,B,C,C,D,A,A" },
@@ -98,55 +96,36 @@
         { t: "Words", a: "F.R. David", parts: { A: "G4+G3_0.4,A4_0.4,B4_0.4,G4_0.4,E4+C3_1.0,C5_0.4,B4_0.4,A4+D3_0.8,G4_0.4,F#4_0.4,E4+G3_1.0", B: "D5+D3_0.4,C5_0.4,B4_0.4,G4_0.4,E5+C3_1.0,D5_0.4,C5_0.4,B4+G3_1.0" }, seq: "A,A,B,A,B,A,A,B" }
     ];
 
-    let piano, padGain, pad, sheet = [], tiles = [], isPlaying = false, score = 0, hp = 100, sheetIdx = 0, selected = 0;
+    let piano, sheet = [], tiles = [], isPlaying = false, score = 0, hp = 100, sheetIdx = 0, selected = 0;
     let difficulty = "normal", speedMult = 1.0, hitLineY, isLoaded = false;
     const gameArea = document.getElementById('game');
 
-    // 🔥 1. 진짜 2014년 유튜브 영상 스타일 사운드 믹싱
-    const reverb = new Tone.Reverb({
-        decay: 0.6,
-        wet: 0.15 // 아주 살짝만 깔리는 실내 리버브 느낌
-    });
+    // 🔥 4. 리버브 살짝 더 증가 (건조함 타파, 자연스러운 공간감)
+    const reverb = new Tone.Reverb({ decay: 0.8, wet: 0.22 }); 
+    
+    // 컴프레서 & EQ
+    const eq = new Tone.EQ3({ low: -8, mid: -2, high: 6 });
+    const comp = new Tone.Compressor({ threshold: -18, ratio: 4, attack: 0.003, release: 0.15 }).toDestination();
 
-    const eq = new Tone.EQ3({
-        low: -8,  // 무거운 베이스 컷
-        mid: -2,  // 중음 살짝 깎음
-        high: 6   // 고음의 쨍함 극대화
-    });
-
-    const comp = new Tone.Compressor({
-        threshold: -18,
-        ratio: 4,
-        attack: 0.003,
-        release: 0.15
-    });
-
-    // 사운드 체인 연결
     reverb.connect(eq);
     eq.connect(comp);
-    comp.toDestination();
-
-    // 약간의 공기감을 만들어줄 화이트노이즈 패드 준비 (아주 작게)
-    padGain = new Tone.Gain(0.005).toDestination();
-    pad = new Tone.Noise("pink").connect(padGain);
 
     function useEmergencySynth() {
         if(isLoaded) return;
         if(piano) piano.dispose(); 
-        piano = new Tone.PolySynth(Tone.Synth, { volume: -4, envelope: { attack: 0.005, release: 0.2 } }).connect(reverb);
+        piano = new Tone.PolySynth(Tone.Synth, { volume: -4, envelope: { attack: 0.005, release: 0.28 } }).connect(reverb);
         setReady();
     }
 
-    // 신스가 아닌, '가볍게 세팅된 진짜 피아노 샘플'로 회귀 (유튜브 영상의 그 톤)
+    // 🔥 3. 릴리즈 증가 (뚝 끊기지 않고 자연스럽게 꼬리가 남음)
     piano = new Tone.Sampler({
-        urls: {
-            A3: "A3.mp3",
-            C4: "C4.mp3",
-            E4: "E4.mp3",
-            A4: "A4.mp3"
-        },
+        urls: { "C3": "C3.mp3", "C4": "C4.mp3", "C5": "C5.mp3", "C6": "C6.mp3" },
         baseUrl: "https://tonejs.github.io/audio/salamander/",
-        release: 0.2 // 짧게 끊어치기
+        release: 0.28, 
+        attack: 0.005,
+        volume: -2,
+        onload: () => { if(!isLoaded) setReady(); },
+        onerror: () => useEmergencySynth()
     }).connect(reverb);
 
     setTimeout(() => { if(!isLoaded) useEmergencySynth(); }, 3500);
@@ -155,7 +134,7 @@
         if (isLoaded) return;
         isLoaded = true;
         const btn = document.getElementById("start-btn");
-        btn.textContent = "게임 시작!";
+        btn.textContent = "연주 시작!";
         btn.classList.add("ready");
         renderSongs(); 
     }
@@ -166,7 +145,7 @@
         songs.forEach((s, idx) => {
             const item = document.createElement('div');
             item.className = `song-item ${idx === selected ? 'active' : ''}`;
-            item.innerHTML = `<div><div class="song-title">${s.t}</div><div class="song-artist">오리지널 유튜브 사운드</div></div>`;
+            item.innerHTML = `<div><div class="song-title">${s.t}</div><div class="song-artist">화성 복원 모드 (${s.a})</div></div>`;
             item.onclick = () => { selected = idx; renderSongs(); };
             listDiv.appendChild(item);
         });
@@ -180,7 +159,7 @@
         });
     });
 
-    // 멜로디만 타일화
+    // 🔥 1. 화성 복원: 최고음 하나만 쓰는 게 아니라 2개까지 허용!
     function parseSheet(songObj) {
         const noteArray = [];
         let time = 1.0;
@@ -199,13 +178,15 @@
                 const dur = parseFloat(durStr);
                 const notes = noteStr.split('+'); 
 
+                // 음정 순 정렬 후, 최고음 + 그 아래음 (최대 2개) 추출
                 notes.sort((a, b) => Tone.Frequency(b).toMidi() - Tone.Frequency(a).toMidi());
-                const highestNote = notes[0]; 
+                const playNotes = notes.slice(0, 2); 
 
-                const midi = Tone.Frequency(highestNote).toMidi();
+                // 최고음 기준으로 레인 배치
+                const midi = Tone.Frequency(playNotes[0]).toMidi();
                 let lane = isNaN(midi) ? Math.floor(Math.random() * 4) : midi % 4;
                 
-                noteArray.push({ t: time, l: lane, n: highestNote, d: dur });
+                noteArray.push({ t: time, l: lane, n: playNotes, d: dur });
                 time += dur;
             }
         }
@@ -215,9 +196,6 @@
     document.getElementById('start-btn').addEventListener('pointerdown', async () => {
         if(!isLoaded) return;
         await Tone.start();
-        
-        // 배경 미세 앰비언스 시작
-        if (pad.state !== "started") pad.start();
         
         if (difficulty === "easy") speedMult = 0.7;
         else if (difficulty === "hard") speedMult = 1.5;
@@ -271,11 +249,10 @@
 
             const diff = Math.abs(o.data.t - now);
 
-            // 🔥 2. 모바일 터치 최적화: 판정 윈도우 완화 (0.22초) -> 밀림 현상 방지
             if (diff < 0.22) { 
                 
-                // 🔥 3. 0.18초 길이로 고정 재생 + 약간 더 세게(0.9) 타격감 부여
-                piano.triggerAttackRelease(o.data.n, 0.18, Tone.now(), 0.9);
+                // 🔥 2. 배열(playNotes) 그대로 재생 + 재생 길이 0.3초 (살짝 겹치게 페달 효과) + 벨로시티 0.85
+                piano.triggerAttackRelease(o.data.n, 0.3, Tone.now(), 0.85);
                 
                 o.hit = true;
                 o.el.classList.add("pressed");
@@ -300,18 +277,15 @@
     function loop() {
         if(!isPlaying) return;
         const now = Tone.Transport.seconds; 
-        
-        // 🔥 4. 화면 시각 딜레이 최적화 (LOOKAHEAD 줄임)
-        const baseLookahead = 1.2; 
-        const currentLookahead = baseLookahead / speedMult;
-        const speed = hitLineY / currentLookahead;
+        const LOOKAHEAD = 1.2; // 0지연 시각 싱크 유지
+        const speed = hitLineY / LOOKAHEAD;
 
-        while(sheetIdx < sheet.length && sheet[sheetIdx].t < now + currentLookahead) {
+        while(sheetIdx < sheet.length && sheet[sheetIdx].t < now + LOOKAHEAD) {
             const data = sheet[sheetIdx++];
             const el = document.createElement('div');
             
             const visualDur = data.d * 1.4; 
-            const h = Math.max(80, visualDur * speed * 0.8);
+            const h = Math.max(100, visualDur * speed * 0.8);
             const isLong = data.d >= 0.6; 
             
             el.className = `tile ${isLong ? 'long' : ''}`;
@@ -329,7 +303,6 @@
             const bottom = hitLineY - (o.data.t - now) * speed;
             o.el.style.top = (bottom - o.h) + "px";
 
-            // 타이밍 초과 시 놓침 판정
             if(!o.hit && !o.miss && (o.data.t - now) < -0.2) {
                 o.miss = true; 
                 o.el.classList.add('missed');
@@ -352,7 +325,6 @@
 
     function end(win) {
         isPlaying = false; Tone.Transport.stop(); Tone.Transport.cancel(0);
-        if (pad.state === "started") pad.stop();
         gameArea.style.display = 'none';
         document.getElementById('result').style.display = 'flex';
         document.getElementById('res-title').innerText = win ? "STAGE CLEAR!" : "GAME OVER";
