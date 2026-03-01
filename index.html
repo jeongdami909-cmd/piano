@@ -3,17 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Piano Tiles - Arcade Clone</title>
+    <title>Piano Tiles - Arcade Clone Pro</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
     <style>
         :root { --neon: #00f2ff; --pink: #ff00ea; --gold: #ffea00; --bg: #050508; }
-        /* 터치 밀림 현상 완벽 방지 */
-        * { box-sizing: border-box; user-select: none; margin: 0; padding: 0; font-family: 'Pretendard', sans-serif; -webkit-tap-highlight-color: transparent; touch-action: none; }
+        
+        /* 🔥 지피티 피드백 1: touch-action: none을 전체(*)에서 뺌! */
+        * { box-sizing: border-box; user-select: none; margin: 0; padding: 0; font-family: 'Pretendard', sans-serif; -webkit-tap-highlight-color: transparent; }
         body { color: #fff; height: 100dvh; overflow: hidden; background: var(--bg); }
+        
+        /* 🔥 로비 및 UI 버튼들은 정상적으로 터치되게 명시 */
+        button { touch-action: manipulation; }
 
         .screen { position: absolute; top: 0; left: 50%; width: 100%; height: 100%; max-width: 500px; transform: translateX(-50%); display: none; flex-direction: column; background: var(--bg); border-left: 1px solid #111; border-right: 1px solid #111; }
         
-        /* 로비 화면 */
         #lobby { display: flex; z-index: 100; padding: 20px; }
         h1 { text-align: center; font-size: 28px; font-weight: 900; background: linear-gradient(90deg, var(--neon), var(--pink)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; padding: 5px 0; }
         .desc { text-align: center; color: #aaa; font-size: 13px; margin-bottom: 15px; }
@@ -31,9 +34,9 @@
         #start-btn { width: 100%; padding: 18px; border-radius: 50px; border: none; font-size: 18px; font-weight: bold; background: #222; color: #555; transition: 0.3s; }
         #start-btn.ready { background: linear-gradient(45deg, var(--neon), var(--pink)); color: #fff; pointer-events: auto; box-shadow: 0 5px 20px rgba(255, 0, 234, 0.4); cursor: pointer;}
 
-        /* 게임 영역 */
-        #game { overflow: hidden; z-index: 50; position: relative; }
-        /* 🔥 중요: 터치는 오직 gameArea에서만 처리하도록 다른 요소들은 pointer-events: none 처리 */
+        /* 🔥 게임 화면에서만 스크롤/터치 밀림을 완벽 차단! */
+        #game { overflow: hidden; z-index: 50; position: relative; touch-action: none; }
+        
         .lane-bg { position: absolute; top: 0; width: 25%; height: 100%; border-right: 1px dashed rgba(255,255,255,0.1); pointer-events: none; }
         #hit-line { position: absolute; bottom: 15%; width: 100%; height: 4px; background: rgba(255,255,255,0.8); z-index: 5; box-shadow: 0 0 15px #fff; pointer-events: none; }
         
@@ -42,7 +45,6 @@
         #hp-bar { width: 100%; height: 100%; background: #00ff00; transition: width 0.2s; }
         #judgment { position: absolute; top: 45%; width: 100%; text-align: center; font-size: 45px; font-weight: 900; z-index: 70; opacity: 0; pointer-events: none; transition: 0.1s; }
 
-        /* 건반 타일 (터치 이벤트 받지 않음) */
         .tile { position: absolute; width: 24%; margin-left: 0.5%; border-radius: 6px; background: linear-gradient(to bottom, #fff, var(--neon)); z-index: 10; pointer-events: none; }
         .tile.long { background: linear-gradient(to bottom, #fff, var(--gold)); box-shadow: 0 0 15px var(--gold); }
         .tile.pressed { opacity: 0.2; transform: scale(1.05); transition: 0.1s; box-shadow: 0 0 40px #fff; }
@@ -83,7 +85,6 @@
 </div>
 
 <script>
-    // 🎼 악보는 그대로 유지! 단, 파싱 단계에서 화음을 전부 잘라내고 멜로디만 남깁니다.
     const songs = [
         { t: "Canon in D", a: "Pachelbel", parts: { A: "F#5+D3_0.5,E5+A2_0.5,D5+B2_0.5,C#5+F#2_0.5,B4+G2_0.5,A4+D3_0.5,B4+G2_0.5,C#5+A2_0.5", B: "D5+D3_0.25,C#5_0.25,D5_0.25,D4_0.25,E4+A2_0.25,F#4_0.25,G4_0.25,A4_0.25,B4+B2_0.25,A4_0.25,G4_0.25,F#4_0.25,E4+F#2_0.25,D4_0.25,E4_0.25,F#4_0.25", C: "G4+G2_0.25,F#4_0.25,E4_0.25,D4_0.25,C#4+D3_0.25,B3_0.25,A3_0.25,G3_0.25,F#3+G2_0.25,E3_0.25,D3_0.25,E3_0.25,F#3+A2_0.25,G3_0.25,A3_0.25,B3_0.25", D: "D5+D3_0.5,F#5_0.5,A5+A2_0.5,G5_0.5,F#5+B2_0.5,D5_0.5,F#5+F#2_0.5,E5_0.5,D5+G2_0.5,B4_0.5,D5+D3_0.5,A4_0.5,G4+G2_0.5,B4_0.5,A4+A2_0.5,C#5_0.5" }, seq: "A,A,B,B,C,C,D,D,B,A" },
         { t: "Take On Me", a: "a-ha", parts: { A: "F#5+B3_0.2,F#5_0.2,D5_0.2,B4_0.2,B4+E3_0.4,E5_0.2,E5_0.2,E5_0.2,G#5+A3_0.2,G#5_0.2,A5_0.2,B5_0.2,A5+D3_0.2,A5_0.2,A5_0.2,E5_0.2,D5_0.2,F#5+B3_0.2,F#5_0.2,F#5_0.2,E5_0.2,E5_0.2,F#5_0.2,E5_0.2", B: "A4+D3_0.4,A4_0.4,E4_0.4,F#4_0.4,G#4+E3_0.8,A4+D3_0.4,A4_0.4,E4_0.4,F#4_0.4,G#4+E3_0.8", C: "B4+B2_0.3,B4_0.3,E5_0.4,C#5+A2_0.4,C#5_0.3,G#4+E2_0.8,G#4_0.3,C#5+D3_0.4,C#5_0.4,C#5_0.4,E5_0.4,E5_0.4,E5_0.4,B4+B2_1.2", D: "A4+D3_0.4,B4_0.4,C#5_0.4,D5_0.4,E5+A2_0.8,D5_0.4,C#5_0.4,B4+E3_1.6" }, seq: "A,A,B,B,C,C,D,A,A" },
@@ -103,14 +104,19 @@
     let difficulty = "normal", speedMult = 1.0, hitLineY, isLoaded = false;
     const gameArea = document.getElementById('game');
 
-    // 🔥 사운드 엔진 세팅 (아케이드 피아노 타일 방식)
-    // 1. EQ 과감하게 세팅 (저음 컷, 고음 부스팅)
+    // 🔥 지피티 피드백 2: 오디오 체인 대격변 (EQ -> Compressor -> Reverb)
+    // 1. EQ로 저음 웅웅거림 날리고 고음 부스트
     const eq = new Tone.EQ3({ low: -8, mid: 2, high: 4 });
     
-    // 2. 리버브 대폭 축소 (홀 사운드 제거, 압축된 사운드)
+    // 2. Compressor로 소리를 꽉 압축해서 타격감을 귀에 직접 때려박음
+    const comp = new Tone.Compressor({ threshold: -20, ratio: 6, attack: 0.005, release: 0.1 });
+    
+    // 3. Reverb는 최소화하여 아케이드의 드라이하고 경쾌한 사운드 완성
     const reverb = new Tone.Reverb({ decay: 0.8, wet: 0.08 }).toDestination(); 
 
-    eq.connect(reverb);
+    // 사운드 체인 연결
+    eq.connect(comp);
+    comp.connect(reverb);
 
     function useEmergencySynth() {
         if(isLoaded) return;
@@ -119,7 +125,6 @@
         setReady();
     }
 
-    // 3. 샘플러는 유지하되 타격감을 위해 release 조정
     piano = new Tone.Sampler({
         urls: { "C3": "C3.mp3", "C4": "C4.mp3", "C5": "C5.mp3", "C6": "C6.mp3" },
         baseUrl: "https://tonejs.github.io/audio/salamander/",
@@ -146,12 +151,13 @@
         songs.forEach((s, idx) => {
             const item = document.createElement('div');
             item.className = `song-item ${idx === selected ? 'active' : ''}`;
-            item.innerHTML = `<div><div class="song-title">${s.t}</div><div class="song-artist">단선율 아케이드 모드 (${s.a})</div></div>`;
+            item.innerHTML = `<div><div class="song-title">${s.t}</div><div class="song-artist">오락실 아케이드 모드 (${s.a})</div></div>`;
             item.onclick = () => { selected = idx; renderSongs(); };
             listDiv.appendChild(item);
         });
     }
 
+    // 난이도 버튼 UI
     document.querySelectorAll('.diff-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('active'));
@@ -160,7 +166,7 @@
         });
     });
 
-    // 🔥 멜로디만 타일화 (자동 반주 완전 제거)
+    // 멜로디만 타일화 (화음, 베이스 아예 삭제)
     function parseSheet(songObj) {
         const noteArray = [];
         let time = 1.0;
@@ -237,11 +243,10 @@
         hpBar.style.background = hp > 60 ? "#00ff00" : (hp > 30 ? "#ffea00" : "#ff0055");
     }
 
-    // 🔥 게임 판정 엔진 혁신: 레인(Lane) 기반 시간차 판정 시스템
+    // 🔥 레인(Lane) 기반 시간차 판정 시스템
     gameArea.addEventListener("pointerdown", (e) => {
         if (!isPlaying) return;
 
-        // 터치한 X 좌표를 통해 어떤 레인(0~3)을 눌렀는지 계산
         const rect = gameArea.getBoundingClientRect();
         const x = e.clientX - rect.left;
         const lane = Math.floor(x / (rect.width / 4));
@@ -252,14 +257,14 @@
         for (let i = 0; i < tiles.length; i++) {
             const o = tiles[i];
             if (o.hit || o.miss) continue;
-            if (o.data.l !== lane) continue; // 같은 레인인지 확인
+            if (o.data.l !== lane) continue; 
 
-            // 타이밍 오차 계산 (핵심!)
+            // 타이밍 오차 계산
             const diff = Math.abs(o.data.t - now);
 
-            // 판정 윈도우 (0.2초 이내면 터치 인정)
-            if (diff < 0.2) { 
-                // 타격음: Velocity 0.85 고정, 딜레이 없이 쨍하게 때림
+            // 판정 윈도우 (0.18초 이내)
+            if (diff < 0.18) { 
+                // 타격음: Velocity 0.85 고정, 즉시 재생으로 딜레이 완전 삭제!
                 piano.triggerAttackRelease(o.data.n, o.data.d * 0.9, Tone.now(), 0.85);
                 o.hit = true;
                 o.el.classList.add("pressed");
@@ -271,12 +276,11 @@
                 updateHP();
                 
                 hitSomething = true;
-                break; // 가장 가까운 타일 하나만 처리하고 루프 종료
+                break; 
             }
         }
 
         if (!hitSomething) {
-            // 아무 타일도 없는 레인을 누르거나 타이밍을 놓쳤을 때 페널티
             hp -= 10;
             updateHP();
         }
@@ -313,7 +317,7 @@
             const bottom = hitLineY - (o.data.t - now) * speed;
             o.el.style.top = (bottom - o.h) + "px";
 
-            // 타이밍이 완전히 지나갔을 때 (판정선 아래로 내려감)
+            // 타이밍이 완전히 지나갔을 때
             if(!o.hit && !o.miss && (o.data.t - now) < -0.2) {
                 o.miss = true; 
                 o.el.classList.add('missed');
@@ -336,7 +340,7 @@
     }
 
     function end(win) {
-        isPlaying = false; Tone.Transport.stop(); Tone.Transport.cancel(0);
+        isPlaying = false; Tone.Transport.stop();
         gameArea.style.display = 'none';
         document.getElementById('result').style.display = 'flex';
         document.getElementById('res-title').innerText = win ? "STAGE CLEAR!" : "GAME OVER";
