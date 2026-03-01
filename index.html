@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Magic Piano: Ultimate 12 Songs</title>
+    <title>Magic Piano: Bug Fix Edition</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
     <style>
         :root { --main: #00e5ff; --hit: #ff00ea; --lane: rgba(255,255,255,0.1); }
-        * { box-sizing: border-box; user-select: none; touch-action: none; font-family: 'Pretendard', sans-serif; }
+        /* 🔥 버그 수정 1: 전체 터치 잠금 해제 (스크롤 가능해짐) */
+        * { box-sizing: border-box; user-select: none; font-family: 'Pretendard', sans-serif; }
         
-        /* 우주 느낌의 움직이는 배경 */
         @keyframes bgScroll { 0% { background-position: 0% 0%; } 100% { background-position: 0% 100%; } }
         body { 
             margin: 0; color: #fff; height: 100dvh; overflow: hidden; display: flex; flex-direction: column;
@@ -17,18 +17,16 @@
             background-size: 100% 200%; animation: bgScroll 15s linear infinite;
         }
 
-        /* ---------------- 로비 화면 (스크롤 완벽 해결) ---------------- */
         #lobby { 
             display: flex; flex-direction: column; height: 100%; width: 100%; max-width: 500px; 
-            margin: 0 auto; background: rgba(0,0,0,0.8); backdrop-filter: blur(10px); z-index: 20; 
+            margin: 0 auto; background: rgba(0,0,0,0.8); backdrop-filter: blur(10px); z-index: 20; position: relative;
         }
         
-        /* 상단 고정 영역 */
         header { flex: 0 0 auto; padding: 25px 20px 15px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); }
         header h1 { margin: 0; font-size: 26px; font-weight: 900; background: linear-gradient(90deg, #00e5ff, #ff00ea); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         header p { margin: 8px 0 0; font-size: 13px; color: #aaa; }
         
-        /* 곡 목록 영역 (남는 공간을 모두 차지하며 스크롤됨) */
+        /* 곡 목록 영역 */
         #song-list { flex: 1 1 auto; overflow-y: auto; padding: 15px; -webkit-overflow-scrolling: touch; }
         .song-item { 
             background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; 
@@ -38,15 +36,14 @@
         .song-genre { font-size: 11px; color: var(--main); font-weight: bold; margin-bottom: 5px; }
         .song-title { font-size: 16px; font-weight: bold; color: #fff; }
 
-        /* 하단 고정 시작 버튼 영역 */
         .footer { flex: 0 0 auto; padding: 20px; background: rgba(0,0,0,0.9); border-top: 1px solid #333; }
         #start-btn { 
             width: 100%; padding: 18px; background: linear-gradient(90deg, #00e5ff, #ff00ea); color: #fff; 
             font-size: 20px; font-weight: 900; border: none; border-radius: 50px; cursor: pointer; box-shadow: 0 5px 20px rgba(255,0,234,0.4); 
         }
 
-        /* ---------------- 게임 스테이지 ---------------- */
-        #game { display: none; width: 100vw; max-width: 500px; height: 100%; margin: 0 auto; position: relative; overflow: hidden; transition: background-color 0.1s; }
+        /* 🔥 버그 수정 2: 게임 화면 안에서만 터치 스크롤 방지 */
+        #game { touch-action: none; display: none; width: 100vw; max-width: 500px; height: 100%; margin: 0 auto; position: relative; overflow: hidden; transition: background-color 0.1s; }
         .lane-bg { position: absolute; width: 25%; height: 100%; border-right: 1px solid var(--lane); background: linear-gradient(180deg, transparent, rgba(0,229,255,0.05)); }
         #hit-line { position: absolute; bottom: 15%; width: 100%; height: 4px; background: #fff; box-shadow: 0 0 15px var(--main), 0 0 30px var(--hit); z-index: 5; }
         
@@ -70,12 +67,12 @@
 
 <div id="lobby">
     <header>
-        <h1>MAGIC TILES V5</h1>
-        <p>3번 틀리면 게임 오버! 100점을 달성하세요</p>
+        <h1>MAGIC TILES V6</h1>
+        <p>버그 완벽 수정본! 끝까지 스크롤하세요.</p>
     </header>
     <div id="song-list"></div>
     <div class="footer">
-        <button id="start-btn" onclick="initGame()">PLAY NOW</button>
+        <button id="start-btn">PLAY NOW</button>
     </div>
 </div>
 
@@ -92,7 +89,6 @@
 </div>
 
 <script>
-    // 12곡의 방대한 데이터 (배경 반주 b + 멜로디 m)
     const library = [
         { g: "EDM / POP", t: "Alan Walker - Faded", s: 8, b: ["F#3", "D3", "A3", "E3"], m: ["F#5", "F#5", "F#5", "E5", "D5", "D5", "D5", "C#5", "A4", "A4", "A4", "E5", "E5", "C#5", "C#5", "C#5"] },
         { g: "NEW AGE", t: "이루마 - River Flows in You", s: 7, b: ["F#3", "D3", "A3", "E3"], m: ["A4", "G#4", "A4", "G#4", "A4", "E4", "A4", "D4", "A4", "G#4", "A4", "G#4", "A4", "E4", "A4", "D4"] },
@@ -102,7 +98,8 @@
         { g: "CLASSIC", t: "라흐마니노프 - 피아노 협주곡 2번", s: 7.5, b: ["C2", "G2", "C3", "G2"], m: ["C4", "Eb4", "G4", "C5", "B4", "G4", "Eb4", "C4", "Bb3", "C4", "Eb4", "G4", "Eb5", "D5", "C5"] },
         { g: "CLASSIC", t: "모차르트 - 터키 행진곡", s: 8.5, b: ["A2", "E3", "A2", "E3"], m: ["B4", "A4", "G#4", "A4", "C5", "D5", "C5", "B4", "C5", "E5", "F5", "E5", "D#5", "E5", "B5"] },
         { g: "ANIME", t: "하울의 움직이는 성", s: 7.5, b: ["G2", "D3", "Bb2", "D3"], m: ["D4", "G4", "Bb4", "D5", "C5", "Bb4", "A4", "Bb4", "G4", "A4", "F#4", "G4", "D4"] },
-        { g: "MOVIE", t: "말할 수 없는 비밀 (Secret)", s: 10, b: ["C3", "G3", "Am3", "F3"], m: ["E5", "D#5", "E5", "B4", "D5", "C5", "A4", "C4", "E4", "A4", "B4", "E4", "G#4", "B4", "C5"] },
+        // 🔥 버그 수정 4: "Am3" 오타를 "A3"로 수정하여 엔진 크래시 방지!
+        { g: "MOVIE", t: "말할 수 없는 비밀 (Secret)", s: 10, b: ["C3", "G3", "A3", "F3"], m: ["E5", "D#5", "E5", "B4", "D5", "C5", "A4", "C4", "E4", "A4", "B4", "E4", "G#4", "B4", "C5"] },
         { g: "POP", t: "Coldplay - Viva La Vida", s: 8, b: ["C#3", "D3", "A3", "E3"], m: ["E5", "D5", "C5", "B4", "A4", "G4", "A4", "C5", "D5", "E5", "D5", "C5", "B4"] },
         { g: "HIP-HOP", t: "Dr. Dre - Still D.R.E.", s: 8, b: ["C3", "C3", "B2", "B2"], m: ["E6", "E6", "E6", "E6", "E6", "E6", "E6", "E6", "B5", "B5", "B5", "B5", "B5", "B5", "B5"] },
         { g: "CLASSIC", t: "쇼팽 - 흑건", s: 11, b: ["Gb2", "Db3", "Gb2", "Db3"], m: ["Gb5", "Eb5", "Db5", "Bb4", "Gb4", "Eb4", "Db4", "Bb3", "Gb3", "Eb3", "Db3", "Bb2", "Gb2"] }
@@ -110,11 +107,10 @@
 
     let selected = 0;
     let bgmSynth, melodySynth, reverb;
-    let isPlaying = false, score = 0, lives = 3, nIdx = 0, spawnCount = 0;
+    let isPlaying = false, score = 0, lives = 3, nIdx = 0;
     let tiles = [], loopId, spawnId, bgmLoop;
-    const TARGET_SCORE = 100; // 게임 승리 조건 (충분히 길게 100점)
+    const TARGET_SCORE = 100;
 
-    // UI: 곡 목록 (Flex 레이아웃으로 잘리지 않음)
     const listDiv = document.getElementById('song-list');
     library.forEach((s, i) => {
         const d = document.createElement('div');
@@ -124,25 +120,22 @@
         listDiv.appendChild(d);
     });
 
-    async function initGame() {
-        document.getElementById('start-btn').innerText = "사운드 로딩 중...";
-        await Tone.start();
-        reverb = new Tone.Reverb(2.5).toDestination();
+    // 시작 버튼에 안전하게 이벤트 리스너 연결
+    document.getElementById('start-btn').addEventListener('pointerdown', async () => {
+        const btn = document.getElementById('start-btn');
+        if (btn.innerText === "로딩 중...") return;
+        btn.innerText = "로딩 중...";
         
-        // 배경 화음 신디사이저
-        bgmSynth = new Tone.PolySynth(Tone.Synth, {
-            oscillator: { type: "sine" }, envelope: { attack: 0.5, decay: 1, sustain: 0.8, release: 2 }
-        }).connect(reverb);
-        bgmSynth.volume.value = -8;
-
-        // 멜로디 피아노 신디사이저
-        melodySynth = new Tone.PolySynth(Tone.Synth, {
-            oscillator: { type: "triangle" }, envelope: { attack: 0.02, decay: 0.5, sustain: 0.2, release: 1 }
-        }).connect(reverb);
-        melodySynth.volume.value = 2;
-
+        await Tone.start();
+        if (!bgmSynth) {
+            reverb = new Tone.Reverb(2.5).toDestination();
+            bgmSynth = new Tone.PolySynth(Tone.Synth, { oscillator: { type: "sine" }, envelope: { attack: 0.5, decay: 1, sustain: 0.8, release: 2 } }).connect(reverb);
+            bgmSynth.volume.value = -8;
+            melodySynth = new Tone.PolySynth(Tone.Synth, { oscillator: { type: "triangle" }, envelope: { attack: 0.02, decay: 0.5, sustain: 0.2, release: 1 } }).connect(reverb);
+            melodySynth.volume.value = 2;
+        }
         startGame();
-    }
+    });
 
     function createParticles(x, y) {
         const stage = document.getElementById('game');
@@ -150,10 +143,8 @@
             const p = document.createElement('div');
             p.className = 'particle';
             p.style.left = x + 'px'; p.style.top = y + 'px';
-            const tx = (Math.random() - 0.5) * 150;
-            const ty = (Math.random() - 0.5) * 150;
-            p.style.setProperty('--tx', tx + 'px');
-            p.style.setProperty('--ty', ty + 'px');
+            p.style.setProperty('--tx', (Math.random() - 0.5) * 150 + 'px');
+            p.style.setProperty('--ty', (Math.random() - 0.5) * 150 + 'px');
             stage.appendChild(p);
             setTimeout(() => p.remove(), 500);
         }
@@ -166,13 +157,11 @@
     function startGame() {
         document.getElementById('lobby').style.display = 'none';
         document.getElementById('game').style.display = 'block';
-        isPlaying = true; score = 0; lives = 3; nIdx = 0; spawnCount = 0; tiles = [];
+        isPlaying = true; score = 0; lives = 3; nIdx = 0; tiles = [];
         document.getElementById('score').innerText = '0';
         updateLives();
         
         const songData = library[selected];
-
-        // 음악이 끊기지 않는 웅장한 배경 화음 자동 반복 루프
         let chordIdx = 0;
         bgmLoop = setInterval(() => {
             const chordRoot = songData.b[chordIdx % songData.b.length];
@@ -186,7 +175,12 @@
 
     function createTile() {
         if (!isPlaying) return;
-        if (spawnCount >= TARGET_SCORE) return; // 100개까지만 생성
+        
+        // 🔥 버그 수정 5: 점수가 달성되면 게임 승리 처리
+        if (score >= TARGET_SCORE) {
+            winGame();
+            return;
+        }
         
         const songData = library[selected];
         const lane = Math.floor(Math.random() * 4);
@@ -202,23 +196,18 @@
             if (t.classList.contains('hit')) return;
             
             melodySynth.triggerAttackRelease(noteToPlay, "8n");
-            
             const rect = t.getBoundingClientRect();
             createParticles(rect.left + rect.width/2, rect.top + rect.height/2);
 
             t.classList.add('hit');
             score++; document.getElementById('score').innerText = score;
-            
-            if (score >= TARGET_SCORE) {
-                setTimeout(winGame, 800);
-            }
             setTimeout(() => t.remove(), 100);
         };
 
         t.addEventListener('pointerdown', hitEvent);
         document.getElementById('game').appendChild(t);
         tiles.push(t);
-        nIdx++; spawnCount++;
+        nIdx++;
     }
 
     function gameLoop() {
@@ -232,13 +221,10 @@
             let top = parseFloat(t.style.top) + speed;
             t.style.top = top + 'px';
 
-            // 바닥에 닿았는데 치지 못했을 때 (MISS)
             if (top > h) {
                 if(!t.classList.contains('hit')) {
                     lives--;
                     updateLives();
-                    
-                    // 화면 번쩍임 효과
                     stage.style.backgroundColor = "rgba(255,0,0,0.4)";
                     setTimeout(() => stage.style.backgroundColor = "transparent", 150);
 
