@@ -3,17 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Piano Tiles Pro - Studio Mixing</title>
+    <title>Piano Tiles - Arcade Clone</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
     <style>
         :root { --neon: #00f2ff; --pink: #ff00ea; --gold: #ffea00; --bg: #050508; }
-        * { box-sizing: border-box; user-select: none; margin: 0; padding: 0; font-family: 'Pretendard', sans-serif; -webkit-tap-highlight-color: transparent; }
-        body { color: #fff; height: 100dvh; overflow: hidden; background: var(--bg); touch-action: manipulation; }
+        /* 터치 밀림 현상 완벽 방지 */
+        * { box-sizing: border-box; user-select: none; margin: 0; padding: 0; font-family: 'Pretendard', sans-serif; -webkit-tap-highlight-color: transparent; touch-action: none; }
+        body { color: #fff; height: 100dvh; overflow: hidden; background: var(--bg); }
 
         .screen { position: absolute; top: 0; left: 50%; width: 100%; height: 100%; max-width: 500px; transform: translateX(-50%); display: none; flex-direction: column; background: var(--bg); border-left: 1px solid #111; border-right: 1px solid #111; }
         
+        /* 로비 화면 */
         #lobby { display: flex; z-index: 100; padding: 20px; }
-        h1 { text-align: center; font-size: 26px; font-weight: 900; background: linear-gradient(90deg, var(--neon), var(--pink)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; padding: 5px 0; }
+        h1 { text-align: center; font-size: 28px; font-weight: 900; background: linear-gradient(90deg, var(--neon), var(--pink)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; padding: 5px 0; }
         .desc { text-align: center; color: #aaa; font-size: 13px; margin-bottom: 15px; }
 
         .diff-group { display: flex; gap: 10px; margin-bottom: 15px; }
@@ -23,24 +25,27 @@
         #song-list { flex: 1; overflow-y: auto; background: rgba(255,255,255,0.02); border-radius: 15px; padding: 10px; margin-bottom: 10px; }
         .song-item { padding: 14px; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center; border-radius: 10px; margin-bottom: 5px; cursor: pointer; }
         .song-item.active { background: rgba(0, 242, 255, 0.15); border: 1px solid var(--neon); }
-        .song-title { font-size: 14px; font-weight: bold; }
+        .song-title { font-size: 15px; font-weight: bold; }
         .song-artist { font-size: 11px; color: var(--gold); margin-top: 3px; }
         
         #start-btn { width: 100%; padding: 18px; border-radius: 50px; border: none; font-size: 18px; font-weight: bold; background: #222; color: #555; transition: 0.3s; }
         #start-btn.ready { background: linear-gradient(45deg, var(--neon), var(--pink)); color: #fff; pointer-events: auto; box-shadow: 0 5px 20px rgba(255, 0, 234, 0.4); cursor: pointer;}
 
-        #game { overflow: hidden; z-index: 50; touch-action: none; }
+        /* 게임 영역 */
+        #game { overflow: hidden; z-index: 50; position: relative; }
+        /* 🔥 중요: 터치는 오직 gameArea에서만 처리하도록 다른 요소들은 pointer-events: none 처리 */
         .lane-bg { position: absolute; top: 0; width: 25%; height: 100%; border-right: 1px dashed rgba(255,255,255,0.1); pointer-events: none; }
         #hit-line { position: absolute; bottom: 15%; width: 100%; height: 4px; background: rgba(255,255,255,0.8); z-index: 5; box-shadow: 0 0 15px #fff; pointer-events: none; }
         
-        #score { position: absolute; top: 40px; width: 100%; text-align: center; font-size: 45px; font-weight: 900; z-index: 60; text-shadow: 0 0 10px var(--neon); pointer-events: none; }
+        #score { position: absolute; top: 40px; width: 100%; text-align: center; font-size: 50px; font-weight: 900; z-index: 60; text-shadow: 0 0 15px var(--neon); pointer-events: none; }
         #hp-container { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); width: 150px; height: 6px; background: #333; border-radius: 3px; z-index: 60; pointer-events: none; }
         #hp-bar { width: 100%; height: 100%; background: #00ff00; transition: width 0.2s; }
-        #judgment { position: absolute; top: 45%; width: 100%; text-align: center; font-size: 40px; font-weight: 900; z-index: 70; opacity: 0; pointer-events: none; transition: 0.1s; }
+        #judgment { position: absolute; top: 45%; width: 100%; text-align: center; font-size: 45px; font-weight: 900; z-index: 70; opacity: 0; pointer-events: none; transition: 0.1s; }
 
-        .tile { position: absolute; width: 24%; margin-left: 0.5%; border-radius: 6px; background: linear-gradient(to bottom, #fff, var(--neon)); z-index: 10; cursor: pointer;}
+        /* 건반 타일 (터치 이벤트 받지 않음) */
+        .tile { position: absolute; width: 24%; margin-left: 0.5%; border-radius: 6px; background: linear-gradient(to bottom, #fff, var(--neon)); z-index: 10; pointer-events: none; }
         .tile.long { background: linear-gradient(to bottom, #fff, var(--gold)); box-shadow: 0 0 15px var(--gold); }
-        .tile.pressed { opacity: 0.3; transform: scale(1.05); transition: 0.1s; box-shadow: 0 0 30px #fff; }
+        .tile.pressed { opacity: 0.2; transform: scale(1.05); transition: 0.1s; box-shadow: 0 0 40px #fff; }
         .tile.missed { background: #ff0055 !important; opacity: 0.5; }
 
         #result { justify-content: center; align-items: center; text-align: center; z-index: 200; background: rgba(0,0,0,0.95); }
@@ -49,8 +54,8 @@
 <body>
 
 <div id="lobby" class="screen" style="display: flex;">
-    <h1>STUDIO MIXING PRO</h1>
-    <p class="desc">EQ와 공간감이 최적화된 리얼 피아노 사운드</p>
+    <h1>ARCADE CLONE PRO</h1>
+    <p class="desc">오락실 감성의 단선율 멜로디 타격감 극대화!</p>
     
     <div class="diff-group">
         <button class="diff-btn" data-diff="easy">하 (Easy)</button>
@@ -72,12 +77,13 @@
 
 <div id="result" class="screen">
     <h2 id="res-title" style="font-size:28px;">STAGE CLEAR</h2>
-    <div id="rank" style="font-size:80px; font-weight:900; color:var(--gold); margin: 20px 0;">S</div>
-    <div id="final-score" style="font-size:18px; margin-bottom: 30px; color:#aaa;">Score: 0</div>
-    <button onclick="location.reload()" style="padding: 15px 40px; border-radius: 30px; border: none; font-weight: bold; background:#fff; cursor: pointer;">다시 하기</button>
+    <div id="rank" style="font-size:90px; font-weight:900; color:var(--gold); margin: 20px 0;">S</div>
+    <div id="final-score" style="font-size:20px; margin-bottom: 30px; color:#aaa;">Score: 0</div>
+    <button onclick="location.reload()" style="padding: 15px 40px; border-radius: 30px; border: none; font-weight: bold; background:#fff; cursor: pointer; font-size: 18px;">로비로 돌아가기</button>
 </div>
 
 <script>
+    // 🎼 악보는 그대로 유지! 단, 파싱 단계에서 화음을 전부 잘라내고 멜로디만 남깁니다.
     const songs = [
         { t: "Canon in D", a: "Pachelbel", parts: { A: "F#5+D3_0.5,E5+A2_0.5,D5+B2_0.5,C#5+F#2_0.5,B4+G2_0.5,A4+D3_0.5,B4+G2_0.5,C#5+A2_0.5", B: "D5+D3_0.25,C#5_0.25,D5_0.25,D4_0.25,E4+A2_0.25,F#4_0.25,G4_0.25,A4_0.25,B4+B2_0.25,A4_0.25,G4_0.25,F#4_0.25,E4+F#2_0.25,D4_0.25,E4_0.25,F#4_0.25", C: "G4+G2_0.25,F#4_0.25,E4_0.25,D4_0.25,C#4+D3_0.25,B3_0.25,A3_0.25,G3_0.25,F#3+G2_0.25,E3_0.25,D3_0.25,E3_0.25,F#3+A2_0.25,G3_0.25,A3_0.25,B3_0.25", D: "D5+D3_0.5,F#5_0.5,A5+A2_0.5,G5_0.5,F#5+B2_0.5,D5_0.5,F#5+F#2_0.5,E5_0.5,D5+G2_0.5,B4_0.5,D5+D3_0.5,A4_0.5,G4+G2_0.5,B4_0.5,A4+A2_0.5,C#5_0.5" }, seq: "A,A,B,B,C,C,D,D,B,A" },
         { t: "Take On Me", a: "a-ha", parts: { A: "F#5+B3_0.2,F#5_0.2,D5_0.2,B4_0.2,B4+E3_0.4,E5_0.2,E5_0.2,E5_0.2,G#5+A3_0.2,G#5_0.2,A5_0.2,B5_0.2,A5+D3_0.2,A5_0.2,A5_0.2,E5_0.2,D5_0.2,F#5+B3_0.2,F#5_0.2,F#5_0.2,E5_0.2,E5_0.2,F#5_0.2,E5_0.2", B: "A4+D3_0.4,A4_0.4,E4_0.4,F#4_0.4,G#4+E3_0.8,A4+D3_0.4,A4_0.4,E4_0.4,F#4_0.4,G#4+E3_0.8", C: "B4+B2_0.3,B4_0.3,E5_0.4,C#5+A2_0.4,C#5_0.3,G#4+E2_0.8,G#4_0.3,C#5+D3_0.4,C#5_0.4,C#5_0.4,E5_0.4,E5_0.4,E5_0.4,B4+B2_1.2", D: "A4+D3_0.4,B4_0.4,C#5_0.4,D5_0.4,E5+A2_0.8,D5_0.4,C#5_0.4,B4+E3_1.6" }, seq: "A,A,B,B,C,C,D,A,A" },
@@ -97,35 +103,28 @@
     let difficulty = "normal", speedMult = 1.0, hitLineY, isLoaded = false;
     const gameArea = document.getElementById('game');
 
-    // 🔥 핵심 1: EQ(이퀄라이저) 추가로 저음 베이스와 고음 멜로디 충돌 방지
-    const eq = new Tone.EQ3({
-        low: -4,   // 베이스 웅웅거림 살짝 깎음
-        mid: 1,    // 피아노 중간음 살림
-        high: 2    // 멜로디 또렷하게 부스팅
-    });
-
-    // 🔥 핵심 2: 리버브 과다 해결 (잔향 줄이고 선명도 높임)
-    const reverb = new Tone.Reverb({
-        decay: 1.4, // 홀 전체 울림 방지
-        wet: 0.18   // 원음 80%, 잔향 20%
-    }).toDestination();
+    // 🔥 사운드 엔진 세팅 (아케이드 피아노 타일 방식)
+    // 1. EQ 과감하게 세팅 (저음 컷, 고음 부스팅)
+    const eq = new Tone.EQ3({ low: -8, mid: 2, high: 4 });
+    
+    // 2. 리버브 대폭 축소 (홀 사운드 제거, 압축된 사운드)
+    const reverb = new Tone.Reverb({ decay: 0.8, wet: 0.08 }).toDestination(); 
 
     eq.connect(reverb);
 
-    // 비상용 신스
     function useEmergencySynth() {
         if(isLoaded) return;
         if(piano) piano.dispose(); 
-        piano = new Tone.PolySynth(Tone.Synth, { volume: -10, envelope: { attack: 0.02, release: 1.5 } }).connect(eq);
+        piano = new Tone.PolySynth(Tone.Synth, { volume: -8, envelope: { attack: 0.01, release: 1 } }).connect(eq);
         setReady();
     }
 
-    // 🔥 핵심 3: Sampler Attack 추가 (피아노 타건감을 부드럽게)
+    // 3. 샘플러는 유지하되 타격감을 위해 release 조정
     piano = new Tone.Sampler({
         urls: { "C3": "C3.mp3", "C4": "C4.mp3", "C5": "C5.mp3", "C6": "C6.mp3" },
         baseUrl: "https://tonejs.github.io/audio/salamander/",
-        release: 1.5,
-        attack: 0.02, // 약간 늦은 어택으로 쇳소리(딱딱함) 완벽 제거
+        release: 1.0, 
+        attack: 0.01, 
         onload: () => { if(!isLoaded) setReady(); },
         onerror: () => useEmergencySynth()
     }).connect(eq);
@@ -147,7 +146,7 @@
         songs.forEach((s, idx) => {
             const item = document.createElement('div');
             item.className = `song-item ${idx === selected ? 'active' : ''}`;
-            item.innerHTML = `<div><div class="song-title">${s.t}</div><div class="song-artist">스튜디오 믹싱 버전 (${s.a})</div></div>`;
+            item.innerHTML = `<div><div class="song-title">${s.t}</div><div class="song-artist">단선율 아케이드 모드 (${s.a})</div></div>`;
             item.onclick = () => { selected = idx; renderSongs(); };
             listDiv.appendChild(item);
         });
@@ -161,7 +160,7 @@
         });
     });
 
-    // 🌟 악보 생성 엔진
+    // 🔥 멜로디만 타일화 (자동 반주 완전 제거)
     function parseSheet(songObj) {
         const noteArray = [];
         let time = 1.0;
@@ -180,19 +179,17 @@
                 const dur = parseFloat(durStr);
                 const notes = noteStr.split('+'); 
 
+                // 최고음(멜로디) 추출
                 notes.sort((a, b) => Tone.Frequency(b).toMidi() - Tone.Frequency(a).toMidi());
                 const highestNote = notes[0]; 
-                const restNotes = notes.slice(1); 
 
-                // 🔥 핵심 4: 지피티의 음정 기반 레인 배치 (계단 현상 제거)
                 const midi = Tone.Frequency(highestNote).toMidi();
                 let lane = isNaN(midi) ? Math.floor(Math.random() * 4) : midi % 4;
                 
                 noteArray.push({ 
                     t: time, 
                     l: lane, 
-                    n: highestNote,
-                    rest: restNotes,
+                    n: highestNote, // 최고음 하나만!
                     d: dur 
                 });
                 time += dur;
@@ -206,7 +203,7 @@
         await Tone.start();
         
         if (difficulty === "easy") speedMult = 0.7;
-        else if (difficulty === "hard") speedMult = 1.4;
+        else if (difficulty === "hard") speedMult = 1.5;
         else speedMult = 1.0;
 
         Tone.Transport.playbackRate = speedMult;
@@ -221,18 +218,6 @@
         updateHP();
         
         Tone.Transport.cancel(0); 
-
-        // 베이스 잔잔하게 (볼륨 0.25)
-        sheet.forEach(item => {
-            if (item.rest.length > 0) {
-                Tone.Transport.schedule((time) => {
-                    if (isPlaying) {
-                        piano.triggerAttackRelease(item.rest, item.d, time, 0.25);
-                    }
-                }, item.t);
-            }
-        });
-
         Tone.Transport.stop();
         Tone.Transport.seconds = 0;
         Tone.Transport.start();
@@ -252,12 +237,58 @@
         hpBar.style.background = hp > 60 ? "#00ff00" : (hp > 30 ? "#ffea00" : "#ff0055");
     }
 
+    // 🔥 게임 판정 엔진 혁신: 레인(Lane) 기반 시간차 판정 시스템
+    gameArea.addEventListener("pointerdown", (e) => {
+        if (!isPlaying) return;
+
+        // 터치한 X 좌표를 통해 어떤 레인(0~3)을 눌렀는지 계산
+        const rect = gameArea.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const lane = Math.floor(x / (rect.width / 4));
+        const now = Tone.Transport.seconds;
+
+        let hitSomething = false;
+
+        for (let i = 0; i < tiles.length; i++) {
+            const o = tiles[i];
+            if (o.hit || o.miss) continue;
+            if (o.data.l !== lane) continue; // 같은 레인인지 확인
+
+            // 타이밍 오차 계산 (핵심!)
+            const diff = Math.abs(o.data.t - now);
+
+            // 판정 윈도우 (0.2초 이내면 터치 인정)
+            if (diff < 0.2) { 
+                // 타격음: Velocity 0.85 고정, 딜레이 없이 쨍하게 때림
+                piano.triggerAttackRelease(o.data.n, o.data.d * 0.9, Tone.now(), 0.85);
+                o.hit = true;
+                o.el.classList.add("pressed");
+
+                score += 20;
+                hp = Math.min(100, hp + 3);
+                document.getElementById('score').innerText = score;
+                showJudg(diff < 0.08 ? "PERFECT" : "GOOD", "var(--neon)");
+                updateHP();
+                
+                hitSomething = true;
+                break; // 가장 가까운 타일 하나만 처리하고 루프 종료
+            }
+        }
+
+        if (!hitSomething) {
+            // 아무 타일도 없는 레인을 누르거나 타이밍을 놓쳤을 때 페널티
+            hp -= 10;
+            updateHP();
+        }
+    });
+
     function loop() {
         if(!isPlaying) return;
         const now = Tone.Transport.seconds; 
         const LOOKAHEAD = 1.6; 
         const speed = hitLineY / LOOKAHEAD;
 
+        // 시각적 타일 생성
         while(sheetIdx < sheet.length && sheet[sheetIdx].t < now + LOOKAHEAD) {
             const data = sheet[sheetIdx++];
             const el = document.createElement('div');
@@ -272,46 +303,20 @@
             el.style.top = "-500px";
             
             const obj = { el, data, h, hit: false, miss: false };
-            
-            el.addEventListener('pointerdown', (e) => {
-                e.preventDefault();
-                if(obj.hit || obj.miss) return;
-
-                const rect = el.getBoundingClientRect();
-                const gameRect = gameArea.getBoundingClientRect();
-                const tileTop = rect.top - gameRect.top;
-                const tileBottom = rect.bottom - gameRect.top;
-                
-                if (tileBottom > hitLineY - 150 && tileTop < hitLineY + 150) {
-                    
-                    // 🔥 핵심 5: 멜로디 길이와 볼륨(Velocity) 타협. 고막 찢어짐 방지! (0.75)
-                    piano.triggerAttackRelease(data.n, data.d * 1.1, Tone.now(), 0.75);
-                    
-                    obj.hit = true; 
-                    el.classList.add('pressed');
-                    
-                    const dist = Math.abs(tileBottom - hitLineY);
-                    const isPerfect = dist < 70;
-                    
-                    score += (isLong ? 30 : (isPerfect ? 20 : 10)); 
-                    hp = Math.min(100, hp + 3);
-                    document.getElementById('score').innerText = score;
-                    
-                    showJudg(isPerfect ? "PERFECT" : "GOOD", isPerfect ? "var(--neon)" : "#fff");
-                    updateHP();
-                }
-            });
             gameArea.appendChild(el);
             tiles.push(obj);
         }
 
+        // 타일 이동 및 Miss 처리
         for(let i = tiles.length - 1; i >= 0; i--) {
             const o = tiles[i];
             const bottom = hitLineY - (o.data.t - now) * speed;
             o.el.style.top = (bottom - o.h) + "px";
 
+            // 타이밍이 완전히 지나갔을 때 (판정선 아래로 내려감)
             if(!o.hit && !o.miss && (o.data.t - now) < -0.2) {
-                o.miss = true; o.el.classList.add('missed');
+                o.miss = true; 
+                o.el.classList.add('missed');
                 hp -= 15; score = Math.max(0, score - 15);
                 document.getElementById('score').innerText = score;
                 showJudg("MISS", "#ff0055");
@@ -319,6 +324,7 @@
                 if(hp <= 0) end(false);
             }
             
+            // 화면 밖으로 나가면 메모리 삭제
             if(bottom - o.h > gameArea.offsetHeight + 100) { 
                 o.el.remove(); 
                 tiles.splice(i, 1); 
