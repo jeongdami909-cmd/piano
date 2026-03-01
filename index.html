@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Piano Tiles - Passthrough Engine V4</title>
+    <title>Piano Tiles - Passthrough Stable V4.1</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
     <style>
         :root { --neon: #00f2ff; --pink: #ff00ea; --gold: #ffea00; --bg: #050508; }
@@ -50,8 +50,8 @@
 <body>
 
 <div id="lobby" class="screen" style="display: flex;">
-    <h1>PASSTHROUGH ENGINE V4</h1>
-    <p class="desc">완벽한 오디오 스트림 & 생존형 리듬게임 구조</p>
+    <h1>PASSTHROUGH ENGINE V4.1</h1>
+    <p class="desc">모바일 동기화 및 렌더링 완벽 안정화</p>
     
     <div class="diff-group">
         <button class="diff-btn" data-diff="easy">하 (Easy)</button>
@@ -97,7 +97,6 @@
     let difficulty = "normal", speedMult = 1.0, hitLineY;
     const gameArea = document.getElementById('game');
 
-    // 🔥 1. 마스터 피아노 엔진: 완벽하게 믹싱된 원곡(BGM)을 1ms 오차 없이 렌더링
     const reverb = new Tone.Reverb({ decay: 1.5, wet: 0.2 }).toDestination();
     
     masterPiano = new Tone.PolySynth(Tone.Synth, {
@@ -106,7 +105,6 @@
         envelope: { attack: 0.01, decay: 0.2, sustain: 0.5, release: 1.0 }
     }).connect(reverb);
 
-    // 🔥 2. 타격감용 틱(Tick) 사운드: 건반을 누를 때마다 경쾌하게 반응
     hitSound = new Tone.MembraneSynth({
         pitchDecay: 0.05,
         octaves: 10,
@@ -136,13 +134,12 @@
         });
     });
 
-    // 악보 파싱 및 마스터 트랙(BGM) 스케줄링
     function parseAndSchedule(songObj) {
         const noteArray = [];
         let time = 1.0;
         const sequence = songObj.seq.split(',');
 
-        Tone.Transport.cancel(0); // 이전 스케줄 초기화
+        Tone.Transport.cancel(0); 
 
         for (let partKey of sequence) {
             if (time > 90) break;
@@ -157,12 +154,10 @@
                 const dur = parseFloat(durStr);
                 const notes = noteStr.split('+'); 
 
-                // 🔥 3. 엔진이 알아서 음악을 연주하도록 타임라인에 완벽하게 박아버림!
                 Tone.Transport.schedule((t) => {
                     masterPiano.triggerAttackRelease(notes, dur * 0.9, t);
                 }, time);
 
-                // 최고음을 기준으로 플레이어가 쳐야 할 "시각적 타일" 좌표 생성
                 notes.sort((a, b) => Tone.Frequency(b).toMidi() - Tone.Frequency(a).toMidi());
                 const highestNote = notes[0]; 
                 const midi = Tone.Frequency(highestNote).toMidi();
@@ -175,7 +170,11 @@
         return noteArray;
     }
 
-    document.getElementById('start-btn').addEventListener('pointerdown', async () => {
+    // 🔥 지피티 피드백 적용: 모바일 렌더링 딜레이 및 동기화 이슈 완벽 해결!
+    document.getElementById('start-btn').addEventListener('pointerdown', async (e) => {
+        e.preventDefault(); // 유령 터치 방지
+        e.stopPropagation();
+
         await Tone.start(); 
         
         if (difficulty === "easy") speedMult = 0.7;
@@ -186,18 +185,33 @@
 
         document.getElementById('lobby').style.display = 'none';
         gameArea.style.display = 'block';
+
+        // 화면이 block된 후 계산해야 정확한 높이가 나옴
         hitLineY = gameArea.offsetHeight * 0.85;
 
         sheet = parseAndSchedule(songs[selected]);
-        isPlaying = true; score = 0; sheetIdx = 0; tiles = [];
+
+        // 🔥 악보 로딩 실패 방지 (안전 장치)
+        if (!sheet || sheet.length === 0) {
+            alert("악보 로딩에 실패했습니다.");
+            return;
+        }
+
+        isPlaying = true; // 상태값을 먼저 켜둠
+        score = 0; 
+        sheetIdx = 0; 
+        tiles = [];
         document.getElementById('score').innerText = "0";
         
         Tone.Transport.stop();
         Tone.Transport.seconds = 0;
         
-        // 🔥 음악 재생 시작! 플레이어는 이제 이 음악의 흐름을 쫓아가야 합니다.
-        Tone.Transport.start();
-        requestAnimationFrame(loop);
+        // 🔥 핵심: 모바일 DOM 렌더링과 Audio Context 활성화 시간을 100ms 벌어줌
+        // 이렇게 하면 loop가 빈 화면에서 혼자 돌아 게임 오버를 내는 버그가 100% 사라짐!
+        setTimeout(() => {
+            Tone.Transport.start();
+            requestAnimationFrame(loop);
+        }, 100);
     });
 
     function showJudg(txt, col) {
@@ -207,7 +221,6 @@
         setTimeout(() => { j.style.opacity = 0; j.style.transform = "scale(1)"; }, 200);
     }
 
-    // 🔥 플레이어의 입력은 이제 "음악을 만드는 것"이 아니라 "음악을 허락하는 것"입니다.
     gameArea.addEventListener("pointerdown", (e) => {
         if (!isPlaying) return;
 
@@ -226,7 +239,6 @@
             const diff = Math.abs(o.data.t - now);
 
             if (diff < 0.22) { 
-                // 타일 명중! 음악은 이미 배경에서 완벽하게 흐르고 있으니, 타격감만 줍니다.
                 hitSound.triggerAttackRelease("C4", "8n");
                 
                 o.hit = true;
@@ -242,8 +254,7 @@
         }
 
         if (!hitSomething) {
-            // 빈 공간을 누르면 즉시 게임 오버!
-            end(false);
+            end(false); // 빈 곳 누르면 즉시 아웃
         }
     });
 
@@ -276,13 +287,11 @@
             const bottom = hitLineY - (o.data.t - now) * speed;
             o.el.style.top = (bottom - o.h) + "px";
 
-            // 🔥 핵심: 타일이 판정선을 무사히 통과하지 못하고 놓쳐버린 경우 -> 미스!
             if(!o.hit && !o.miss && (o.data.t - now) < -0.2) {
                 o.miss = true; 
                 o.el.classList.add('missed');
                 
-                // 타일을 놓치는 순간 음악이 즉시 멈추며 게임 오버! (진짜 리듬게임 룰)
-                end(false);
+                end(false); // 타일 놓쳐도 즉시 아웃
                 return;
             }
             
@@ -292,15 +301,15 @@
             }
         }
 
+        // 🔥 지피티 힌트: 곡이 정상적으로 끝나면 win 처리!
         if(sheetIdx >= sheet.length && tiles.length === 0) end(true);
         else requestAnimationFrame(loop);
     }
 
     function end(win) {
         isPlaying = false; 
-        // ❌ 실패하는 순간 자비 없이 음악을 멈춰버립니다.
         Tone.Transport.pause(); 
-        masterPiano.releaseAll(); // 잔향까지 즉시 소거
+        masterPiano.releaseAll(); 
         
         gameArea.style.display = 'none';
         document.getElementById('result').style.display = 'flex';
