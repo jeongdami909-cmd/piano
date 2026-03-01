@@ -3,91 +3,124 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Magic Piano: Cinematic Concert</title>
+    <title>Magic Piano: Neon Concert</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
     <style>
         :root { --neon: #00f2ff; --pink: #ff00ea; --bg: #05050a; }
-        * { box-sizing: border-box; user-select: none; font-family: 'Pretendard', sans-serif; }
+        * { box-sizing: border-box; user-select: none; font-family: 'Pretendard', sans-serif; touch-action: none; }
         
         @keyframes aurora { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
         body { 
             margin: 0; color: #fff; height: 100dvh; overflow: hidden; display: flex; flex-direction: column;
-            background: linear-gradient(-45deg, #0a001a, #001133, #05050a, #1a001a);
+            background: linear-gradient(-45deg, #050011, #001133, #1a0022, #000);
             background-size: 400% 400%; animation: aurora 15s ease infinite;
         }
 
         #lobby { 
             display: flex; flex-direction: column; height: 100%; width: 100%; max-width: 500px; 
-            margin: 0 auto; background: rgba(0,0,0,0.85); backdrop-filter: blur(20px); z-index: 20; position: relative;
+            margin: 0 auto; background: rgba(0,0,0,0.7); backdrop-filter: blur(20px); z-index: 20; position: relative;
         }
         
         header { flex: 0 0 auto; padding: 30px 20px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); }
-        header h1 { margin: 0; font-size: 28px; font-weight: 900; background: linear-gradient(90deg, #00e5ff, #ff00ea); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 0 10px rgba(0,229,255,0.5)); }
-        header p { margin: 8px 0 0; font-size: 13px; color: #888; letter-spacing: 1px; }
+        header h1 { margin: 0; font-size: 32px; font-weight: 900; background: linear-gradient(90deg, var(--neon), var(--pink)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 0 10px rgba(0,229,255,0.6)); text-transform: uppercase; letter-spacing: 2px; }
+        header p { margin: 8px 0 0; font-size: 13px; color: #aaa; letter-spacing: 1px; }
         
         #song-list { flex: 1 1 auto; overflow-y: auto; padding: 20px; -webkit-overflow-scrolling: touch; }
         .song-item { 
-            background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; 
-            padding: 22px; margin-bottom: 15px; display: flex; flex-direction: column; cursor: pointer; transition: 0.3s;
+            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; 
+            padding: 20px; margin-bottom: 15px; display: flex; flex-direction: column; cursor: pointer; transition: all 0.2s ease;
         }
-        .song-item.active { border-color: var(--neon); background: rgba(0, 229, 255, 0.1); box-shadow: 0 0 20px rgba(0,229,255,0.3); transform: scale(1.03); }
-        .song-genre { font-size: 11px; color: var(--neon); font-weight: bold; margin-bottom: 6px; letter-spacing: 2px; }
-        .song-title { font-size: 17px; font-weight: bold; color: #fff; }
+        .song-item.active { border-color: var(--pink); background: rgba(255, 0, 234, 0.1); box-shadow: 0 0 20px rgba(255,0,234,0.3); transform: scale(1.02); }
+        .song-genre { font-size: 11px; color: var(--pink); font-weight: bold; margin-bottom: 6px; letter-spacing: 2px; }
+        .song-title { font-size: 18px; font-weight: bold; color: #fff; text-shadow: 0 0 5px rgba(255,255,255,0.3); }
 
         .footer { flex: 0 0 auto; padding: 25px; background: rgba(0,0,0,0.9); border-top: 1px solid #222; }
         #start-btn { 
-            width: 100%; padding: 20px; background: linear-gradient(90deg, #00e5ff, #ff00ea); color: #fff; 
-            font-size: 20px; font-weight: 900; border: none; border-radius: 50px; cursor: pointer; box-shadow: 0 10px 30px rgba(255,0,234,0.5); 
+            width: 100%; padding: 20px; background: linear-gradient(45deg, var(--neon), var(--pink)); color: #fff; 
+            font-size: 20px; font-weight: 900; border: none; border-radius: 50px; cursor: pointer; box-shadow: 0 5px 20px rgba(255,0,234,0.4); text-transform: uppercase; letter-spacing: 1px; transition: 0.2s;
         }
+        #start-btn:active { transform: scale(0.95); }
 
-        #game { touch-action: none; display: none; width: 100vw; max-width: 500px; height: 100%; margin: 0 auto; position: relative; overflow: hidden; background: #000; }
-        .lane-bg { position: absolute; width: 25%; height: 100%; border-right: 1px solid rgba(255,255,255,0.05); }
-        .lane-flash { position: absolute; width: 25%; height: 100%; background: linear-gradient(to top, var(--neon), transparent); opacity: 0; pointer-events: none; transition: opacity 0.1s; }
+        /* 비주얼 강화된 게임 화면 */
+        #game { display: none; width: 100vw; max-width: 500px; height: 100%; margin: 0 auto; position: relative; overflow: hidden; background: #000; }
         
-        #hit-line { position: absolute; bottom: 15%; width: 100%; height: 2px; background: #fff; box-shadow: 0 0 20px var(--neon), 0 0 40px var(--pink); z-index: 5; }
+        /* 네온 그리드 배경 */
+        .grid-bg {
+            position: absolute; width: 200%; height: 200%; bottom: 0; left: -50%;
+            background-image: 
+                linear-gradient(rgba(0, 229, 255, 0.15) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 0, 234, 0.1) 1px, transparent 1px);
+            background-size: 40px 40px;
+            transform: perspective(600px) rotateX(60deg);
+            transform-origin: bottom;
+            animation: gridMove 2s linear infinite; z-index: 1;
+            pointer-events: none;
+        }
+        @keyframes gridMove { from { transform: perspective(600px) rotateX(60deg) translateY(0); } to { transform: perspective(600px) rotateX(60deg) translateY(40px); } }
+
+        .lane-bg { position: absolute; width: 25%; height: 100%; border-right: 1px dashed rgba(255,255,255,0.1); z-index: 2; }
+        .lane-flash { position: absolute; width: 25%; height: 100%; background: linear-gradient(to top, var(--neon), transparent); opacity: 0; pointer-events: none; transition: opacity 0.15s ease-out; z-index: 3; }
         
+        /* 건반 타격존 비주얼 추가 */
+        #keys-container { position: absolute; bottom: 10%; width: 100%; height: 80px; display: flex; z-index: 5; }
+        .hit-key { 
+            flex: 1; border: 1px solid rgba(255,255,255,0.2); border-bottom: none; 
+            background: linear-gradient(180deg, transparent, rgba(255,255,255,0.05)); 
+            border-top: 3px solid #fff; box-shadow: 0 -5px 15px rgba(0,229,255,0.2); transition: 0.1s;
+        }
+        .hit-key.active { background: linear-gradient(180deg, transparent, rgba(0,229,255,0.4)); border-top: 3px solid var(--neon); box-shadow: 0 -10px 30px var(--neon); transform: translateY(4px); }
+
         .tile { 
-            position: absolute; width: 25%; height: 160px; border-radius: 10px;
-            background: linear-gradient(180deg, rgba(255,255,255,0.2) 0%, rgba(0,229,255,0.6) 100%);
-            border: 2px solid #fff; box-shadow: 0 0 15px rgba(0,229,255,0.4); z-index: 10;
+            position: absolute; width: 25%; height: 140px; border-radius: 8px;
+            background: linear-gradient(180deg, rgba(255,255,255,0.8) 0%, var(--neon) 100%);
+            border: 2px solid #fff; box-shadow: 0 0 20px var(--neon); z-index: 10;
         }
-        .tile.pressed { opacity: 0; transform: scale(1.3); transition: 0.15s ease-out; }
+        .tile.pressed { opacity: 0; transform: scale(1.4); filter: blur(4px); transition: 0.2s ease-out; }
 
-        .particle { position: absolute; width: 6px; height: 6px; background: #fff; border-radius: 50%; pointer-events: none; animation: spark 0.6s forwards; z-index: 25; }
-        @keyframes spark { 0% { transform: scale(1) translate(0,0); opacity: 1; } 100% { transform: scale(0) translate(var(--tx), var(--ty)); opacity: 0; } }
+        .particle { position: absolute; width: 8px; height: 8px; background: #fff; border-radius: 50%; pointer-events: none; animation: spark 0.5s forwards ease-out; z-index: 25; }
+        @keyframes spark { 0% { transform: scale(1) translate(0,0); opacity: 1; box-shadow: 0 0 20px #fff; } 100% { transform: scale(0) translate(var(--tx), var(--ty)); opacity: 0; } }
 
-        #hud { position: absolute; top: 40px; width: 100%; display: flex; flex-direction: column; align-items: center; z-index: 30; pointer-events: none; }
-        #score { font-size: 60px; font-weight: 900; text-shadow: 0 0 20px var(--neon); }
-        #lives { font-size: 22px; margin-top: 10px; letter-spacing: 4px; }
+        #hud { position: absolute; top: 50px; width: 100%; display: flex; flex-direction: column; align-items: center; z-index: 30; pointer-events: none; }
+        #score { font-size: 70px; font-weight: 900; text-shadow: 0 0 20px var(--pink), 0 0 40px var(--neon); font-style: italic; }
+        #lives { font-size: 24px; margin-top: 5px; letter-spacing: 2px; filter: drop-shadow(0 0 5px rgba(255,0,0,0.5)); }
     </style>
 </head>
 <body>
 
 <div id="lobby">
     <header>
-        <h1>PIANO CONCERT</h1>
-        <p>웅장한 반주와 화려한 빛의 향연</p>
+        <h1>Neon Concert</h1>
+        <p>비트에 맞춰 건반을 두드리세요</p>
     </header>
     <div id="song-list"></div>
     <div class="footer">
-        <button id="start-btn">CONCERT START</button>
+        <button id="start-btn">PLAY NOW</button>
     </div>
 </div>
 
 <div id="game">
+    <div class="grid-bg"></div>
     <div id="hud">
         <div id="score">0</div>
-        <div id="lives">❤️❤️❤️</div>
+        <div id="lives">❤️❤️❤️❤️❤️❤️</div> 
     </div>
+    
     <div class="lane-bg" style="left:0%"></div>
     <div class="lane-bg" style="left:25%"></div>
     <div class="lane-bg" style="left:50%"></div>
     <div class="lane-bg" style="left:75%; border:none;"></div>
+    
     <div id="flash-0" class="lane-flash" style="left:0%"></div>
     <div id="flash-1" class="lane-flash" style="left:25%"></div>
     <div id="flash-2" class="lane-flash" style="left:50%"></div>
     <div id="flash-3" class="lane-flash" style="left:75%"></div>
-    <div id="hit-line"></div>
+    
+    <div id="keys-container">
+        <div id="key-0" class="hit-key"></div>
+        <div id="key-1" class="hit-key"></div>
+        <div id="key-2" class="hit-key"></div>
+        <div id="key-3" class="hit-key"></div>
+    </div>
 </div>
 
 <script>
@@ -100,14 +133,13 @@
         { g: "CLASSIC", t: "엘리제를 위하여", s: 7.5, b: ["A2", "E3", "A2", "E3"], m: ["E5", "D#5", "E5", "D#5", "E5", "B4", "D5", "C5", "A4", "C4", "E4", "A4", "B4"] },
         { g: "CLASSIC", t: "차이코프스키 - 백조의 호수", s: 8, b: ["B2", "F#3", "G2", "D3"], m: ["B4", "D5", "E5", "G5", "F#5", "E5", "D5", "B4", "G4", "B4", "D5", "E5"] },
         { g: "EDM", t: "Alan Walker - Faded", s: 9, b: ["F#2", "D2", "A2", "E2"], m: ["F#5", "F#5", "F#5", "E5", "D5", "D5", "D5", "C#5", "A4", "A4", "A4", "E5"] },
-        { g: "ANIME", t: "하울의 움직이는 성", s: 7.5, b: ["G2", "D3", "Bb2", "D3"], m: ["D4", "G4", "Bb4", "D5", "C5", "Bb4", "A4", "Bb4", "G4", "A4", "F#4", "G4"] },
         { g: "MOVIE", t: "말할 수 없는 비밀 (Secret)", s: 10, b: ["C3", "G3", "A2", "F2"], m: ["E5", "D#5", "E5", "B4", "D5", "C5", "A4", "C4", "E4", "A4", "B4", "E4"] },
-        { g: "POP", t: "Coldplay - Viva La Vida", s: 8.5, b: ["C#3", "D3", "A3", "E3"], m: ["E5", "D5", "C5", "B4", "A4", "G4", "A4", "C5", "D5", "E5", "D5", "C5"] },
         { g: "CLASSIC", t: "쇼팽 - 흑건", s: 11, b: ["Gb2", "Db3", "Gb2", "Db3"], m: ["Gb5", "Eb5", "Db5", "Bb4", "Gb4", "Eb4", "Db4", "Bb3", "Gb3", "Eb3"] }
     ];
 
-    let selected = 0, audioCtx, bgmSynth, melodySynth, reverb, isPlaying = false, score = 0, lives = 3, nIdx = 0, tiles = [], loopId, spawnId, bgmLoop;
+    let selected = 0, bgmSynth, melodySynth, reverb, isPlaying = false, score = 0, lives = 6, nIdx = 0, tiles = [], loopId, spawnId, bgmLoop;
     const TARGET = 100;
+    const MAX_LIVES = 6; // 최대 목숨 개수
 
     const listDiv = document.getElementById('song-list');
     library.forEach((s, i) => {
@@ -118,18 +150,16 @@
         listDiv.appendChild(d);
     });
 
-    // ✅ 해결: pointerdown 대신 click 사용 (모바일 AudioContext 활성화 이슈 해결)
     document.getElementById('start-btn').addEventListener('click', async () => {
         const btn = document.getElementById('start-btn');
-        if (btn.innerText === "로딩 중...") return;
-        btn.innerText = "로딩 중...";
+        if (btn.innerText === "LOADING...") return;
+        btn.innerText = "LOADING...";
         await Tone.start();
         if (!bgmSynth) {
-            reverb = new Tone.Reverb(3).toDestination();
-            bgmSynth = new Tone.PolySynth(Tone.Synth, { oscillator: { type: "sine" }, envelope: { attack: 0.8, release: 2 } }).connect(reverb);
+            reverb = new Tone.Reverb(2).toDestination();
+            bgmSynth = new Tone.PolySynth(Tone.Synth, { oscillator: { type: "sine" }, envelope: { attack: 0.5, release: 1.5 } }).connect(reverb);
             bgmSynth.volume.value = -12;
-            melodySynth = new Tone.PolySynth(Tone.Synth, { oscillator: { type: "triangle" }, envelope: { attack: 0.01, decay: 0.4, sustain: 0.1, release: 0.8 } }).connect(reverb);
-            // ✅ 해결: 클리핑 방지 볼륨 하향
+            melodySynth = new Tone.PolySynth(Tone.Synth, { oscillator: { type: "triangle" }, envelope: { attack: 0.01, decay: 0.3, sustain: 0.2, release: 0.8 } }).connect(reverb);
             melodySynth.volume.value = -2;
         }
         startGame();
@@ -137,31 +167,29 @@
 
     function spark(x, y, color) {
         const stage = document.getElementById('game');
-        // ✅ 해결: 파티클 8개로 최적화
         for(let i=0; i<8; i++) {
             const p = document.createElement('div');
             p.className = 'particle';
             p.style.left = x + 'px'; p.style.top = y + 'px';
             p.style.background = color;
-            p.style.boxShadow = `0 0 10px ${color}`;
-            p.style.setProperty('--tx', (Math.random() - 0.5) * 200 + 'px');
-            p.style.setProperty('--ty', (Math.random() - 0.5) * 200 + 'px');
+            p.style.boxShadow = `0 0 15px ${color}`;
+            p.style.setProperty('--tx', (Math.random() - 0.5) * 250 + 'px');
+            p.style.setProperty('--ty', (Math.random() - 0.5) * 250 + 'px');
             stage.appendChild(p);
-            setTimeout(() => p.remove(), 600);
+            setTimeout(() => p.remove(), 500);
         }
     }
 
     function startGame() {
-        // ✅ 해결: 이전 루프 초기화 방어 (중복 실행 방지)
         if (loopId) cancelAnimationFrame(loopId);
         if (spawnId) clearInterval(spawnId);
         if (bgmLoop) clearInterval(bgmLoop);
 
         document.getElementById('lobby').style.display = 'none';
         document.getElementById('game').style.display = 'block';
-        isPlaying = true; score = 0; lives = 3; nIdx = 0; tiles = [];
+        isPlaying = true; score = 0; lives = MAX_LIVES; nIdx = 0; tiles = [];
         document.getElementById('score').innerText = '0';
-        document.getElementById('lives').innerText = "❤️❤️❤️";
+        updateLivesUI();
         
         const data = library[selected];
         let cIdx = 0;
@@ -172,9 +200,12 @@
         }, 1000);
 
         gameLoop();
-        // ✅ 해결: 스폰 속도 공식 안정화
         const interval = Math.max(250, 700 - data.s * 40);
         spawnId = setInterval(createTile, interval);
+    }
+
+    function updateLivesUI() {
+        document.getElementById('lives').innerText = "❤️".repeat(lives) + "🖤".repeat(MAX_LIVES - lives);
     }
 
     function createTile() {
@@ -183,7 +214,7 @@
         const t = document.createElement('div');
         t.className = 'tile';
         t.style.left = (lane * 25) + '%';
-        t.style.top = '-160px';
+        t.style.top = '-140px';
         
         const note = library[selected].m[nIdx % library[selected].m.length];
 
@@ -191,35 +222,46 @@
             e.preventDefault();
             if (t.classList.contains('pressed')) return;
 
-            // ✅ 해결: 관대한 판정 수정 (판정선 근처에서만 Hit 인정)
             const stageHeight = document.getElementById('game').clientHeight;
+            // 판정 기준을 하단 건반 영역(bottom: 10% 부근)으로 맞춤
             const hitLineY = stageHeight * 0.85; 
             const rect = t.getBoundingClientRect();
-            const tileBottom = rect.top + rect.height;
+            const tileCenter = rect.top + (rect.height / 2);
 
-            // 오차 범위 120px 밖이면 무시
-            if (Math.abs(tileBottom - hitLineY) > 120) return;
+            // 판정 오차 범위
+            if (Math.abs(tileCenter - hitLineY) > 130) return;
 
             melodySynth.triggerAttackRelease(note, "8n");
             
+            // 시각 이펙트: 플래시 + 건반 눌림
+            const color = Math.random() > 0.5 ? 'var(--neon)' : 'var(--pink)';
+            spark(rect.left + rect.width/2, rect.top + rect.height, color);
+            
             const flash = document.getElementById(`flash-${lane}`);
-            spark(rect.left + rect.width/2, rect.top + rect.height/2, Math.random() > 0.5 ? '#00e5ff' : '#ff00ea');
-            flash.style.opacity = '0.5';
-            setTimeout(() => flash.style.opacity = '0', 100);
+            flash.style.opacity = '0.6';
+            flash.style.background = `linear-gradient(to top, ${color}, transparent)`;
+            setTimeout(() => flash.style.opacity = '0', 150);
+
+            const keyEl = document.getElementById(`key-${lane}`);
+            keyEl.classList.add('active');
+            setTimeout(() => keyEl.classList.remove('active'), 100);
 
             t.classList.add('pressed');
-            score++; document.getElementById('score').innerText = score;
+            score++; 
+            const scoreEl = document.getElementById('score');
+            scoreEl.innerText = score;
+            scoreEl.style.transform = "scale(1.2)";
+            setTimeout(() => scoreEl.style.transform = "scale(1)", 100);
+
             if(score >= TARGET) setTimeout(win, 800);
             
-            // ✅ 해결: DOM 삭제뿐 아니라 tiles 배열에서도 완벽하게 제거
             setTimeout(() => {
                 const idx = tiles.indexOf(t);
                 if (idx > -1) tiles.splice(idx, 1);
                 t.remove();
-            }, 150);
+            }, 200);
         };
 
-        // ✅ 해결: passive: false 옵션 추가로 터치 지연 방지
         t.addEventListener('pointerdown', onHit, { passive: false });
         document.getElementById('game').appendChild(t);
         tiles.push(t);
@@ -240,12 +282,11 @@
             if (top > h) {
                 if(!t.classList.contains('pressed')) {
                     lives--;
-                    document.getElementById('lives').innerText = "❤️".repeat(lives) + "🖤".repeat(3 - lives);
-                    stage.style.boxShadow = "inset 0 0 50px rgba(255,0,0,0.5)";
+                    updateLivesUI();
+                    stage.style.boxShadow = "inset 0 0 80px rgba(255,0,0,0.6)";
                     setTimeout(() => stage.style.boxShadow = "none", 200);
                     if(lives <= 0) { gameOver(); return; }
                 }
-                // 화면을 벗어나면 DOM과 배열에서 모두 즉시 제거
                 t.remove(); tiles.splice(i, 1);
             }
         }
@@ -254,14 +295,12 @@
 
     function gameOver() {
         isPlaying = false; clearInterval(spawnId); clearInterval(bgmLoop); cancelAnimationFrame(loopId);
-        alert(`공연 종료\n최종 점수: ${score}`);
-        location.reload();
+        setTimeout(() => { alert(`GAME OVER\n최종 점수: ${score}`); location.reload(); }, 100);
     }
 
     function win() {
         isPlaying = false; clearInterval(spawnId); clearInterval(bgmLoop); cancelAnimationFrame(loopId);
-        alert(`✨ 완벽한 연주였습니다! ✨\n100점 달성 성공!`);
-        location.reload();
+        setTimeout(() => { alert(`✨ PERFECT STAGE ✨\n100점 달성을 축하합니다!`); location.reload(); }, 100);
     }
 </script>
 </body>
