@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Piano Tiles - Arcade Sound Pro</title>
+    <title>Piano Tiles - 2014 Original</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
     <style>
         :root { --neon: #00f2ff; --pink: #ff00ea; --gold: #ffea00; --bg: #050508; }
@@ -28,10 +28,8 @@
         .song-title { font-size: 15px; font-weight: bold; }
         .song-artist { font-size: 11px; color: var(--gold); margin-top: 3px; }
         
-        #start-btn { width: 100%; padding: 18px; border-radius: 50px; border: none; font-size: 18px; font-weight: bold; background: #222; color: #555; transition: 0.3s; }
-        #start-btn.ready { background: linear-gradient(45deg, var(--neon), var(--pink)); color: #fff; pointer-events: auto; box-shadow: 0 5px 20px rgba(255, 0, 234, 0.4); cursor: pointer;}
+        #start-btn { width: 100%; padding: 18px; border-radius: 50px; border: none; font-size: 18px; font-weight: bold; background: linear-gradient(45deg, var(--neon), var(--pink)); color: #fff; cursor: pointer; box-shadow: 0 5px 20px rgba(255, 0, 234, 0.4); }
 
-        /* 게임 화면 터치 제어 */
         #game { overflow: hidden; z-index: 50; position: relative; touch-action: none; }
         
         .lane-bg { position: absolute; top: 0; width: 25%; height: 100%; border-right: 1px dashed rgba(255,255,255,0.1); pointer-events: none; }
@@ -53,8 +51,8 @@
 <body>
 
 <div id="lobby" class="screen" style="display: flex;">
-    <h1>ARCADE SOUND PRO</h1>
-    <p class="desc">드라이하고 쨍한 원조 피아노 타일 사운드</p>
+    <h1>2014 ORIGINAL</h1>
+    <p class="desc">드디어 찾은 그 시절 피아노 타일의 타격감</p>
     
     <div class="diff-group">
         <button class="diff-btn" data-diff="easy">하 (Easy)</button>
@@ -63,7 +61,7 @@
     </div>
 
     <div id="song-list"></div>
-    <button id="start-btn">사운드 엔진 로딩 중...</button>
+    <button id="start-btn">게임 시작!</button>
 </div>
 
 <div id="game" class="screen">
@@ -98,60 +96,43 @@
     ];
 
     let piano, sheet = [], tiles = [], isPlaying = false, score = 0, hp = 100, sheetIdx = 0, selected = 0;
-    let difficulty = "normal", speedMult = 1.0, hitLineY, isLoaded = false;
+    let difficulty = "normal", speedMult = 1.0, hitLineY;
     const gameArea = document.getElementById('game');
 
-    // 🔥 오락실 사운드 믹싱 세팅 (지피티 철학 100% 반영)
-    // 1. EQ 과감하게 세팅: 웅웅거리는 저음(-12) 완전 삭제, 귀에 쨍하게 박히는 고음(+6)
-    const eq = new Tone.EQ3({ low: -12, mid: 0, high: 6 });
+    // 🔥 1. 극단적인 아케이드 EQ 세팅: 저음 완전 소거, 고음 폭발
+    const eq = new Tone.EQ3({ low: -15, mid: -2, high: 10 });
     
-    // 2. 컴프레서: 타격감을 빵빵하게 뭉쳐주는 역할
+    // 컴프레서로 타격감을 한 번 더 뭉쳐줍니다
     const comp = new Tone.Compressor({ threshold: -20, ratio: 6, attack: 0.005, release: 0.1 }).toDestination();
-    
-    // 🔥 리버브 완전 제거! (eq -> comp -> destination 직결)
-    eq.connect(comp);
+    eq.connect(comp); // 리버브 완전 삭제!!
 
-    function useEmergencySynth() {
-        if(isLoaded) return;
-        if(piano) piano.dispose(); 
-        // 비상용 신스도 짧은 릴리즈 설정
-        piano = new Tone.PolySynth(Tone.Synth, { volume: -4, envelope: { attack: 0.005, release: 0.18 } }).connect(eq);
-        setReady();
-    }
-
-    // 🔥 3. Sampler 설정: 리얼 피아노지만 릴리즈를 짧게 끊어(0.18) 미디 디지털 피아노처럼 만듦
-    piano = new Tone.Sampler({
-        urls: { "C4": "C4.mp3", "C5": "C5.mp3" }, // 용량 최소화
-        baseUrl: "https://tonejs.github.io/audio/salamander/",
-        release: 0.18, 
-        attack: 0.005, // 딜레이 없는 칼같은 타격
-        volume: -4,
-        onload: () => { if(!isLoaded) setReady(); },
-        onerror: () => useEmergencySynth()
+    // 🔥 2. 무거운 Sampler 삭제! 가볍고 빠르고 쨍한 아케이드 전용 신디사이저로 교체!
+    piano = new Tone.PolySynth(Tone.Synth, {
+        volume: -6,
+        oscillator: {
+            type: "triangle" // 맑고 얇은 8비트/미디 톤
+        },
+        envelope: {
+            attack: 0.001, // 딜레이 0, 누르자마자 즉각 타격
+            decay: 0.05,
+            sustain: 0.2,
+            release: 0.08  // 여운 없이 차갑고 빠르게 뚝 끊어짐
+        }
     }).connect(eq);
 
-    setTimeout(() => { if(!isLoaded) useEmergencySynth(); }, 3500);
-
-    function setReady() {
-        if (isLoaded) return;
-        isLoaded = true;
-        const btn = document.getElementById("start-btn");
-        btn.textContent = "게임 시작!";
-        btn.classList.add("ready");
-        renderSongs(); 
-    }
-
+    // 샘플을 다운받을 필요가 없으니 로딩은 0초. 즉시 시작 가능합니다!
     function renderSongs() {
         const listDiv = document.getElementById('song-list');
         listDiv.innerHTML = ""; 
         songs.forEach((s, idx) => {
             const item = document.createElement('div');
             item.className = `song-item ${idx === selected ? 'active' : ''}`;
-            item.innerHTML = `<div><div class="song-title">${s.t}</div><div class="song-artist">아케이드 멜로디 모드 (${s.a})</div></div>`;
+            item.innerHTML = `<div><div class="song-title">${s.t}</div><div class="song-artist">디지털 아케이드 모드</div></div>`;
             item.onclick = () => { selected = idx; renderSongs(); };
             listDiv.appendChild(item);
         });
     }
+    renderSongs();
 
     document.querySelectorAll('.diff-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
@@ -180,11 +161,9 @@
                 const dur = parseFloat(durStr);
                 const notes = noteStr.split('+'); 
 
-                // 멜로디(가장 높은 음)만 추출
                 notes.sort((a, b) => Tone.Frequency(b).toMidi() - Tone.Frequency(a).toMidi());
                 const highestNote = notes[0]; 
 
-                // 음정 기반 레인 배치
                 const midi = Tone.Frequency(highestNote).toMidi();
                 let lane = isNaN(midi) ? Math.floor(Math.random() * 4) : midi % 4;
                 
@@ -196,7 +175,6 @@
     }
 
     document.getElementById('start-btn').addEventListener('pointerdown', async () => {
-        if(!isLoaded) return;
         await Tone.start();
         
         if (difficulty === "easy") speedMult = 0.7;
@@ -214,6 +192,7 @@
         document.getElementById('score').innerText = "0";
         updateHP();
         
+        Tone.Transport.cancel(0); 
         Tone.Transport.stop();
         Tone.Transport.seconds = 0;
         Tone.Transport.start();
@@ -233,7 +212,7 @@
         hpBar.style.background = hp > 60 ? "#00ff00" : (hp > 30 ? "#ffea00" : "#ff0055");
     }
 
-    // 🔥 아케이드 리듬게임의 근본: 시간차 기반 레인 터치 판정
+    // 레인 기반 시간차 판정 시스템
     gameArea.addEventListener("pointerdown", (e) => {
         if (!isPlaying) return;
 
@@ -251,11 +230,10 @@
 
             const diff = Math.abs(o.data.t - now);
 
-            // 판정 윈도우 0.18초 (피아노 타일급 반응속도)
             if (diff < 0.18) { 
                 
-                // 🔥 4. 소리 고정: 악보 길이가 길든 짧든 무조건 0.18초로 툭 끊어치기! (아케이드 타격감의 핵심)
-                piano.triggerAttackRelease(o.data.n, 0.18, Tone.now(), 0.9);
+                // 🔥 3. 핵심 수정: 무조건 0.12초 컷! 원곡의 길이가 어떻든 똑같은 파워와 똑같은 길이로 때림.
+                piano.triggerAttackRelease(o.data.n, 0.12, Tone.now(), 1);
                 
                 o.hit = true;
                 o.el.classList.add("pressed");
@@ -283,7 +261,6 @@
         const LOOKAHEAD = 1.6; 
         const speed = hitLineY / LOOKAHEAD;
 
-        // 시각적 타일 생성
         while(sheetIdx < sheet.length && sheet[sheetIdx].t < now + LOOKAHEAD) {
             const data = sheet[sheetIdx++];
             const el = document.createElement('div');
@@ -302,13 +279,11 @@
             tiles.push(obj);
         }
 
-        // 타일 이동 및 Miss 처리
         for(let i = tiles.length - 1; i >= 0; i--) {
             const o = tiles[i];
             const bottom = hitLineY - (o.data.t - now) * speed;
             o.el.style.top = (bottom - o.h) + "px";
 
-            // 타이밍이 완전히 지나갔을 때
             if(!o.hit && !o.miss && (o.data.t - now) < -0.2) {
                 o.miss = true; 
                 o.el.classList.add('missed');
@@ -330,7 +305,7 @@
     }
 
     function end(win) {
-        isPlaying = false; Tone.Transport.stop(); 
+        isPlaying = false; Tone.Transport.stop(); Tone.Transport.cancel(0);
         gameArea.style.display = 'none';
         document.getElementById('result').style.display = 'flex';
         document.getElementById('res-title').innerText = win ? "STAGE CLEAR!" : "GAME OVER";
