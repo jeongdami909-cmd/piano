@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Smart Pitch Piano</title>
+    <title>Crystal Piano - Smooth Melody</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
     <style>
         :root { --neon: #00f2ff; --pink: #ff00ea; --miss: #ff0055; }
@@ -47,7 +47,7 @@
 <body>
 
 <div id="lobby">
-    <h1>Smart Pitch Piano</h1>
+    <h1>Crystal Piano</h1>
     
     <div class="section-title">1. 곡 선택 (MP3)</div>
     <div class="upload-area" id="drop-zone" onclick="document.getElementById('audio-upload').click()">
@@ -55,8 +55,8 @@
     </div>
     <input type="file" id="audio-upload" accept="audio/*" style="display:none;">
 
-    <div class="section-title">2. 노래 조(Key) 맞추기</div>
-    <p style="font-size: 12px; color: #888; margin-top: -5px; margin-bottom: 10px;">노래가 고조될 때 음이 어울리도록 으뜸음을 맞춥니다.</p>
+    <div class="section-title">2. 배경음악 조(Key) 맞추기</div>
+    <p style="font-size: 12px; color: #888; margin-top: -5px; margin-bottom: 10px;">불협화음이 난다면 으뜸음을 바꿔보세요. 아름다운 선율이 유지됩니다.</p>
     <div class="key-grid" id="key-selector">
         <button class="key-btn selected" data-key="C">C</button>
         <button class="key-btn" data-key="Db">Db</button>
@@ -92,13 +92,16 @@
 </div>
 
 <script>
-    let piano, bgm, fft, isPlaying = false, score = 0, tiles = [];
+    let piano, bgm, isPlaying = false, score = 0, tiles = [];
     let loopId, spawnId, winTimeoutId;
     let selectedRoot = "C";
     let currentSpeed = 6;
     let currentSpawnRate = 700;
     
-    // 피아노 샘플러
+    // 부드러운 선율을 위한 변수
+    let currentScale = [];
+    let noteIndex = 0;
+
     piano = new Tone.Sampler({
         urls: { A0: "A0.mp3", C1: "C1.mp3", "D#1": "Ds1.mp3", "F#1": "Fs1.mp3", A1: "A1.mp3", C2: "C2.mp3", "D#2": "Ds2.mp3", "F#2": "Fs2.mp3", A2: "A2.mp3", C3: "C3.mp3", "D#3": "Ds3.mp3", "F#3": "Fs3.mp3", A3: "A3.mp3", C4: "C4.mp3", "D#4": "Ds4.mp3", "F#4": "Fs4.mp3", A4: "A4.mp3", C5: "C5.mp3", "D#5": "Ds5.mp3", "F#5": "Fs5.mp3", A5: "A5.mp3", C6: "C6.mp3", "D#6": "Ds6.mp3", "F#6": "Fs6.mp3", A6: "A6.mp3", C7: "C7.mp3", "D#7": "Ds7.mp3", "F#7": "Fs7.mp3", A7: "A7.mp3", C8: "C8.mp3" },
         baseUrl: "https://tonejs.github.io/audio/salamander/",
@@ -109,9 +112,6 @@
         }
     }).toDestination();
     piano.volume.value = 5;
-
-    // 🎵 실시간 주파수 분석기 추가!
-    fft = new Tone.Analyser("fft", 2048);
 
     document.querySelectorAll('.diff-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
@@ -127,6 +127,7 @@
             document.querySelectorAll('.key-btn').forEach(b => b.classList.remove('selected'));
             btn.classList.add('selected');
             selectedRoot = btn.dataset.key;
+            updateScale();
         });
     });
 
@@ -139,7 +140,6 @@
         const url = URL.createObjectURL(file);
         if(bgm) bgm.dispose();
         
-        // bgm을 재생하면서 동시에 fft(분석기)로 소리 정보를 보냄
         bgm = new Tone.Player({
             url: url,
             onload: () => {
@@ -147,9 +147,26 @@
                 startBtn.innerText = "콘서트 시작!";
                 startBtn.classList.add('ready');
             }
-        }).connect(fft).toDestination();
+        }).toDestination();
         bgm.volume.value = -3; 
     });
+
+    function updateScale() {
+        const notes = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"];
+        const intervals = [0, 2, 4, 7, 9]; // 아름다운 펜타토닉 스케일
+        const rootIdx = notes.indexOf(selectedRoot);
+        currentScale = [];
+        
+        // 3옥타브~5옥타브까지 넓게 음계 생성
+        for(let oct = 3; oct <= 5; oct++) {
+            for(let i of intervals) {
+                let idx = (rootIdx + i) % 12;
+                let outOct = oct + Math.floor((rootIdx + i) / 12);
+                currentScale.push(notes[idx] + outOct);
+            }
+        }
+        noteIndex = Math.floor(currentScale.length / 2); // 중간 음역대에서 시작
+    }
 
     document.getElementById('start-btn').addEventListener('click', async () => {
         if (!bgm || !bgm.loaded) return;
@@ -161,6 +178,7 @@
         score = 0;
         document.getElementById('score').innerText = '0';
         
+        updateScale();
         bgm.start();
         
         const duration = bgm.buffer.duration * 1000;
@@ -169,53 +187,6 @@
         gameLoop();
         spawnId = setInterval(spawnTile, currentSpawnRate);
     });
-
-    // 🎵 핵심 로직: 현재 MP3에서 가장 강하게 울리는 음정(Pitch)을 찾아 아름다운 음계로 변환
-    function getDynamicNoteFromMP3(rootKey) {
-        const data = fft.getValue();
-        let maxEnergy = -Infinity;
-        let peakIndex = 0;
-        
-        // 멜로디가 주로 분포하는 주파수 대역(약 200Hz ~ 1500Hz) 분석
-        for(let i = 10; i < 200; i++) {
-            if(data[i] > maxEnergy) {
-                maxEnergy = data[i];
-                peakIndex = i;
-            }
-        }
-
-        // 주파수를 미디 노트 번호로 변환 (음 높이 파악)
-        const nyquist = Tone.context.sampleRate / 2;
-        const freq = (peakIndex / fft.size) * nyquist;
-        
-        let rawMidi = 60; // 기본값 (C4)
-        if(freq > 50 && maxEnergy > -80) {
-            rawMidi = Tone.Frequency(freq).toMidi();
-        }
-
-        // 쇳소리(불협화음) 방지를 위해 노래 조(Key)에 맞춰 음 보정
-        const notes = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"];
-        const intervals = [0, 2, 4, 7, 9]; // 아름다운 펜타토닉 스케일
-        const rootIdx = notes.indexOf(rootKey);
-        const scalePitches = intervals.map(i => (rootIdx + i) % 12);
-        
-        let pitchClass = rawMidi % 12;
-        let octave = Math.floor(rawMidi / 12) - 1;
-        
-        // 가장 가까운 어울리는 음 찾기
-        let closest = scalePitches[0];
-        let minDiff = 12;
-        for(let p of scalePitches) {
-            let diff = Math.min(Math.abs(pitchClass - p), 12 - Math.abs(pitchClass - p));
-            if(diff < minDiff) { minDiff = diff; closest = p; }
-        }
-        
-        // 너무 높거나 낮은 음이 나지 않도록 옥타브 고정 (가운데 건반 위주)
-        if(octave < 4) octave = 4;
-        if(octave > 5) octave = 5;
-        
-        return notes[closest] + octave;
-    }
 
     function showMissFeedback() {
         const fb = document.getElementById('feedback');
@@ -243,9 +214,20 @@
             const rect = t.getBoundingClientRect();
             if (rect.bottom < window.innerHeight * 0.5) return; 
 
-            // 🌟 건반을 누르는 순간! MP3를 분석해서 곡의 높낮이를 따라가는 음을 연주함
-            const dynamicNote = getDynamicNoteFromMP3(selectedRoot);
-            piano.triggerAttackRelease(dynamicNote, "2n");
+            // 🎵 물결 선율 생성 핵심 로직
+            // 다음 음은 무조건 현재 음의 바로 옆이거나 한 칸 건너뛴 곳으로만 이동!
+            let step = Math.random() < 0.5 ? 1 : -1; // 위로 갈지 아래로 갈지 결정
+            if (Math.random() < 0.2) step = 0; // 20% 확률로 같은 음 반복
+            if (Math.random() < 0.1) step *= 2; // 10% 확률로 약간 큰 도약
+            
+            noteIndex += step;
+            
+            // 음계 범위를 벗어나지 않게 고정
+            if (noteIndex < 0) noteIndex = 1;
+            if (noteIndex >= currentScale.length) noteIndex = currentScale.length - 2;
+
+            const note = currentScale[noteIndex];
+            piano.triggerAttackRelease(note, "2n");
 
             t.classList.add('pressed');
             score += 10;
@@ -272,7 +254,6 @@
             let top = parseFloat(t.style.top || -140) + currentSpeed;
             t.style.top = top + 'px';
             
-            // 놓치면 -10점 페널티
             if (top > hitLineY + 20 && !t.classList.contains('pressed') && !t.classList.contains('missed')) {
                 t.classList.add('missed'); 
                 score -= 10; 
