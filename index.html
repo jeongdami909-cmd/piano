@@ -3,240 +3,305 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Piano Tiles - V15 Luxury Concert</title>
+    <title>Piano Tiles Pro - Studio Mixing</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
     <style>
-        :root { --neon: #00f2ff; --pink: #ff00ea; --gold: #ffea00; --bg: #030305; }
+        :root { --neon: #00f2ff; --pink: #ff00ea; --gold: #ffea00; --bg: #050508; }
         * { box-sizing: border-box; user-select: none; margin: 0; padding: 0; font-family: 'Pretendard', sans-serif; -webkit-tap-highlight-color: transparent; }
-        body { color: #fff; height: 100dvh; overflow: hidden; background: var(--bg); transition: background 0.1s; }
-        
-        .screen { position: absolute; top: 0; left: 50%; width: 100%; height: 100%; max-width: 500px; transform: translateX(-50%); display: none; flex-direction: column; background: #000; border-left: 1px solid #222; border-right: 1px solid #222; box-shadow: 0 0 50px rgba(0,0,0,1); }
-        
-        /* 로비 비주얼 */
-        #lobby { display: flex; z-index: 100; padding: 25px; background: radial-gradient(circle at top, #111, #000); }
-        h1 { text-align: center; font-size: 32px; font-weight: 900; background: linear-gradient(90deg, var(--neon), var(--pink), var(--gold)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; padding: 15px 0; letter-spacing: -1px; }
-        
-        #song-list { flex: 1; overflow-y: auto; background: rgba(255,255,255,0.03); border-radius: 20px; padding: 10px; margin-bottom: 20px; border: 1px solid #222; }
-        .song-item { padding: 18px; border-bottom: 1px solid #222; border-radius: 12px; margin-bottom: 8px; cursor: pointer; transition: 0.3s; background: rgba(255,255,255,0.02); }
-        .song-item.active { background: linear-gradient(90deg, rgba(0,242,255,0.2), rgba(255,0,234,0.1)); border: 1px solid var(--neon); box-shadow: 0 0 20px rgba(0, 242, 255, 0.2); }
-        .song-item div { font-weight: 800; font-size: 16px; }
-        .song-item span { font-size: 12px; color: #777; }
+        body { color: #fff; height: 100dvh; overflow: hidden; background: var(--bg); touch-action: manipulation; }
 
-        #start-btn { width: 100%; padding: 22px; border-radius: 50px; border: none; font-size: 22px; font-weight: 900; background: linear-gradient(45deg, var(--neon), var(--pink)); color: #fff; cursor: pointer; box-shadow: 0 10px 40px rgba(255, 0, 234, 0.4); transition: 0.2s; }
-        #start-btn:active { transform: scale(0.96); }
-
-        /* 게임 비주얼 */
-        #game { overflow: hidden; z-index: 50; position: relative; touch-action: none; background: #000; }
-        #hp-container { position: absolute; top: 25px; left: 50%; transform: translateX(-50%); width: 240px; height: 8px; background: #111; border-radius: 10px; z-index: 60; border: 1px solid #333; }
-        #hp-bar { width: 100%; height: 100%; background: linear-gradient(90deg, #00ff00, #00f2ff); border-radius: 10px; transition: 0.3s; box-shadow: 0 0 15px var(--neon); }
-
-        .lane { position: absolute; top: 0; width: 25%; height: 100%; border-right: 1px solid rgba(255,255,255,0.03); pointer-events: none; }
-        #hit-line { position: absolute; bottom: 15%; width: 100%; height: 2px; background: linear-gradient(90deg, transparent, #fff, transparent); z-index: 5; opacity: 0.5; }
+        .screen { position: absolute; top: 0; left: 50%; width: 100%; height: 100%; max-width: 500px; transform: translateX(-50%); display: none; flex-direction: column; background: var(--bg); border-left: 1px solid #111; border-right: 1px solid #111; }
         
-        #score { position: absolute; top: 70px; width: 100%; text-align: center; font-size: 70px; font-weight: 900; z-index: 60; text-shadow: 0 0 30px var(--neon); color: #fff; pointer-events: none; }
-        #combo { position: absolute; top: 150px; width: 100%; text-align: center; font-size: 26px; color: var(--gold); font-weight: 900; z-index: 60; opacity: 0; transition: 0.1s; pointer-events: none; text-shadow: 0 0 10px #000; }
-        #combo.show { opacity: 1; transform: scale(1.2); }
+        #lobby { display: flex; z-index: 100; padding: 20px; }
+        h1 { text-align: center; font-size: 26px; font-weight: 900; background: linear-gradient(90deg, var(--neon), var(--pink)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; padding: 5px 0; }
+        .desc { text-align: center; color: #aaa; font-size: 13px; margin-bottom: 15px; }
 
-        .tile { position: absolute; width: 25%; background: linear-gradient(to bottom, #111, #333); border: 1px solid #000; z-index: 10; pointer-events: none; border-radius: 4px; box-shadow: inset 0 0 15px rgba(0,0,0,0.8); }
-        .tile.pressed { background: linear-gradient(to bottom, var(--neon), #fff) !important; opacity: 0; transform: scale(1.3); transition: 0.3s; }
+        .diff-group { display: flex; gap: 10px; margin-bottom: 15px; }
+        .diff-btn { flex: 1; padding: 12px; background: #111; border: 1px solid #333; border-radius: 8px; color: #888; font-weight: bold; font-size: 16px; cursor: pointer; transition: 0.2s; }
+        .diff-btn.active { background: var(--pink); color: #fff; border-color: #fff; box-shadow: 0 0 10px var(--pink); }
+
+        #song-list { flex: 1; overflow-y: auto; background: rgba(255,255,255,0.02); border-radius: 15px; padding: 10px; margin-bottom: 10px; }
+        .song-item { padding: 14px; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center; border-radius: 10px; margin-bottom: 5px; cursor: pointer; }
+        .song-item.active { background: rgba(0, 242, 255, 0.15); border: 1px solid var(--neon); }
+        .song-title { font-size: 14px; font-weight: bold; }
+        .song-artist { font-size: 11px; color: var(--gold); margin-top: 3px; }
         
-        /* 블링블링 이펙트 */
-        .perfect-flash { background: radial-gradient(circle, rgba(0, 242, 255, 0.25) 0%, #000 80%) !important; }
+        #start-btn { width: 100%; padding: 18px; border-radius: 50px; border: none; font-size: 18px; font-weight: bold; background: #222; color: #555; transition: 0.3s; }
+        #start-btn.ready { background: linear-gradient(45deg, var(--neon), var(--pink)); color: #fff; pointer-events: auto; box-shadow: 0 5px 20px rgba(255, 0, 234, 0.4); cursor: pointer;}
 
-        #result { justify-content: center; align-items: center; text-align: center; z-index: 200; background: rgba(0,0,0,0.98); }
+        #game { overflow: hidden; z-index: 50; touch-action: none; }
+        .lane-bg { position: absolute; top: 0; width: 25%; height: 100%; border-right: 1px dashed rgba(255,255,255,0.1); pointer-events: none; }
+        #hit-line { position: absolute; bottom: 15%; width: 100%; height: 4px; background: rgba(255,255,255,0.8); z-index: 5; box-shadow: 0 0 15px #fff; pointer-events: none; }
+        
+        #score { position: absolute; top: 40px; width: 100%; text-align: center; font-size: 45px; font-weight: 900; z-index: 60; text-shadow: 0 0 10px var(--neon); pointer-events: none; }
+        #hp-container { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); width: 150px; height: 6px; background: #333; border-radius: 3px; z-index: 60; pointer-events: none; }
+        #hp-bar { width: 100%; height: 100%; background: #00ff00; transition: width 0.2s; }
+        #judgment { position: absolute; top: 45%; width: 100%; text-align: center; font-size: 40px; font-weight: 900; z-index: 70; opacity: 0; pointer-events: none; transition: 0.1s; }
+
+        .tile { position: absolute; width: 24%; margin-left: 0.5%; border-radius: 6px; background: linear-gradient(to bottom, #fff, var(--neon)); z-index: 10; cursor: pointer;}
+        .tile.long { background: linear-gradient(to bottom, #fff, var(--gold)); box-shadow: 0 0 15px var(--gold); }
+        .tile.pressed { opacity: 0.3; transform: scale(1.05); transition: 0.1s; box-shadow: 0 0 30px #fff; }
+        .tile.missed { background: #ff0055 !important; opacity: 0.5; }
+
+        #result { justify-content: center; align-items: center; text-align: center; z-index: 200; background: rgba(0,0,0,0.95); }
     </style>
 </head>
 <body>
 
 <div id="lobby" class="screen" style="display: flex;">
-    <h1>CONCERT LUXURY</h1>
-    <p style="text-align:center; color:#666; font-size:13px; margin-bottom:15px;">영상의 그 감동, 12곡의 무한 연주로 경험하세요</p>
+    <h1>STUDIO MIXING PRO</h1>
+    <p class="desc">EQ와 공간감이 최적화된 리얼 피아노 사운드</p>
+    
+    <div class="diff-group">
+        <button class="diff-btn" data-diff="easy">하 (Easy)</button>
+        <button class="diff-btn active" data-diff="normal">중 (Normal)</button>
+        <button class="diff-btn" data-diff="hard">상 (Hard)</button>
+    </div>
+
     <div id="song-list"></div>
-    <button id="start-btn">엔진 예열 중...</button>
+    <button id="start-btn">사운드 엔진 로딩 중...</button>
 </div>
 
 <div id="game" class="screen">
     <div id="hp-container"><div id="hp-bar"></div></div>
     <div id="score">0</div>
-    <div id="combo">0 COMBO</div>
+    <div id="judgment"></div>
     <div id="hit-line"></div>
-    <div class="lane" style="left:0%"></div>
-    <div class="lane" style="left:25%"></div>
-    <div class="lane" style="left:50%"></div>
-    <div class="lane" style="left:75%; border:none;"></div>
+    <div class="lane-bg" style="left:0%"></div><div class="lane-bg" style="left:25%"></div><div class="lane-bg" style="left:50%"></div><div class="lane-bg" style="left:75%; border:none;"></div>
 </div>
 
 <div id="result" class="screen">
-    <h2 id="res-title" style="font-size:32px;">CONCERT END</h2>
-    <div id="rank" style="font-size:130px; font-weight:900; color:var(--gold); margin: 20px 0; text-shadow: 0 0 30px var(--gold);">S</div>
-    <div id="final-score" style="font-size:24px; color:#888; margin-bottom:40px;">Score: 0</div>
-    <button onclick="location.reload()" style="padding: 22px 70px; border-radius: 50px; border: none; font-weight: bold; background:#fff; font-size: 22px; cursor: pointer; color:#000;">대기실로 돌아가기</button>
+    <h2 id="res-title" style="font-size:28px;">STAGE CLEAR</h2>
+    <div id="rank" style="font-size:80px; font-weight:900; color:var(--gold); margin: 20px 0;">S</div>
+    <div id="final-score" style="font-size:18px; margin-bottom: 30px; color:#aaa;">Score: 0</div>
+    <button onclick="location.reload()" style="padding: 15px 40px; border-radius: 30px; border: none; font-weight: bold; background:#fff; cursor: pointer;">다시 하기</button>
 </div>
 
 <script>
     const songs = [
-        { t: "Canon in D", a: "Pachelbel", parts: { A: "F#5+D3_0.5,E5+A2_0.5,D5+B2_0.5,C#5+F#2_0.5,B4+G2_0.5,A4+D3_0.5,B4+G2_0.5,C#5+A2_0.5", B: "D5+D3_0.25,C#5_0.25,D5_0.25,D4_0.25,E4+A2_0.25,F#4_0.25,G4_0.25,A4_0.25,B4+B2_0.25,A4_0.25,G4_0.25,F#4_0.25", C: "G4+G2_0.25,F#4_0.25,E4_0.25,D4_0.25,C#4+D3_0.25,B3_0.25,A3_0.25,G3_0.25" } },
-        { t: "River Flows in You", a: "Yiruma", parts: { A: "F#4+F#2_0.5,E4_0.5,F#4_0.5,C#4+A2_1.0,F#4+F#2_0.5,E4_0.5,F#4_0.5,C#4+A2_1.0", B: "B3+D3_0.5,A3_0.5,B3_0.5,F#3+E3_1.5,F#4+F#2_0.5,E4_0.5,F#4_0.5,C#4+A2_1.0" } },
-        { t: "겨울바람", a: "Chopin", parts: { A: "E4+A2_0.5,E4_0.5,F4_0.5,E4_0.5,A4+A2_1.0,G#4_0.5,A4_0.5,C5+A2_1.0,B4_0.5,C5_0.5", B: "A5+A2_0.15,G#5_0.15,A5_0.15,F5_0.15,E5+E2_0.15,D#5_0.15,E5_0.15,C5_0.15" } },
-        { t: "Take On Me", a: "a-ha", parts: { A: "F#5+B3_0.2,F#5_0.2,D5_0.2,B4_0.2,B4+E3_0.4,E5_0.2,E5_0.2,E5_0.2", B: "A4+D3_0.4,A4_0.4,E4_0.4,F#4_0.4,G#4+E3_0.8" } },
-        { t: "Still D.R.E.", a: "Dr. Dre", parts: { A: "A4+C5+E5_0.2,A4+C5+E5_0.2,A4+C5+E5_0.2,A4+C5+E5_0.4,A4+C5+E5_0.2", B: "G4+B4+E5_0.2,G4+B4+E5_0.2,G4+B4+E5_0.2,G4+B4+E5_0.4,G4+B4+E5_0.2" } },
-        { t: "Purple Rain", a: "Prince", parts: { A: "Bb4+Bb2_0.8,C5_0.4,D5_0.4,F5+Eb3_1.2,D5_0.4,C5_0.4", B: "F5+Bb2_0.6,F5_0.6,G5_0.6,F5+Eb3_0.8,D5_0.4,C5_0.4" } },
-        { t: "Gymnopédie No.1", a: "Erik Satie", parts: { A: "F#4+D3_1.2,A4_1.2,C#5+A2_1.2,B4_1.2", B: "F#4+D3_1.2,A4_1.2,C#5+G2_1.2,E5_1.2" } },
-        { t: "No Scrubs", a: "TLC", parts: { A: "G#4+G#2_0.4,G#4_0.4,B4_0.4,C#5+F#2_0.8,B4_0.4,G#4_0.4", B: "B4+G#2_0.4,B4_0.4,B4_0.4,C#5+F#2_0.4,B4_0.4,G#4_0.4" } },
-        { t: "Swan Lake", a: "Tchaikovsky", parts: { A: "A4+A2_0.6,D5_0.3,E5_0.3,F5_0.6,E5_0.3,D5_0.3", B: "F5+D3_0.6,A5_0.3,G5_0.3,F5_0.6,E5_0.3,D5_0.3" } },
-        { t: "Driver's High", a: "L'Arc-en-Ciel", parts: { A: "E5+E3_0.2,E5_0.2,D5_0.2,B4_0.2,A4+A2_0.4,G4_0.2", B: "B4+G3_0.4,B4_0.4,D5_0.4,E5+A3_0.8,D5_0.4,B4_0.4" } },
-        { t: "Concerto No.2", a: "Rachmaninoff", parts: { A: "C3+C4_1.0,D3+D4_1.0,Eb3+Eb4_1.0,F3+F4_1.0,G3+G4_1.5", B: "G4+Eb3_0.5,F4_0.5,G4_0.5,Ab4+F3_1.0,G4_0.5" } },
-        { t: "Waterfalls", a: "TLC", parts: { A: "Eb4+Eb2_0.5,G4_0.5,Bb4_0.5,C5+F2_1.0,Bb4_0.5,G4_0.5", B: "Eb5+Eb2_0.5,D5_0.5,C5_0.5,Bb4+F2_1.0,G4_0.5,F4_0.5" } }
+        { t: "Canon in D", a: "Pachelbel", parts: { A: "F#5+D3_0.5,E5+A2_0.5,D5+B2_0.5,C#5+F#2_0.5,B4+G2_0.5,A4+D3_0.5,B4+G2_0.5,C#5+A2_0.5", B: "D5+D3_0.25,C#5_0.25,D5_0.25,D4_0.25,E4+A2_0.25,F#4_0.25,G4_0.25,A4_0.25,B4+B2_0.25,A4_0.25,G4_0.25,F#4_0.25,E4+F#2_0.25,D4_0.25,E4_0.25,F#4_0.25", C: "G4+G2_0.25,F#4_0.25,E4_0.25,D4_0.25,C#4+D3_0.25,B3_0.25,A3_0.25,G3_0.25,F#3+G2_0.25,E3_0.25,D3_0.25,E3_0.25,F#3+A2_0.25,G3_0.25,A3_0.25,B3_0.25", D: "D5+D3_0.5,F#5_0.5,A5+A2_0.5,G5_0.5,F#5+B2_0.5,D5_0.5,F#5+F#2_0.5,E5_0.5,D5+G2_0.5,B4_0.5,D5+D3_0.5,A4_0.5,G4+G2_0.5,B4_0.5,A4+A2_0.5,C#5_0.5" }, seq: "A,A,B,B,C,C,D,D,B,A" },
+        { t: "Take On Me", a: "a-ha", parts: { A: "F#5+B3_0.2,F#5_0.2,D5_0.2,B4_0.2,B4+E3_0.4,E5_0.2,E5_0.2,E5_0.2,G#5+A3_0.2,G#5_0.2,A5_0.2,B5_0.2,A5+D3_0.2,A5_0.2,A5_0.2,E5_0.2,D5_0.2,F#5+B3_0.2,F#5_0.2,F#5_0.2,E5_0.2,E5_0.2,F#5_0.2,E5_0.2", B: "A4+D3_0.4,A4_0.4,E4_0.4,F#4_0.4,G#4+E3_0.8,A4+D3_0.4,A4_0.4,E4_0.4,F#4_0.4,G#4+E3_0.8", C: "B4+B2_0.3,B4_0.3,E5_0.4,C#5+A2_0.4,C#5_0.3,G#4+E2_0.8,G#4_0.3,C#5+D3_0.4,C#5_0.4,C#5_0.4,E5_0.4,E5_0.4,E5_0.4,B4+B2_1.2", D: "A4+D3_0.4,B4_0.4,C#5_0.4,D5_0.4,E5+A2_0.8,D5_0.4,C#5_0.4,B4+E3_1.6" }, seq: "A,A,B,B,C,C,D,A,A" },
+        { t: "겨울바람", a: "쇼팽", parts: { A: "E4+A2_0.5,E4_0.5,F4_0.5,E4_0.5,A4+A2_1.0,G#4_0.5,A4_0.5,C5+A2_1.0,B4_0.5,C5_0.5,E5+A2_1.5", B: "A5+A2_0.15,G#5_0.15,A5_0.15,F5_0.15,E5+E2_0.15,D#5_0.15,E5_0.15,C5_0.15,B4+B2_0.15,A#4_0.15,B4_0.15,G4_0.15,F4+F2_0.15,E4_0.15,F4_0.15,D4_0.15", C: "C4+A2_0.15,B3_0.15,C4_0.15,A3_0.15,G#3+E2_0.15,G3_0.15,G#3_0.15,E3_0.15,A4+A2_0.15,B4_0.15,C5_0.15,D5_0.15,E5+E2_0.15,F5_0.15,G5_0.15,A5_0.15", D: "C6+A2_0.15,B5_0.15,C6_0.15,A5_0.15,G#5+E2_0.15,G5_0.15,G#5_0.15,E5_0.15,C5+A2_0.15,B4_0.15,C5_0.15,A4_0.15,E4+E2_0.15,D#4_0.15,E4_0.15,C4_0.15" }, seq: "A,B,C,B,D,C,B,D,A" },
+        { t: "Seasons of Love", a: "RENT", parts: { A: "F4+Bb2_0.5,A4_0.5,C5+F2_0.5,D5_0.5,C5+Eb2_1.0,Bb4_0.5,A4_0.5,G4+Bb2_0.5,F4_1.0", B: "F4+Bb2_0.5,A4_0.5,C5+F2_0.5,D5_0.5,E5+Eb2_1.0,D5_0.5,C5_0.5,Bb4+Bb2_0.5,A4_1.5", C: "A4+F2_0.5,Bb4_0.5,C5+F2_0.5,D5_0.5,F5+Eb2_1.0,D5_0.5,C5_0.5,Bb4+Bb2_0.5,A4_1.5" }, seq: "A,B,A,C,A,B,C" },
+        { t: "Summer", a: "히사이시 조", parts: { A: "D4+D3_0.4,E4+A3_0.4,F#4+D3_0.4,A4+A3_0.4,D5+D3_1.0,C#5+A3_0.5,B4_0.5,A4+D3_1.5,G4+G2_0.4,F#4+D3_0.4,E4+A2_0.4,D4+D3_1.5", B: "D4+G2_0.4,E4_0.4,F#4_0.4,A4_0.4,D5+D3_1.0,E5+A2_0.5,F#5_0.5,E5+A2_2.0", C: "B4+G2_0.4,C#5_0.4,D5_0.4,E5_0.4,F#5+D3_1.0,E5+A2_0.5,D5_0.5,C#5+A2_2.0" }, seq: "A,A,B,C,A,B,C,A" },
+        { t: "Secret", a: "주걸륜", parts: { A: "C5+C3_0.25,G4_0.25,E4_0.25,G4_0.25,C5+B2_0.25,G4_0.25,E4_0.25,G4_0.25,D5+A2_0.25,A4_0.25,F4_0.25,A4_0.25,D5+G2_0.25,G4_0.25,F4_0.25,G4_0.25", B: "E5+F2_0.25,C5_0.25,A4_0.25,C5_0.25,E5+E2_0.25,C5_0.25,A4_0.25,C5_0.25,F5+D2_0.25,D5_0.25,A4_0.25,D5_0.25,F5+G2_0.25,D5_0.25,B4_0.25,D5_0.25" }, seq: "A,A,B,B,A,B,A,B,A" },
+        { t: "Rush", a: "리쌍", parts: { A: "E4+E3_0.3,G4_0.3,B4+E3_0.3,A4_0.6,G4_0.3,F#4_0.3,E4+E3_1.0", B: "E3+E2_0.3,G3_0.3,B3+E2_0.3,A3_0.6,G3_0.3,F#3_0.3,E3+E2_1.0", C: "E5+E3_0.3,D5_0.3,B4+E3_0.3,A4_0.6,G4_0.3,F#4_0.3,E4+E3_1.0" }, seq: "A,A,B,B,C,C,A,B,C,A" },
+        { t: "Dying Young", a: "Kenny G", parts: { A: "G4+C3_0.8,C5_0.8,D5_0.8,Eb5+G2_2.0,D5_0.8,C5_0.8,G4+C3_2.5,F4_0.8,G4_0.8,C5_0.8,D5_0.8", B: "F5+F2_2.0,Eb5_0.8,D5_0.8,C5+C3_3.0,G5+Eb3_0.8,F5_0.8,Eb5_0.8,D5+Bb2_2.0,C5_0.8,Bb4_0.8,C5+C3_3.0" }, seq: "A,B,A,B,A,B" },
+        { t: "River Flows in You", a: "이루마", parts: { A: "F#4+F#2_0.5,E4_0.5,F#4_0.5,C#4+A2_1.0,F#4+F#2_0.5,E4_0.5,F#4_0.5,C#4+A2_1.0", B: "B3+D3_0.5,A3_0.5,B3_0.5,F#3+E3_1.5,F#4+F#2_0.5,E4_0.5,F#4_0.5,C#4+A2_1.0", C: "A4+F#2_0.4,G#4_0.4,A4_0.4,E5+D3_0.8,A4_0.4,G#4_0.4,A4_0.4,E5+E3_0.8" }, seq: "A,B,A,C,B,C,A,C" },
+        { t: "Danse Macabre", a: "Saint-Saëns", parts: { A: "D5+G3_0.4,D5_0.4,D5_0.4,D5_0.4,D5_0.4,D5_0.4,D5_0.4,G4+G2_0.8,Bb4_0.4,A4_0.4,G4+D3_0.4,F#4_0.4,G4+G2_0.8", B: "D5+G3_0.4,Eb5_0.4,D5_0.4,D5_0.4,D5_0.4,D5_0.4,G4+G2_0.8,Bb4_0.4,A4_0.4,G4+D3_0.4,F#4_0.4,G4+G2_0.8" }, seq: "A,B,A,B,A,B,A,B" },
+        { t: "Waterfalls", a: "TLC", parts: { A: "Eb4+Eb3_0.5,G4_0.5,Bb4_0.5,C5+F3_1.0,Bb4_0.5,G4_0.5,F4_0.5,Eb4+Eb3_1.0,Eb4_0.5,G4_0.5,Bb4_0.5,C5+F3_1.0,Bb4_0.5,G4_0.5,Ab4_0.5,G4+Eb3_1.5", B: "Eb5+Eb3_0.5,D5_0.5,C5_0.5,Bb4+F3_1.0,G4_0.5,F4_0.5,Eb4_0.5,Eb4+Eb3_1.0,C5_0.5,Bb4_0.5,G4_0.5,F4+F3_1.0,Eb4_0.5,C4_0.5,Eb4+Eb3_1.5" }, seq: "A,B,A,B,A,B" },
+        { t: "Words", a: "F.R. David", parts: { A: "G4+G3_0.4,A4_0.4,B4_0.4,G4_0.4,E4+C3_1.0,C5_0.4,B4_0.4,A4+D3_0.8,G4_0.4,F#4_0.4,E4+G3_1.0", B: "D5+D3_0.4,C5_0.4,B4_0.4,G4_0.4,E5+C3_1.0,D5_0.4,C5_0.4,B4+G3_1.0" }, seq: "A,A,B,A,B,A,A,B" }
     ];
 
-    let masterPiano, sheet = [], tiles = [], isPlaying = false, score = 0, combo = 0, hp = 100, sheetIdx = 0, selected = 0;
-    let hitLineY, gameStartTime = 0;
+    let piano, sheet = [], tiles = [], isPlaying = false, score = 0, hp = 100, sheetIdx = 0, selected = 0;
+    let difficulty = "normal", speedMult = 1.0, hitLineY, isLoaded = false;
+    const gameArea = document.getElementById('game');
 
-    // 🔥 V15 사운드 엔진: 영상 속 찰랑거리는 깊은 공간감 재현 (FMSynth + Delay + Reverb)
-    const reverb = new Tone.Reverb({ decay: 5.5, wet: 0.45 }).toDestination();
-    const delay = new Tone.FeedbackDelay({ delayTime: "8n", feedback: 0.35, wet: 0.2 }).connect(reverb);
-    
-    masterPiano = new Tone.PolySynth({
-        maxPolyphony: 24,
-        voice: Tone.FMSynth,
-        options: {
-            harmonicity: 3.0, modulationIndex: 12,
-            oscillator: { type: "sine" },
-            envelope: { attack: 0.005, decay: 0.2, sustain: 0.4, release: 3.5 },
-            modulation: { type: "triangle" },
-            modulationEnvelope: { attack: 0.1, decay: 0.3, sustain: 0.2, release: 2.5 }
-        }
-    }).connect(delay);
+    // 🔥 핵심 1: EQ(이퀄라이저) 추가로 저음 베이스와 고음 멜로디 충돌 방지
+    const eq = new Tone.EQ3({
+        low: -4,   // 베이스 웅웅거림 살짝 깎음
+        mid: 1,    // 피아노 중간음 살림
+        high: 2    // 멜로디 또렷하게 부스팅
+    });
+
+    // 🔥 핵심 2: 리버브 과다 해결 (잔향 줄이고 선명도 높임)
+    const reverb = new Tone.Reverb({
+        decay: 1.4, // 홀 전체 울림 방지
+        wet: 0.18   // 원음 80%, 잔향 20%
+    }).toDestination();
+
+    eq.connect(reverb);
+
+    // 비상용 신스
+    function useEmergencySynth() {
+        if(isLoaded) return;
+        if(piano) piano.dispose(); 
+        piano = new Tone.PolySynth(Tone.Synth, { volume: -10, envelope: { attack: 0.02, release: 1.5 } }).connect(eq);
+        setReady();
+    }
+
+    // 🔥 핵심 3: Sampler Attack 추가 (피아노 타건감을 부드럽게)
+    piano = new Tone.Sampler({
+        urls: { "C3": "C3.mp3", "C4": "C4.mp3", "C5": "C5.mp3", "C6": "C6.mp3" },
+        baseUrl: "https://tonejs.github.io/audio/salamander/",
+        release: 1.5,
+        attack: 0.02, // 약간 늦은 어택으로 쇳소리(딱딱함) 완벽 제거
+        onload: () => { if(!isLoaded) setReady(); },
+        onerror: () => useEmergencySynth()
+    }).connect(eq);
+
+    setTimeout(() => { if(!isLoaded) useEmergencySynth(); }, 3500);
+
+    function setReady() {
+        if (isLoaded) return;
+        isLoaded = true;
+        const btn = document.getElementById("start-btn");
+        btn.textContent = "게임 시작!";
+        btn.classList.add("ready");
+        renderSongs(); 
+    }
 
     function renderSongs() {
         const listDiv = document.getElementById('song-list');
-        listDiv.innerHTML = "";
+        listDiv.innerHTML = ""; 
         songs.forEach((s, idx) => {
             const item = document.createElement('div');
             item.className = `song-item ${idx === selected ? 'active' : ''}`;
-            item.innerHTML = `<div>${s.t}</div><span>Luxury Concert Mode - ${s.a}</span>`;
+            item.innerHTML = `<div><div class="song-title">${s.t}</div><div class="song-artist">스튜디오 믹싱 버전 (${s.a})</div></div>`;
             item.onclick = () => { selected = idx; renderSongs(); };
             listDiv.appendChild(item);
         });
-        document.getElementById('start-btn').innerText = "콘서트 시작";
     }
-    renderSongs();
 
-    // 🔥 V15 무한 연주 엔진: 25개 마디를 랜덤 생성하여 3분 이상 전개
-    function buildInfiniteSheet(songObj) {
+    document.querySelectorAll('.diff-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('active'));
+            e.target.classList.add('active');
+            difficulty = e.target.getAttribute('data-diff');
+        });
+    });
+
+    // 🌟 악보 생성 엔진
+    function parseSheet(songObj) {
         const noteArray = [];
-        let time = 1.5;
-        const partKeys = Object.keys(songObj.parts);
-        
-        for (let i = 0; i < 30; i++) {
-            const partKey = partKeys[Math.floor(Math.random() * partKeys.length)];
-            const items = songObj.parts[partKey].split(',');
-            
-            items.forEach(item => {
+        let time = 1.0;
+        const sequence = songObj.seq.split(',');
+
+        for (let partKey of sequence) {
+            if (time > 90) break;
+            const partStr = songObj.parts[partKey];
+            if (!partStr) continue;
+
+            const items = partStr.split(',');
+            for (let item of items) {
+                if (!item) continue;
+                
                 const [noteStr, durStr] = item.split('_');
                 const dur = parseFloat(durStr);
-                const notes = noteStr.split('+');
+                const notes = noteStr.split('+'); 
+
+                notes.sort((a, b) => Tone.Frequency(b).toMidi() - Tone.Frequency(a).toMidi());
+                const highestNote = notes[0]; 
+                const restNotes = notes.slice(1); 
+
+                // 🔥 핵심 4: 지피티의 음정 기반 레인 배치 (계단 현상 제거)
+                const midi = Tone.Frequency(highestNote).toMidi();
+                let lane = isNaN(midi) ? Math.floor(Math.random() * 4) : midi % 4;
                 
-                const m = Tone.Frequency(notes[0]).toMidi();
-                let lane = Math.floor(((m - 40) / 45) * 4);
-                lane = Math.min(3, Math.max(0, lane));
-                
-                noteArray.push({ t: time, l: lane, n: notes, d: dur });
+                noteArray.push({ 
+                    t: time, 
+                    l: lane, 
+                    n: highestNote,
+                    rest: restNotes,
+                    d: dur 
+                });
                 time += dur;
-            });
+            }
         }
         return noteArray;
     }
 
-    document.getElementById('start-btn').addEventListener('pointerdown', async (e) => {
-        e.preventDefault();
+    document.getElementById('start-btn').addEventListener('pointerdown', async () => {
+        if(!isLoaded) return;
         await Tone.start();
-        document.getElementById('lobby').style.display = 'none';
-        document.getElementById('game').style.display = 'block';
-        hitLineY = window.innerHeight * 0.85;
+        
+        if (difficulty === "easy") speedMult = 0.7;
+        else if (difficulty === "hard") speedMult = 1.4;
+        else speedMult = 1.0;
 
-        tiles.forEach(t => t.el.remove());
-        tiles = [];
-        sheet = buildInfiniteSheet(songs[selected]);
-        isPlaying = true; score = 0; combo = 0; hp = 100; sheetIdx = 0;
+        Tone.Transport.playbackRate = speedMult;
+
+        document.getElementById('lobby').style.display = 'none';
+        gameArea.style.display = 'block';
+        hitLineY = gameArea.offsetHeight * 0.85;
+
+        sheet = parseSheet(songs[selected]);
+        isPlaying = true; score = 0; hp = 100; sheetIdx = 0; tiles = [];
+        document.getElementById('score').innerText = "0";
         updateHP();
         
-        document.getElementById('score').innerText = "0";
-        document.getElementById('combo').classList.remove('show');
-        
+        Tone.Transport.cancel(0); 
+
+        // 베이스 잔잔하게 (볼륨 0.25)
+        sheet.forEach(item => {
+            if (item.rest.length > 0) {
+                Tone.Transport.schedule((time) => {
+                    if (isPlaying) {
+                        piano.triggerAttackRelease(item.rest, item.d, time, 0.25);
+                    }
+                }, item.t);
+            }
+        });
+
         Tone.Transport.stop();
-        Tone.Transport.position = 0;
-        setTimeout(() => {
-            gameStartTime = Tone.now();
-            Tone.Transport.start();
-            requestAnimationFrame(loop);
-        }, 150);
+        Tone.Transport.seconds = 0;
+        Tone.Transport.start();
+        requestAnimationFrame(loop);
     });
+
+    function showJudg(txt, col) {
+        const j = document.getElementById('judgment');
+        j.innerText = txt; j.style.color = col; j.style.opacity = 1;
+        j.style.transform = "scale(1.1)";
+        setTimeout(() => { j.style.opacity = 0; j.style.transform = "scale(1)"; }, 250);
+    }
 
     function updateHP() {
-        const bar = document.getElementById('hp-bar');
-        bar.style.width = hp + "%";
-        if (hp > 60) bar.style.background = "linear-gradient(90deg, #00ff00, var(--neon))";
-        else if (hp > 30) bar.style.background = var(--gold);
-        else bar.style.background = "#ff0055";
+        const hpBar = document.getElementById('hp-bar');
+        hpBar.style.width = `${hp}%`;
+        hpBar.style.background = hp > 60 ? "#00ff00" : (hp > 30 ? "#ffea00" : "#ff0055");
     }
-
-    function flashScreen() {
-        document.body.classList.add('perfect-flash');
-        setTimeout(() => document.body.classList.remove('perfect-flash'), 100);
-    }
-
-    document.getElementById('game').addEventListener("pointerdown", (e) => {
-        if (!isPlaying) return;
-        const now = Tone.now() - gameStartTime;
-        const rect = e.currentTarget.getBoundingClientRect();
-        const touchX = (e.clientX || (e.touches && e.touches[0].clientX)) - rect.left;
-        const lane = Math.floor(touchX / (rect.width / 4));
-
-        let hit = false;
-        for (let i = 0; i < tiles.length; i++) {
-            const o = tiles[i];
-            if (o.hit || o.miss || o.data.l !== lane) continue;
-
-            const diff = Math.abs(o.data.t - now);
-            if (diff < 0.35) {
-                // 🎹 벨로시티(강약) 랜덤 적용으로 생동감 부여
-                const vel = 0.7 + Math.random() * 0.3;
-                masterPiano.triggerAttackRelease(o.data.n, o.data.d * 1.8, Tone.now(), vel);
-                
-                o.hit = true; o.el.classList.add("pressed");
-                combo++; hp = Math.min(100, hp + 2);
-                score += (20 + Math.floor(combo/10));
-                
-                document.getElementById('score').innerText = score;
-                document.getElementById('combo').innerText = `${combo} COMBO`;
-                document.getElementById('combo').classList.add('show');
-                if (diff < 0.1) flashScreen(); // PERFECT 이펙트
-                updateHP();
-                hit = true; break;
-            }
-        }
-        if (!hit) {
-            hp -= 12; updateHP();
-            if (hp <= 0) end(false);
-        }
-    });
 
     function loop() {
         if(!isPlaying) return;
-        const now = Tone.now() - gameStartTime;
-        const LOOKAHEAD = 1.3;
+        const now = Tone.Transport.seconds; 
+        const LOOKAHEAD = 1.6; 
         const speed = hitLineY / LOOKAHEAD;
 
         while(sheetIdx < sheet.length && sheet[sheetIdx].t < now + LOOKAHEAD) {
             const data = sheet[sheetIdx++];
             const el = document.createElement('div');
-            el.className = 'tile';
+            
+            const visualDur = data.d * 1.4; 
+            const h = Math.max(100, visualDur * speed * 0.8);
+            const isLong = data.d >= 0.6; 
+            
+            el.className = `tile ${isLong ? 'long' : ''}`;
             el.style.left = (data.l * 25) + '%';
-            el.style.height = Math.max(90, data.d * speed * 0.9) + 'px';
+            el.style.height = h + 'px';
             el.style.top = "-500px";
-            const obj = { el, data, h: parseFloat(el.style.height), hit: false, miss: false };
-            document.getElementById('game').appendChild(el);
+            
+            const obj = { el, data, h, hit: false, miss: false };
+            
+            el.addEventListener('pointerdown', (e) => {
+                e.preventDefault();
+                if(obj.hit || obj.miss) return;
+
+                const rect = el.getBoundingClientRect();
+                const gameRect = gameArea.getBoundingClientRect();
+                const tileTop = rect.top - gameRect.top;
+                const tileBottom = rect.bottom - gameRect.top;
+                
+                if (tileBottom > hitLineY - 150 && tileTop < hitLineY + 150) {
+                    
+                    // 🔥 핵심 5: 멜로디 길이와 볼륨(Velocity) 타협. 고막 찢어짐 방지! (0.75)
+                    piano.triggerAttackRelease(data.n, data.d * 1.1, Tone.now(), 0.75);
+                    
+                    obj.hit = true; 
+                    el.classList.add('pressed');
+                    
+                    const dist = Math.abs(tileBottom - hitLineY);
+                    const isPerfect = dist < 70;
+                    
+                    score += (isLong ? 30 : (isPerfect ? 20 : 10)); 
+                    hp = Math.min(100, hp + 3);
+                    document.getElementById('score').innerText = score;
+                    
+                    showJudg(isPerfect ? "PERFECT" : "GOOD", isPerfect ? "var(--neon)" : "#fff");
+                    updateHP();
+                }
+            });
+            gameArea.appendChild(el);
             tiles.push(obj);
         }
 
@@ -245,24 +310,31 @@
             const bottom = hitLineY - (o.data.t - now) * speed;
             o.el.style.top = (bottom - o.h) + "px";
 
-            if(!o.hit && !o.miss && (o.data.t - now) < -0.35) {
-                o.miss = true; hp -= 25; updateHP();
-                if (hp <= 0) { end(false); return; }
+            if(!o.hit && !o.miss && (o.data.t - now) < -0.2) {
+                o.miss = true; o.el.classList.add('missed');
+                hp -= 15; score = Math.max(0, score - 15);
+                document.getElementById('score').innerText = score;
+                showJudg("MISS", "#ff0055");
+                updateHP();
+                if(hp <= 0) end(false);
             }
-            if(bottom - o.h > window.innerHeight + 100) { o.el.remove(); tiles.splice(i, 1); }
+            
+            if(bottom - o.h > gameArea.offsetHeight + 100) { 
+                o.el.remove(); 
+                tiles.splice(i, 1); 
+            }
         }
+
         if(sheetIdx >= sheet.length && tiles.length === 0) end(true);
         else requestAnimationFrame(loop);
     }
 
     function end(win) {
-        if (!isPlaying) return;
-        isPlaying = false; Tone.Transport.pause();
-        setTimeout(() => masterPiano.releaseAll(), 500);
-        document.getElementById('game').style.display = 'none';
+        isPlaying = false; Tone.Transport.stop(); Tone.Transport.cancel(0);
+        gameArea.style.display = 'none';
         document.getElementById('result').style.display = 'flex';
-        document.getElementById('res-title').innerText = win ? "LEGENDARY PERFORMANCE" : "HP EXHAUSTED";
-        document.getElementById('rank').innerText = win ? (score > 3000 ? "SSS" : "S") : "F";
+        document.getElementById('res-title').innerText = win ? "STAGE CLEAR!" : "GAME OVER";
+        document.getElementById('rank').innerText = win ? (score > (sheet.length * 15) ? "SSS" : "S") : "F";
         document.getElementById('final-score').innerText = `Score: ${score}`;
     }
 </script>
