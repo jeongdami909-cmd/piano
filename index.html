@@ -3,36 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Piano Tiles - V20 Ultimate Classic</title>
+    <title>Piano Tiles - V21 Ultimate Stable</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
     <style>
         :root { --neon: #00f2ff; --pink: #ff00ea; --gold: #ffea00; }
         * { box-sizing: border-box; user-select: none; margin: 0; padding: 0; font-family: 'Pretendard', sans-serif; -webkit-tap-highlight-color: transparent; }
         
-        /* 🔥 지피티 패치 2: 이중 터치 방지 (완벽한 모바일 최적화) */
         body { color: #000; height: 100dvh; overflow: hidden; background: #fff; touch-action: none; }
         
         .screen { position: absolute; top: 0; left: 50%; width: 100%; height: 100%; max-width: 500px; transform: translateX(-50%); display: none; flex-direction: column; background: #fff; border-left: 1px solid #ddd; border-right: 1px solid #ddd; }
         
         #lobby { display: flex; z-index: 100; padding: 25px; background: #050508; color: #fff; }
-        h1 { text-align: center; font-size: 28px; font-weight: 900; background: linear-gradient(90deg, var(--neon), var(--pink)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; padding: 15px 0; }
+        h1 { text-align: center; font-size: 30px; font-weight: 900; background: linear-gradient(90deg, var(--neon), var(--pink)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; padding: 15px 0; }
         
         #song-list { flex: 1; overflow-y: auto; background: rgba(255,255,255,0.03); border-radius: 20px; padding: 10px; margin-bottom: 20px; border: 1px solid #222; }
         .song-item { padding: 18px; border-bottom: 1px solid #222; border-radius: 12px; margin-bottom: 8px; cursor: pointer; background: rgba(255,255,255,0.02); }
         .song-item.active { background: rgba(0,242,255,0.15); border: 1px solid var(--neon); }
-        .song-title { font-weight: 800; font-size: 16px; }
-        .song-artist { font-size: 11px; color: var(--gold); margin-top: 4px; }
+        .song-title { font-weight: 900; font-size: 16px; }
+        .song-artist { font-size: 12px; color: var(--gold); margin-top: 4px; }
 
-        #start-btn { width: 100%; padding: 22px; border-radius: 50px; border: none; font-size: 20px; font-weight: 900; background: linear-gradient(45deg, var(--neon), var(--pink)); color: #fff; cursor: pointer; }
+        #start-btn { width: 100%; padding: 22px; border-radius: 50px; border: none; font-size: 20px; font-weight: 900; background: linear-gradient(45deg, var(--neon), var(--pink)); color: #fff; cursor: pointer; transition: 0.2s; }
+        #start-btn:active { transform: scale(0.98); }
 
-        /* 🔥 지피티 패치 2: 게임 영역 터치 액션 강제 차단 */
         #game { overflow: hidden; z-index: 50; position: relative; touch-action: none; background: #fff; }
         
         .lane-line { position: absolute; top: 0; width: 25%; height: 100%; border-right: 1px solid #ddd; pointer-events: none; }
         
-        #score { position: absolute; top: 30px; width: 100%; text-align: center; font-size: 60px; font-weight: 900; z-index: 60; color: #ff0055; pointer-events: none; text-shadow: 2px 2px 0px #fff, -2px -2px 0px #fff; }
+        #score { position: absolute; top: 30px; width: 100%; text-align: center; font-size: 65px; font-weight: 900; z-index: 60; color: #ff0055; pointer-events: none; text-shadow: 3px 3px 0px #fff, -3px -3px 0px #fff, 0px 3px 0px #fff, 0px -3px 0px #fff; }
 
-        /* 🔥 60fps 부드러운 애니메이션: cubic-bezier로 쫀득한 하강 스크롤 구현 */
         .row { position: absolute; width: 100%; height: 25%; transition: bottom 0.12s cubic-bezier(0.25, 0.46, 0.45, 0.94); }
         
         .tile { position: absolute; width: 25%; height: 100%; background: #111; border: 1px solid #000; box-shadow: inset 0 -4px 0 rgba(255,255,255,0.2); transition: background 0.1s; }
@@ -41,14 +39,14 @@
         
         @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
 
-        #result { justify-content: center; align-items: center; text-align: center; z-index: 200; background: rgba(0,0,0,0.9); color: #fff; }
+        #result { justify-content: center; align-items: center; text-align: center; z-index: 200; background: rgba(0,0,0,0.95); color: #fff; }
     </style>
 </head>
 <body>
 
 <div id="lobby" class="screen" style="display: flex;">
-    <h1>ULTIMATE CLASSIC V20</h1>
-    <p style="text-align:center; color:#888; font-size:12px; margin-bottom:15px;">전체 음역대 복원 및 60fps 스크롤 안정화</p>
+    <h1>V21 MASTERPIECE</h1>
+    <p style="text-align:center; color:#aaa; font-size:12px; margin-bottom:15px;">단 1%의 버그도 허용하지 않는 완벽한 튜닝</p>
     <div id="song-list"></div>
     <button id="start-btn">그랜드 피아노 조율 중...</button>
 </div>
@@ -63,8 +61,8 @@
 </div>
 
 <div id="result" class="screen">
-    <h2 id="res-title" style="font-size:32px;">GAME OVER</h2>
-    <div id="rank" style="font-size:100px; font-weight:900; color:var(--gold); margin: 20px 0;">S</div>
+    <h2 id="res-title" style="font-size:36px; margin-bottom:10px;">GAME OVER</h2>
+    <div id="rank" style="font-size:110px; font-weight:900; color:var(--gold); margin: 10px 0; text-shadow: 0 0 20px var(--gold);">S</div>
     <div id="final-score" style="font-size:24px; color:#ccc; margin-bottom:40px;">Score: 0</div>
     <button onclick="location.reload()" style="padding: 20px 60px; border-radius: 50px; border: none; font-weight: bold; background:#fff; font-size: 20px; cursor: pointer; color:#000;">다시 도전</button>
 </div>
@@ -75,7 +73,7 @@
         { t: "겨울바람", a: "Chopin", parts: { A: "E4,E4,F4,E4,A4,G#4,A4,C5,B4,C5,E5", B: "A5,G#5,A5,F5,E5,D#5,E5,C5,B4,A#4,B4,G4,F4,E4,F4,D4" } },
         { t: "River Flows in You", a: "Yiruma", parts: { A: "F#4,E4,F#4,C#4,F#4,E4,F#4,C#4", B: "B3,A3,B3,F#3,F#4,E4,F#4,C#4" } },
         { t: "Piano Concerto No.2", a: "Rachmaninoff", parts: { A: "C4,D4,Eb4,F4,G4,Ab4,G4", B: "G4,F4,G4,Ab4,G4,F4,Eb4" } },
-        { t: "Take On Me", a: "a-ha", parts: { A: "F#5,F#5,D5,B4,B4,E5,E5,E5,G#5,G#5,A5,B5,A5,A5,A5,E5,D5" } },
+        { t: "Take On Me", a: "a-ha", parts: { A: "F#5,F#5,D5,B4,B4,E5,E5,E5,G#5,G#5,A5,B5,A5,A5,A5,E5,D5", B: "A4,A4,E4,F#4,G#4" } },
         { t: "Still D.R.E.", a: "Dr. Dre", parts: { A: "E5,E5,E5,E5,E5,E5,E5", B: "B4,B4,B4,B4,B4,B4,B4" } }
     ];
 
@@ -83,9 +81,8 @@
     let isPlaying = false, score = 0, currentStep = 0, selected = 0;
     const gameArea = document.getElementById('game');
     
-    gameArea.style.touchAction = "none"; // 모바일 씹힘 2중 차단
+    gameArea.style.touchAction = "none"; 
 
-    // 🔥 지피티 패치 1: Salamander 샘플 전체 음역대 로드 (무음 버그 완벽 해결)
     piano = new Tone.Sampler({
         urls: {
             A0: "A0.mp3", C1: "C1.mp3", "D#1": "Ds1.mp3", "F#1": "Fs1.mp3",
@@ -149,7 +146,7 @@
 
     function createRow(offset) {
         const sheetIdx = currentStep + offset;
-        if(sheetIdx >= sheet.length) return; // 악보가 끝나면 생성 중지
+        if(sheetIdx >= sheet.length) return; 
 
         const data = sheet[sheetIdx];
         const rowEl = document.createElement('div');
@@ -163,18 +160,24 @@
         rowEl.appendChild(tileEl);
         gameArea.appendChild(rowEl);
         
-        activeRows.push({ rowEl, tileEl, lane: data.lane, note: data.note, sheetIdx });
+        // 🔥 지피티 패치 2: 연타 꼬임 방지를 위한 locked 플래그 추가
+        activeRows.push({ rowEl, tileEl, lane: data.lane, note: data.note, sheetIdx, locked: false });
     }
 
     gameArea.addEventListener("pointerdown", (e) => {
-        // 🔥 지피티 패치 4: 이중 종료(빨간 타일 중복) 방지
         if (!isPlaying || activeRows.length === 0) return;
+
+        // 🔥 지피티 패치 2: 터치 연타 시 이중 처리 방지
+        const bottomRow = activeRows[0]; 
+        if (bottomRow.locked) return;
+        bottomRow.locked = true;
 
         const rect = gameArea.getBoundingClientRect();
         const touchX = e.clientX - rect.left;
-        const clickedLane = Math.floor(touchX / (rect.width / 4));
-
-        const bottomRow = activeRows[0]; 
+        
+        // 🔥 지피티 패치 3: 레인 계산 미세 오차 완벽 차단 (0~3 클램프)
+        let clickedLane = Math.floor(touchX / (rect.width / 4));
+        clickedLane = Math.max(0, Math.min(3, clickedLane));
 
         if (clickedLane === bottomRow.lane) {
             // ✅ 정답
@@ -187,7 +190,6 @@
             const removedRow = activeRows.shift();
             setTimeout(() => removedRow.rowEl.remove(), 120); 
             
-            // 60fps 부드러운 스크롤 애니메이션
             activeRows.forEach((r, idx) => {
                 r.rowEl.style.bottom = (idx * 25) + '%'; 
             });
@@ -195,8 +197,8 @@
             currentStep++;
             createRow(4);
             
-            // 🔥 지피티 패치 3: 완벽한 곡 종료 조건 (화면에 남은 타일이 0이 될 때)
-            if(activeRows.length === 0) {
+            // 🔥 지피티 패치 1: 100% 확실한 곡 완료/클리어 조건
+            if(currentStep >= sheet.length && activeRows.length === 0) {
                 setTimeout(() => end(true), 300);
             }
 
@@ -212,7 +214,7 @@
     });
 
     function end(win) {
-        // 🔥 지피티 패치 4: 다중 실행 완벽 차단
+        // 🔥 지피티 패치 4: 다중 실행 완벽 차단 (빨간 타일 중복 생성 방지)
         if (!isPlaying) return;
         isPlaying = false;
         
@@ -222,7 +224,7 @@
             document.getElementById('res-title').innerText = win ? "SONG CLEARED!" : "GAME OVER";
             document.getElementById('rank').innerText = win ? "SSS" : (score > 150 ? "S" : (score > 50 ? "A" : "F"));
             document.getElementById('final-score').innerText = `Score: ${score}`;
-        }, 600); // 실패한 타일의 깜빡임을 충분히 보여주고 결과창 띄움
+        }, 500); 
     }
 </script>
 </body>
