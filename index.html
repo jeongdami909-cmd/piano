@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Crystal Piano - Music Box</title>
+    <title>Smart Pitch Piano</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
     <style>
         :root { --neon: #00f2ff; --pink: #ff00ea; --miss: #ff0055; }
@@ -19,12 +19,10 @@
         .upload-area.active { border-color: var(--neon); background: rgba(0, 242, 255, 0.1); }
         #file-status { color: #ccc; font-size: 14px; word-break: break-all; }
 
-        /* 조성 버튼 */
         .key-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
         .key-btn { padding: 12px 0; background: #111; border: 1px solid #333; color: #aaa; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer; }
         .key-btn.selected { background: var(--neon); color: #000; border-color: #fff; }
 
-        /* 난이도 버튼 */
         .diff-grid { display: flex; gap: 10px; }
         .diff-btn { flex: 1; padding: 15px 0; background: #111; border: 1px solid #333; border-radius: 8px; color: #aaa; font-weight: bold; cursor: pointer; transition: 0.2s; }
         .diff-btn.active { background: var(--pink); color: #fff; border-color: #fff; }
@@ -39,10 +37,8 @@
         .tile.pressed { transform: scale(1.3); opacity: 0; transition: 0.2s; background: #fff; box-shadow: 0 0 40px #fff; }
         .tile.missed { background: linear-gradient(to bottom, #550000, var(--miss)); box-shadow: 0 0 15px var(--miss); opacity: 0.5; }
         
-        /* 판정 선 */
         #hit-line { position: absolute; bottom: 15%; width: 100%; height: 3px; background: rgba(255,255,255,0.5); z-index: 5; box-shadow: 0 0 10px #fff; }
         
-        /* 점수 */
         #score-container { position: absolute; top: 40px; width: 100%; text-align: center; z-index: 50; pointer-events: none; }
         #score { font-size: 60px; font-weight: 900; text-shadow: 0 0 15px var(--neon); transition: color 0.2s; }
         #feedback { font-size: 20px; font-weight: bold; height: 24px; color: var(--miss); opacity: 0; transition: 0.2s; }
@@ -51,7 +47,7 @@
 <body>
 
 <div id="lobby">
-    <h1>Music Box Piano</h1>
+    <h1>Smart Pitch Piano</h1>
     
     <div class="section-title">1. 곡 선택 (MP3)</div>
     <div class="upload-area" id="drop-zone" onclick="document.getElementById('audio-upload').click()">
@@ -60,7 +56,7 @@
     <input type="file" id="audio-upload" accept="audio/*" style="display:none;">
 
     <div class="section-title">2. 노래 조(Key) 맞추기</div>
-    <p style="font-size: 12px; color: #888; margin-top: -5px; margin-bottom: 10px;">배경음악과 어울리게 오르골 멜로디의 으뜸음을 선택하세요.</p>
+    <p style="font-size: 12px; color: #888; margin-top: -5px; margin-bottom: 10px;">노래가 고조될 때 음이 어울리도록 으뜸음을 맞춥니다.</p>
     <div class="key-grid" id="key-selector">
         <button class="key-btn selected" data-key="C">C</button>
         <button class="key-btn" data-key="Db">Db</button>
@@ -96,26 +92,26 @@
 </div>
 
 <script>
-    let piano, bgm, isPlaying = false, score = 0, tiles = [];
+    let piano, bgm, fft, isPlaying = false, score = 0, tiles = [];
     let loopId, spawnId, winTimeoutId;
     let selectedRoot = "C";
     let currentSpeed = 6;
     let currentSpawnRate = 700;
     
-    // 오르골 멜로디 관련 변수
-    let melodySequence = [];
-    let melodyIndex = 0;
-    
+    // 피아노 샘플러
     piano = new Tone.Sampler({
         urls: { A0: "A0.mp3", C1: "C1.mp3", "D#1": "Ds1.mp3", "F#1": "Fs1.mp3", A1: "A1.mp3", C2: "C2.mp3", "D#2": "Ds2.mp3", "F#2": "Fs2.mp3", A2: "A2.mp3", C3: "C3.mp3", "D#3": "Ds3.mp3", "F#3": "Fs3.mp3", A3: "A3.mp3", C4: "C4.mp3", "D#4": "Ds4.mp3", "F#4": "Fs4.mp3", A4: "A4.mp3", C5: "C5.mp3", "D#5": "Ds5.mp3", "F#5": "Fs5.mp3", A5: "A5.mp3", C6: "C6.mp3", "D#6": "Ds6.mp3", "F#6": "Fs6.mp3", A6: "A6.mp3", C7: "C7.mp3", "D#7": "Ds7.mp3", "F#7": "Fs7.mp3", A7: "A7.mp3", C8: "C8.mp3" },
         baseUrl: "https://tonejs.github.io/audio/salamander/",
-        release: 2, // 여운을 더 길게 주어 오르골 느낌 극대화
+        release: 2,
         onload: () => { 
             const startBtn = document.getElementById('start-btn');
             if(startBtn.innerText === "PIANO LOADING...") startBtn.innerText = "곡을 먼저 선택해주세요"; 
         }
     }).toDestination();
     piano.volume.value = 5;
+
+    // 🎵 실시간 주파수 분석기 추가!
+    fft = new Tone.Analyser("fft", 2048);
 
     document.querySelectorAll('.diff-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
@@ -131,7 +127,6 @@
             document.querySelectorAll('.key-btn').forEach(b => b.classList.remove('selected'));
             btn.classList.add('selected');
             selectedRoot = btn.dataset.key;
-            generateMelodySequence(selectedRoot); // 조 변경 시 멜로디 새로 생성
         });
     });
 
@@ -143,6 +138,8 @@
         
         const url = URL.createObjectURL(file);
         if(bgm) bgm.dispose();
+        
+        // bgm을 재생하면서 동시에 fft(분석기)로 소리 정보를 보냄
         bgm = new Tone.Player({
             url: url,
             onload: () => {
@@ -150,7 +147,7 @@
                 startBtn.innerText = "콘서트 시작!";
                 startBtn.classList.add('ready');
             }
-        }).toDestination();
+        }).connect(fft).toDestination();
         bgm.volume.value = -3; 
     });
 
@@ -164,7 +161,6 @@
         score = 0;
         document.getElementById('score').innerText = '0';
         
-        generateMelodySequence(selectedRoot);
         bgm.start();
         
         const duration = bgm.buffer.duration * 1000;
@@ -174,27 +170,51 @@
         spawnId = setInterval(spawnTile, currentSpawnRate);
     });
 
-    // 🌟 핵심 기능: 물결치듯 흐르는 오르골 멜로디 배열 생성 (랜덤 아님!)
-    function generateMelodySequence(root) {
-        const notes = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"];
-        const intervals = [0, 2, 4, 7, 9]; // 메이저 펜타토닉
-        const rootIdx = notes.indexOf(root);
+    // 🎵 핵심 로직: 현재 MP3에서 가장 강하게 울리는 음정(Pitch)을 찾아 아름다운 음계로 변환
+    function getDynamicNoteFromMP3(rootKey) {
+        const data = fft.getValue();
+        let maxEnergy = -Infinity;
+        let peakIndex = 0;
         
-        let ascending = [];
-        // 4옥타브부터 5옥타브까지 순차적으로 올라가는 음 생성
-        for(let oct = 4; oct <= 5; oct++) {
-            for(let i of intervals) {
-                let idx = (rootIdx + i) % 12;
-                let outOct = oct + Math.floor((rootIdx + i) / 12);
-                ascending.push(notes[idx] + outOct);
+        // 멜로디가 주로 분포하는 주파수 대역(약 200Hz ~ 1500Hz) 분석
+        for(let i = 10; i < 200; i++) {
+            if(data[i] > maxEnergy) {
+                maxEnergy = data[i];
+                peakIndex = i;
             }
         }
-        // 꼭대기 찍고 다시 내려오는 음 생성
-        let descending = [...ascending].reverse().slice(1, -1); 
+
+        // 주파수를 미디 노트 번호로 변환 (음 높이 파악)
+        const nyquist = Tone.context.sampleRate / 2;
+        const freq = (peakIndex / fft.size) * nyquist;
         
-        // 최종 멜로디: [도, 레, 미, 솔, 라, 도, 레... 라, 솔, 미, 레] 순서로 반복됨
-        melodySequence = ascending.concat(descending);
-        melodyIndex = 0; // 게임 시작 시 첫 음부터 시작
+        let rawMidi = 60; // 기본값 (C4)
+        if(freq > 50 && maxEnergy > -80) {
+            rawMidi = Tone.Frequency(freq).toMidi();
+        }
+
+        // 쇳소리(불협화음) 방지를 위해 노래 조(Key)에 맞춰 음 보정
+        const notes = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"];
+        const intervals = [0, 2, 4, 7, 9]; // 아름다운 펜타토닉 스케일
+        const rootIdx = notes.indexOf(rootKey);
+        const scalePitches = intervals.map(i => (rootIdx + i) % 12);
+        
+        let pitchClass = rawMidi % 12;
+        let octave = Math.floor(rawMidi / 12) - 1;
+        
+        // 가장 가까운 어울리는 음 찾기
+        let closest = scalePitches[0];
+        let minDiff = 12;
+        for(let p of scalePitches) {
+            let diff = Math.min(Math.abs(pitchClass - p), 12 - Math.abs(pitchClass - p));
+            if(diff < minDiff) { minDiff = diff; closest = p; }
+        }
+        
+        // 너무 높거나 낮은 음이 나지 않도록 옥타브 고정 (가운데 건반 위주)
+        if(octave < 4) octave = 4;
+        if(octave > 5) octave = 5;
+        
+        return notes[closest] + octave;
     }
 
     function showMissFeedback() {
@@ -220,14 +240,12 @@
             e.preventDefault();
             if (t.classList.contains('pressed') || t.classList.contains('missed')) return;
             
-            // 판정선 근처에서만 터치 가능하도록 제한
             const rect = t.getBoundingClientRect();
             if (rect.bottom < window.innerHeight * 0.5) return; 
 
-            // 🎵 순서대로 흐르는 오르골 멜로디 연주! (랜덤 아님)
-            const note = melodySequence[melodyIndex % melodySequence.length];
-            piano.triggerAttackRelease(note, "2n");
-            melodyIndex++; // 다음 건반을 누르면 다음 음이 나오도록 증가
+            // 🌟 건반을 누르는 순간! MP3를 분석해서 곡의 높낮이를 따라가는 음을 연주함
+            const dynamicNote = getDynamicNoteFromMP3(selectedRoot);
+            piano.triggerAttackRelease(dynamicNote, "2n");
 
             t.classList.add('pressed');
             score += 10;
@@ -247,22 +265,21 @@
     function gameLoop() {
         if (!isPlaying) return;
         const h = window.innerHeight;
-        const hitLineY = h * 0.85; // 하단 판정선 위치
+        const hitLineY = h * 0.85; 
         
         for (let i = tiles.length - 1; i >= 0; i--) {
             const t = tiles[i];
             let top = parseFloat(t.style.top || -140) + currentSpeed;
             t.style.top = top + 'px';
             
-            // 🚨 건반을 안 누르고 판정선을 지나친 경우 (MISS 처리)
+            // 놓치면 -10점 페널티
             if (top > hitLineY + 20 && !t.classList.contains('pressed') && !t.classList.contains('missed')) {
-                t.classList.add('missed'); // 놓친 타일로 표시 (빨갛게 변함)
-                score -= 10; // 점수 10점 깎임!
+                t.classList.add('missed'); 
+                score -= 10; 
                 document.getElementById('score').innerText = score;
                 showMissFeedback();
             }
             
-            // 화면 완전 밖으로 나가면 삭제
             if (top > h + 100) { 
                 t.remove(); 
                 tiles.splice(i, 1); 
