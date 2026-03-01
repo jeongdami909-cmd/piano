@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Piano Tiles - V10 Concert Engine</title>
+    <title>Piano Tiles - V11 Grand Concert</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
     <style>
         :root { --neon: #00f2ff; --pink: #ff00ea; --gold: #ffea00; --bg: #050508; }
         * { box-sizing: border-box; user-select: none; margin: 0; padding: 0; font-family: 'Pretendard', sans-serif; -webkit-tap-highlight-color: transparent; }
-        body { color: #fff; height: 100dvh; overflow: hidden; background: var(--bg); transition: background 0.1s; }
+        body { color: #fff; height: 100dvh; overflow: hidden; background: var(--bg); transition: background 0.15s ease-out; }
         
         button { touch-action: manipulation; }
 
@@ -32,11 +32,22 @@
 
         #game { overflow: hidden; z-index: 50; position: relative; touch-action: none; }
         
-        #hit-line { position: absolute; bottom: 15%; width: 100%; height: 3px; background: rgba(255,255,255,0.5); z-index: 5; pointer-events: none; }
+        /* 백그라운드 레인 컨테이너 */
+        #lanes-container { position: absolute; width: 100%; height: 100%; top: 0; left: 0; display: flex; pointer-events: none; opacity: 0.5;}
+        .lane-line { flex: 1; border-right: 1px dashed rgba(255,255,255,0.08); }
+        .lane-line.black { background: rgba(0,0,0,0.4); border-right: 1px solid rgba(255,255,255,0.02); } /* 검은 건반 레인 */
+        .lane-line.white { background: rgba(255,255,255,0.02); } /* 흰 건반 레인 */
+
+        #hit-line { position: absolute; bottom: 15%; width: 100%; height: 3px; background: rgba(255,255,255,0.8); z-index: 5; pointer-events: none; box-shadow: 0 0 10px var(--neon); }
         
-        #keyboard-container { position: absolute; bottom: 0; width: 100%; height: 15%; display: flex; z-index: 4; border-top: 2px solid #333; }
-        .piano-key { flex: 1; border-right: 1px solid #222; background: linear-gradient(to bottom, #111, #000); position: relative; transition: background 0.1s; }
-        .piano-key.active { background: linear-gradient(to bottom, var(--pink), var(--neon)); }
+        /* 🔥 리얼 피아노 하단 UI */
+        #keyboard-container { position: absolute; bottom: 0; width: 100%; height: 15%; display: flex; z-index: 4; border-top: 3px solid #444; }
+        .piano-key { flex: 1; position: relative; transition: background 0.1s; }
+        .piano-key.white { background: linear-gradient(to bottom, #ddd, #fff); border-right: 1px solid #aaa; border-radius: 0 0 4px 4px; z-index: 1;}
+        .piano-key.black { background: linear-gradient(to bottom, #333, #000); border-right: 1px solid #000; border-left: 1px solid #000; z-index: 2; height: 100%; margin: 0 -2%; }
+        
+        .piano-key.active.white { background: linear-gradient(to bottom, var(--neon), #fff); box-shadow: 0 0 15px var(--neon); }
+        .piano-key.active.black { background: linear-gradient(to bottom, var(--pink), #000); box-shadow: 0 0 15px var(--pink); }
 
         #score-container { position: absolute; top: 40px; width: 100%; text-align: center; z-index: 60; pointer-events: none; }
         #score { font-size: 45px; font-weight: 900; text-shadow: 0 0 15px var(--neon); }
@@ -45,8 +56,12 @@
 
         #judgment { position: absolute; top: 45%; width: 100%; text-align: center; font-size: 45px; font-weight: 900; z-index: 70; opacity: 0; pointer-events: none; }
 
-        .tile { position: absolute; border-radius: 4px; background: linear-gradient(to bottom, #fff, var(--neon)); z-index: 10; pointer-events: none; box-shadow: 0 0 10px rgba(0, 242, 255, 0.3); }
-        .tile.pressed { opacity: 0; transform: scale(1.1); transition: 0.2s; }
+        .tile { position: absolute; border-radius: 4px; background: linear-gradient(to bottom, #fff, var(--neon)); z-index: 10; pointer-events: none; box-shadow: 0 0 10px rgba(0, 242, 255, 0.4); }
+        .tile.black-tile { background: linear-gradient(to bottom, var(--pink), #fff); box-shadow: 0 0 10px rgba(255, 0, 234, 0.4); }
+        .tile.pressed { opacity: 0; transform: scale(1.2); transition: 0.2s; }
+
+        /* 콘서트 라이팅 이펙트 */
+        .concert-flash { background: radial-gradient(circle, rgba(0, 242, 255, 0.2) 0%, var(--bg) 70%) !important; }
 
         #result { justify-content: center; align-items: center; text-align: center; z-index: 200; background: rgba(0,0,0,0.98); }
     </style>
@@ -54,15 +69,15 @@
 <body>
 
 <div id="lobby" class="screen" style="display: flex;">
-    <h1>V10 CONCERT ENGINE</h1>
-    <p class="desc">가이드를 따라 실제 화음을 연주하는 신디사이저</p>
+    <h1>V11 GRAND CONCERT</h1>
+    <p class="desc">버그 픽스 및 리얼 건반 UI 탑재</p>
     <div class="diff-group">
         <button class="diff-btn" data-diff="easy">EASY</button>
         <button class="diff-btn active" data-diff="normal">NORMAL</button>
         <button class="diff-btn" data-diff="hard">HARD</button>
     </div>
     <div id="song-list"></div>
-    <button id="start-btn" class="ready">악기 로드 및 연주 시작!</button>
+    <button id="start-btn" class="ready">그랜드 피아노 로드 및 연주 시작!</button>
 </div>
 
 <div id="game" class="screen">
@@ -73,6 +88,7 @@
     <div id="judgment"></div>
     <div id="hit-line"></div>
     
+    <div id="lanes-container"></div>
     <div id="keyboard-container"></div>
 </div>
 
@@ -80,7 +96,7 @@
     <h2 id="res-title" style="font-size:28px;">CONCERT OVER</h2>
     <div id="rank" style="font-size:100px; font-weight:900; color:var(--gold); margin: 10px 0;">S</div>
     <div id="final-score" style="font-size:20px; margin-bottom: 30px; color:#aaa;">Score: 0</div>
-    <button onclick="location.reload()" style="padding: 15px 40px; border-radius: 30px; border: none; font-weight: bold; background:#fff; cursor: pointer; font-size: 18px; color:#000;">로비로 돌아가기</button>
+    <button onclick="location.reload()" style="padding: 15px 40px; border-radius: 30px; border: none; font-weight: bold; background:#fff; cursor: pointer; font-size: 18px; color:#000;">대기실로 돌아가기</button>
 </div>
 
 <script>
@@ -88,10 +104,9 @@
         { t: "Canon in D", a: "Pachelbel", parts: { A: "F#5+D3_0.5,E5+A2_0.5,D5+B2_0.5,C#5+F#2_0.5,B4+G2_0.5,A4+D3_0.5,B4+G2_0.5,C#5+A2_0.5", B: "D5+D3_0.25,C#5_0.25,D5_0.25,D4_0.25,E4+A2_0.25,F#4_0.25,G4_0.25,A4_0.25,B4+B2_0.25,A4_0.25,G4_0.25,F#4_0.25", C: "G4+G2_0.25,F#4_0.25,E4_0.25,D4_0.25,C#4+D3_0.25,B3_0.25,A3_0.25,G3_0.25,F#3+G2_0.25,E3_0.25,D3_0.25,E3_0.25" }, seq: "A,A,B,B,C,C,A" },
         { t: "Take On Me", a: "a-ha", parts: { A: "F#5+B3_0.2,F#5_0.2,D5_0.2,B4_0.2,B4+E3_0.4,E5_0.2,E5_0.2,E5_0.2,G#5+A3_0.2,G#5_0.2,A5_0.2,B5_0.2,A5+D3_0.2,A5_0.2,A5_0.2", B: "A4+D3_0.4,A4_0.4,E4_0.4,F#4_0.4,G#4+E3_0.8" }, seq: "A,A,B,B,A,B" },
         { t: "겨울바람", a: "Chopin", parts: { A: "E4+A2_0.5,E4_0.5,F4_0.5,E4_0.5,A4+A2_1.0,G#4_0.5,A4_0.5,C5+A2_1.0,B4_0.5,C5_0.5", B: "A5+A2_0.15,G#5_0.15,A5_0.15,F5_0.15,E5+E2_0.15,D#5_0.15,E5_0.15,C5_0.15,B4+B2_0.15,A#4_0.15,B4_0.15,G4_0.15" }, seq: "A,B,B,A,B" },
-        { t: "Piano Concerto No.2", a: "Rachmaninoff", parts: { A: "C3+C4_1.0,D3+D4_1.0,Eb3+Eb4_1.0,F3+F4_1.0,G3+G4_1.5,Ab3+Ab4_0.5,G3+G4_2.0", B: "G4+Eb3_0.5,F4_0.5,G4_0.5,Ab4+F3_1.0,G4_0.5,F4_0.5,Eb4+Eb3_1.5" }, seq: "A,B,B,A,B" }
+        { t: "Driver's High", a: "L'Arc-en-Ciel", parts: { A: "E5+E3_0.2,E5_0.2,D5_0.2,B4_0.2,A4+A2_0.4,G4_0.2,A4_0.2,B4+B2_0.8", B: "B4+G3_0.4,B4_0.4,D5_0.4,E5+A3_0.8,D5_0.4,B4_0.4,A4+E3_0.8" }, seq: "A,A,B,B,A,B,A" }
     ];
 
-    // 🔥 V10: 터치 → MIDI 변환을 위한 동적 엔진 변수들
     let masterPiano, sheet = [], tiles = [], activeTouches = {};
     let isPlaying = false, score = 0, combo = 0, sheetIdx = 0, selected = 0;
     let difficulty = "normal", speedMult = 1.0, hitLineY, gameStartTime = 0;
@@ -99,13 +114,23 @@
     
     const gameArea = document.getElementById('game');
     const keyboardContainer = document.getElementById('keyboard-container');
+    const lanesContainer = document.getElementById('lanes-container');
 
-    // 고급스럽고 선명한 리얼 피아노 사운드 튜닝
+    // 🔥 V11: 지피티님이 짚어주신 최신 v14 PolySynth 생성자 문법 완벽 적용!
     const reverb = new Tone.Reverb({ decay: 1.8, wet: 0.25 }).toDestination();
-    masterPiano = new Tone.PolySynth(Tone.Synth, { 
-        volume: 0, 
-        oscillator: { type: "triangle" }, 
-        envelope: { attack: 0.005, decay: 0.2, sustain: 0.3, release: 0.8 } 
+    
+    masterPiano = new Tone.PolySynth({
+        maxPolyphony: 16,
+        voice: Tone.Synth,
+        options: {
+            oscillator: { type: "triangle" },
+            envelope: {
+                attack: 0.005,
+                decay: 0.2,
+                sustain: 0.3,
+                release: 0.8
+            }
+        }
     }).connect(reverb);
 
     function renderSongs() {
@@ -129,7 +154,7 @@
         });
     });
 
-    // 🔥 1. 곡 분석을 통한 동적 건반 생성 (Min/Max 기반)
+    // 곡 분석 및 흑백 건반(Black/White Keys) UI 동적 렌더링
     function analyzeAndBuildSheet(songObj) {
         const noteArray = [];
         let time = 1.5; 
@@ -138,7 +163,6 @@
         const rawItems = [];
         let minMidi = 999, maxMidi = -999;
 
-        // 1차 순회: 옥타브 범위(Min~Max) 동적 계산
         for (let partKey of sequence) {
             const partStr = songObj.parts[partKey];
             if (!partStr) continue;
@@ -159,26 +183,36 @@
             }
         }
 
-        // 곡의 스케일에 맞춰 화면 건반 개수 세팅
         BASE_MIDI = minMidi;
         KEY_COUNT = Math.max(12, maxMidi - minMidi + 1);
 
-        // 하단 UI 가상 건반 그리기
+        // 건반 및 레인 배경 UI 렌더링
         keyboardContainer.innerHTML = '';
+        lanesContainer.innerHTML = '';
+        
         for(let i = 0; i < KEY_COUNT; i++) {
+            const currentMidi = BASE_MIDI + i;
+            const isBlack = [1, 3, 6, 8, 10].includes(currentMidi % 12);
+            
+            // 가상 건반 생성
             const keyEl = document.createElement('div');
-            keyEl.className = 'piano-key';
+            keyEl.className = `piano-key ${isBlack ? 'black' : 'white'}`;
             keyEl.id = `key-${i}`;
             keyboardContainer.appendChild(keyEl);
+
+            // 레인 가이드 선 생성
+            const laneEl = document.createElement('div');
+            laneEl.className = `lane-line ${isBlack ? 'black' : 'white'}`;
+            lanesContainer.appendChild(laneEl);
         }
 
-        // 2차 순회: 타일 위치를 실제 MIDI 번호에 매핑
         for (let obj of rawItems) {
             obj.notes.forEach(noteName => {
                 const m = Tone.Frequency(noteName).toMidi();
                 if (!isNaN(m)) {
-                    const lane = m - BASE_MIDI; // 화면 왼쪽 끝부터 0번 인덱스
-                    noteArray.push({ t: time, l: lane, n: noteName, d: obj.dur });
+                    const lane = m - BASE_MIDI; 
+                    const isBlack = [1, 3, 6, 8, 10].includes(m % 12);
+                    noteArray.push({ t: time, l: lane, n: noteName, d: obj.dur, isBlack });
                 }
             });
             time += obj.dur;
@@ -192,7 +226,9 @@
         await Tone.start(); 
         
         speedMult = difficulty === "easy" ? 0.75 : (difficulty === "hard" ? 1.4 : 1.0);
-        Tone.Transport.playbackRate = speedMult;
+        
+        // 🔥 V11: 지피티 피드백 적용 (playbackRate 대신 bpm 사용으로 안정성 확보)
+        Tone.Transport.bpm.value = 120 * speedMult;
         
         document.getElementById('lobby').style.display = 'none';
         gameArea.style.display = 'block';
@@ -224,9 +260,9 @@
         setTimeout(() => { j.style.opacity = 0; j.style.transform = "scale(1)"; }, 250);
     }
 
-    function flashScreen() {
-        document.body.style.background = "#222";
-        setTimeout(() => { document.body.style.background = "var(--bg)"; }, 100);
+    function triggerConcertLight() {
+        document.body.classList.add('concert-flash');
+        setTimeout(() => { document.body.classList.remove('concert-flash'); }, 150);
     }
 
     function updateScore(isHit, diff = 0) {
@@ -237,7 +273,7 @@
 
             if (diff < 0.08) { 
                 points = 30; jTxt = "PERFECT"; jCol = "var(--neon)"; 
-                if(combo > 10) flashScreen(); 
+                if(combo > 10) triggerConcertLight(); // 콘서트 조명 이펙트!
             }
             else if (diff < 0.16) { points = 20; jTxt = "GREAT"; jCol = "var(--gold)"; }
 
@@ -252,14 +288,12 @@
         }
     }
 
-    // 🔥 2. 인터랙티브 건반 & 롱노트 홀드 시스템
     function handlePointerDown(e) {
         if (!isPlaying || Tone.now() - gameStartTime < 0.5) return;
 
         const rect = gameArea.getBoundingClientRect();
         const touchX = (e.clientX || (e.touches && e.touches[0].clientX)) - rect.left;
         
-        // 터치 좌표를 실제 가상 건반 인덱스로 변환
         const keyWidth = rect.width / KEY_COUNT;
         const lane = Math.floor(touchX / keyWidth);
         if (lane < 0 || lane >= KEY_COUNT) return;
@@ -267,18 +301,16 @@
         const midi = BASE_MIDI + lane;
         const noteName = Tone.Frequency(midi, "midi").toNote();
 
-        // 🎹 터치하는 순간 해당 위치의 실제 피아노 음이 연주됨! (다이나믹 벨로시티)
-        const velocity = 0.6 + Math.random() * 0.4; // 0.6 ~ 1.0 사이의 터치감
+        const velocity = 0.6 + Math.random() * 0.4; 
         masterPiano.triggerAttack(noteName, Tone.now(), velocity);
         
-        // 손을 뗄 때 소리를 멈추기 위해 저장
-        activeTouches[e.pointerId] = noteName;
+        // 🔥 V11: 지피티 피드백 적용 (모바일 환경에서 undefined 가능성 방지)
+        const id = e.pointerId ?? 0;
+        activeTouches[id] = noteName;
 
-        // 시각적 피드백
         const keyEl = document.getElementById(`key-${lane}`);
         if(keyEl) keyEl.classList.add('active');
 
-        // 판정 로직: 누른 위치(lane)에 가이드 타일이 있었는가?
         const now = Tone.Transport.seconds;
         let hitSomething = false;
         
@@ -304,11 +336,11 @@
     }
 
     function handlePointerUp(e) {
-        // 🎹 손가락을 떼면 해당 음의 울림을 서서히 멈춤 (롱노트 처리 완성)
-        const noteName = activeTouches[e.pointerId];
+        const id = e.pointerId ?? 0;
+        const noteName = activeTouches[id];
         if (noteName) {
             masterPiano.triggerRelease(noteName, Tone.now());
-            delete activeTouches[e.pointerId];
+            delete activeTouches[id];
         }
         document.querySelectorAll('.piano-key').forEach(el => el.classList.remove('active'));
     }
@@ -327,11 +359,10 @@
         while(sheetIdx < sheet.length && sheet[sheetIdx].t < now + LOOKAHEAD) {
             const data = sheet[sheetIdx++];
             const el = document.createElement('div');
-            const visualDur = data.d * 1.4; 
-            const h = Math.max(20, visualDur * speed * 0.8); // 롱노트 길이를 시각적으로 표현
+            const h = Math.max(25, data.d * 1.4 * speed * 0.8); 
             
-            // 타일의 가로폭과 위치를 건반 개수에 맞춰 동적으로 생성
-            el.className = `tile ${data.d >= 0.6 ? 'long' : ''}`;
+            // 검은 건반은 핑크색 톤, 흰 건반은 네온 톤으로 타일 생성
+            el.className = `tile ${data.d >= 0.6 ? 'long' : ''} ${data.isBlack ? 'black-tile' : ''}`;
             el.style.width = `${100 / KEY_COUNT}%`;
             el.style.left = `${(data.l / KEY_COUNT) * 100}%`;
             el.style.height = h + 'px';
@@ -347,7 +378,8 @@
             const bottom = hitLineY - (o.data.t - now) * speed;
             o.el.style.top = (bottom - o.h) + "px";
 
-            const missWindow = 0.3 / speedMult;
+            // 동적 miss 판정
+            const missWindow = 0.3; // bpm으로 전체 속도를 제어하므로 0.3 고정으로 통일해도 무방함
             if(!o.hit && !o.miss && (o.data.t - now) < -missWindow) {
                 o.miss = true; 
                 end(false); 
@@ -366,7 +398,6 @@
         if (!isPlaying) return;
         isPlaying = false; 
         Tone.Transport.pause(); 
-        // 잔향이 너무 뚝 끊기지 않고 자연스럽게 페이드아웃 되도록 처리
         setTimeout(() => { masterPiano.releaseAll(); }, 500);
         
         gameArea.style.display = 'none';
