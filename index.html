@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Piano Tiles: 12 Masterpieces</title>
+    <title>Piano Tiles: Master Concert</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
     <style>
         :root { --neon: #00f2ff; --pink: #ff00ea; --gold: #ffea00; --bg: #050508; }
@@ -11,86 +11,85 @@
         body { color: #fff; height: 100dvh; overflow: hidden; background: var(--bg); touch-action: manipulation; }
 
         .screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; max-width: 500px; left: 50%; transform: translateX(-50%); display: none; flex-direction: column; background: var(--bg); }
-        
-        /* 로비 */
         #lobby { display: flex; z-index: 100; padding: 20px; }
-        h1 { text-align: center; font-size: 28px; font-weight: 900; background: linear-gradient(90deg, var(--neon), var(--pink)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; padding: 15px 0; }
+        h1 { text-align: center; font-size: 24px; font-weight: 900; background: linear-gradient(90deg, var(--neon), var(--pink)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; padding: 10px 0; }
         
-        #song-list { flex: 1; overflow-y: auto; background: rgba(255,255,255,0.02); border-radius: 15px; padding: 10px; margin-bottom: 15px; }
-        .song-item { padding: 18px; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center; cursor: pointer; border-radius: 10px; }
+        #song-list { flex: 1; overflow-y: auto; background: rgba(255,255,255,0.02); border-radius: 15px; padding: 10px; margin-bottom: 10px; }
+        .song-item { padding: 14px; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center; border-radius: 8px; margin-bottom: 5px; }
         .song-item.active { background: rgba(0, 242, 255, 0.15); border: 1px solid var(--neon); }
-        .song-title { font-size: 15px; font-weight: bold; }
-        .song-artist { font-size: 11px; color: #888; margin-top: 3px; }
-        
-        #start-btn { width: 100%; padding: 20px; border-radius: 50px; border: none; font-size: 20px; font-weight: 900; background: #333; color: #777; transition: 0.3s; pointer-events: none; }
-        #start-btn.ready { background: linear-gradient(45deg, var(--neon), var(--pink)); color: #fff; pointer-events: auto; box-shadow: 0 5px 20px rgba(255, 0, 234, 0.4); }
+        .song-title { font-size: 14px; font-weight: bold; }
+        .song-artist { font-size: 11px; color: #888; }
 
-        /* 게임 화면 */
+        .upload-section { margin-bottom: 10px; text-align: center; }
+        .upload-btn { display: inline-block; padding: 8px 15px; border: 1px dashed var(--neon); border-radius: 8px; color: var(--neon); font-size: 12px; cursor: pointer; }
+        
+        #start-btn { width: 100%; padding: 18px; border-radius: 50px; border: none; font-size: 18px; font-weight: 900; background: #333; color: #777; transition: 0.3s; pointer-events: none; }
+        #start-btn.ready { background: linear-gradient(45deg, var(--neon), var(--pink)); color: #fff; pointer-events: auto; }
+
         #game { overflow: hidden; z-index: 50; }
         .lane-bg { position: absolute; top: 0; width: 25%; height: 100%; border-right: 1px dashed rgba(255,255,255,0.1); }
         #hit-line { position: absolute; bottom: 15%; width: 100%; height: 4px; background: rgba(255,255,255,0.8); z-index: 5; box-shadow: 0 0 15px #fff; }
-        
-        #game-ui { position: absolute; top: 0; width: 100%; padding: 30px 20px; z-index: 60; display: flex; justify-content: space-between; pointer-events: none; }
-        #score { font-size: 40px; font-weight: 900; text-shadow: 0 0 10px var(--neon); }
-        #judgment { position: absolute; top: 40%; width: 100%; text-align: center; font-size: 45px; font-weight: 900; z-index: 70; opacity: 0; pointer-events: none; }
+        #score { position: absolute; top: 40px; width: 100%; text-align: center; font-size: 40px; font-weight: 900; z-index: 60; text-shadow: 0 0 10px var(--neon); pointer-events: none; }
+        #judgment { position: absolute; top: 45%; width: 100%; text-align: center; font-size: 45px; font-weight: 900; z-index: 70; opacity: 0; pointer-events: none; }
 
-        .tile { position: absolute; width: 24%; margin-left: 0.5%; border-radius: 6px; background: linear-gradient(to bottom, #fff, var(--neon)); z-index: 10; cursor: pointer; }
+        .tile { position: absolute; width: 24%; margin-left: 0.5%; border-radius: 6px; background: linear-gradient(to bottom, #fff, var(--neon)); z-index: 10; }
         .tile.long { background: linear-gradient(to bottom, #fff, var(--gold)); box-shadow: 0 0 15px var(--gold); }
-        .tile.pressed { opacity: 0; transform: scale(1.1); transition: 0.1s; }
+        .tile.pressed { opacity: 0.3; transform: scale(1.1); transition: 0.1s; }
         .tile.missed { background: #ff0055 !important; opacity: 0.5; }
 
         #result { justify-content: center; align-items: center; text-align: center; z-index: 200; background: rgba(0,0,0,0.95); }
-        #rank { font-size: 100px; font-weight: 900; margin: 20px 0; }
     </style>
 </head>
 <body>
 
 <div id="lobby" class="screen" style="display: flex;">
-    <h1>PIANO TILES PRO</h1>
+    <h1>PIANO TILES : MASTER</h1>
     <div id="song-list"></div>
-    <div style="padding: 10px 0;">
-        <button id="start-btn">PIANO LOADING...</button>
+    <div class="upload-section">
+        <label class="upload-btn" for="audio-upload">📁 MP3 배경음악 연결 (선택)</label>
+        <input type="file" id="audio-upload" accept="audio/*" style="display:none;">
     </div>
+    <button id="start-btn">PIANO LOADING...</button>
 </div>
 
 <div id="game" class="screen">
-    <div id="game-ui"><div id="score">0</div></div>
+    <div id="score">0</div>
     <div id="judgment"></div>
     <div id="hit-line"></div>
     <div class="lane-bg" style="left:0%"></div><div class="lane-bg" style="left:25%"></div><div class="lane-bg" style="left:50%"></div><div class="lane-bg" style="left:75%; border:none;"></div>
 </div>
 
 <div id="result" class="screen">
-    <h2 id="res-title">STAGE CLEAR</h2>
-    <div id="rank">S</div>
-    <button onclick="location.reload()" style="padding: 15px 40px; border-radius: 30px; border: none; font-weight: bold;">다시 하기</button>
+    <h2 id="res-title">連奏 終了</h2>
+    <div id="rank" style="font-size:80px; font-weight:900; color:var(--gold);">S</div>
+    <button onclick="location.reload()" style="padding: 15px 40px; border-radius: 30px; border: none; font-weight: bold; margin-top: 20px;">다시 하기</button>
 </div>
 
 <script>
-    // 🎼 12곡의 실제 멜로디 흐름 (도입-전개-후렴 순으로 반복 없이 1분 구성)
+    // 🎼 섹션별로 구분된 악보 데이터 (Intro:..., Verse:..., Chorus:...)
     const library = [
-        { t: "Winter Wind", a: "Chopin", m: "E4:0.5, E4:0.5, F4:0.5, E4:0.5, A4:1, G#4:0.5, A4:0.5, C5:1, B4:0.5, C5:0.5, E5:2, A5:0.2, G#5:0.2, A5:0.2, F5:0.2, E5:0.2, D#5:0.2, E5:0.2, C5:0.2, B4:0.2, A#4:0.2, B4:0.2, G4:0.2, F4:0.2, E4:0.2" },
-        { t: "Take On Me", a: "a-ha", m: "F#4:0.2, F#4:0.2, D4:0.2, B3:0.2, B3:0.4, E4:0.2, E4:0.2, E4:0.2, G#4:0.2, G#4:0.2, A4:0.2, B4:0.2, A4:0.2, A4:0.2, A4:0.2, E4:0.2, D4:0.2, F#4:0.2, F#4:0.2, F#4:0.2, E4:0.2, E4:0.2, F#4:0.2, E4:0.2, A4:0.4, B4:0.4, C#5:0.4" },
-        { t: "Belle", a: "Notre Dame", m: "D4:0.6, F4:0.6, A4:0.6, D5:1.2, C5:0.6, Bb4:0.6, A4:0.6, G4:1.2, F4:0.6, E4:0.6, D4:1.2, A4:0.6, Bb4:0.6, C5:0.6, D5:1.2, E5:1.2" },
-        { t: "Seasons of Love", a: "RENT", m: "F4:0.5, A4:0.5, C5:0.5, D5:0.5, C5:1, Bb4:0.5, A4:0.5, G4:0.5, F4:1, F4:0.5, A4:0.5, C5:0.5, D5:0.5, C5:1, Bb4:0.5, A4:0.5, G4:0.5, F4:1.5" },
-        { t: "Dying Young", a: "Kenny G", m: "G4:0.7, C5:0.7, D5:0.7, Eb5:2, D5:0.7, C5:0.7, G4:3, F4:0.7, G4:0.7, C5:0.7, D5:0.7, F5:2, Eb5:0.7, D5:0.7, C5:3" },
-        { t: "Words", a: "F.R. David", m: "G4:0.4, A4:0.4, B4:0.4, G4:0.4, E4:1, C5:0.4, B4:0.4, A4:0.8, G4:0.4, F#4:0.4, E4:1, G4:0.4, A4:0.4, B4:0.4, G4:0.4" },
-        { t: "Rush", a: "Leessang", m: "E4:0.3, G4:0.3, B4:0.3, A4:0.6, G4:0.3, F#4:0.3, E4:1, E3:0.3, G3:0.3, B3:0.3, A3:0.6, G3:0.3, F#3:0.3, E3:1" },
-        { t: "Danse Macabre", a: "Saint-Saëns", m: "D5:0.4, D5:0.4, D5:0.4, D5:0.4, D5:0.4, D5:0.4, D5:0.4, G4:0.8, Bb4:0.4, A4:0.4, G4:0.4, F#4:0.4, G4:0.8" },
-        { t: "Waterfalls", a: "TLC", m: "Eb4:0.5, G4:0.5, Bb4:0.5, C5:1, Bb4:0.5, G4:0.5, F4:0.5, Eb4:1, Eb4:0.5, G4:0.5, Bb4:0.5, C5:1, Bb4:0.5, G4:0.5" },
-        { t: "Canon", a: "Pachelbel", m: "F#5:0.5, E5:0.5, D5:0.5, C#5:0.5, B4:0.5, A4:0.5, B4:0.5, C#5:0.5, D5:0.5, A4:0.5, B4:0.5, F#4:0.5, G4:0.5, D4:0.5, G4:0.5, A4:0.5" },
-        { t: "Secret", a: "周杰倫", m: "C5:0.2, G4:0.2, E4:0.2, G4:0.2, C5:0.2, G4:0.2, E4:0.2, G4:0.2, D5:0.2, G4:0.2, F4:0.2, G4:0.2, D5:0.2, G4:0.2, F4:0.2, G4:0.2" },
-        { t: "11 Months", a: "Kuricorder", m: "G4:0.25, D5:0.25, B4:0.25, G4:0.25, A4:0.25, E5:0.25, C5:0.25, A4:0.25, B4:0.25, G5:0.25, D5:0.25, B4:0.25, C5:0.25, A5:0.25, F#5:0.25, D5:0.25" }
+        { t: "겨울바람 (Full)", a: "쇼팽", m: "Intro:E4:0.5,E4:0.5,F4:0.5,E4:0.5,A4:1,G#4:0.5,A4:0.5,C5:1,B4:0.5,C5:0.5,E5:2|Wind:A5:0.15,G#5:0.15,A5:0.15,F5:0.15,E5:0.15,D#5:0.15,E5:0.15,C5:0.15,B4:0.15,A#4:0.15,B4:0.15,G4:0.15,F4:0.15,E4:0.15|Climax:A6:0.1,G6:0.1,F6:0.1,E6:0.1,D6:0.1,C6:0.1,B5:0.1,A5:0.1" },
+        { t: "Take On Me", a: "a-ha", m: "Intro:F#4:0.2,F#4:0.2,D4:0.2,B3:0.2,B3:0.4,E4:0.2,E4:0.2,E4:0.2,G#4:0.2,G#4:0.2,A4:0.2,B4:0.2|Verse:A4:0.4,A4:0.4,E4:0.4,F#4:0.4,G#4:0.8|Chorus:B4:0.3,B4:0.3,E5:0.5,C#5:0.5,C#5:0.3,G#4:0.8,G#4:0.3,C#5:0.5" },
+        { t: "Belle", a: "Notre Dame", m: "Intro:D4:0.6,F4:0.6,A4:0.6,D5:1.2|Verse:C5:0.6,Bb4:0.6,A4:0.6,G4:1.2,F4:0.6,E4:0.6,D4:1.2|Chorus:A4:0.6,Bb4:0.6,C5:0.6,D5:1.2,E5:1.2,F5:0.6,D5:1.8" },
+        { t: "Seasons of Love", a: "RENT", m: "Intro:F4:0.5,A4:0.5,C5:0.5,D5:0.5,C5:1|Verse:Bb4:0.5,A4:0.5,G4:0.5,F4:1.5|Chorus:A4:0.5,C5:0.5,D5:0.5,E5:1,D5:0.5,C5:0.5,Bb4:0.5,A4:1.5" },
+        { t: "Dying Young", a: "Kenny G", m: "Intro:G4:0.8,C5:0.8,D5:0.8,Eb5:2.4|Main:D5:0.8,C5:0.8,G4:3,F4:0.8,G4:0.8,C5:0.8,D5:0.8,F5:2.4|End:Eb5:0.8,D5:0.8,C5:3" },
+        { t: "Words", a: "F.R. David", m: "Verse:G4:0.4,A4:0.4,B4:0.4,G4:0.4,E4:1.2|Chorus:C5:0.4,B4:0.4,A4:0.8,G4:0.4,F#4:0.4,E4:1.2|Refrain:G4:0.4,A4:0.4,B4:0.4,G4:0.4" },
+        { t: "Rush", a: "리쌍", m: "Beat:E4:0.3,G4:0.3,B4:0.3,A4:0.6,G4:0.3,F#4:0.3,E4:1.2|Rap:E3:0.3,G3:0.3,B3:0.3,A3:0.6,G3:0.3,F#3:0.3,E3:1.2" },
+        { t: "Danse Macabre", a: "Saint-Saëns", m: "Theme:D5:0.4,D5:0.4,D5:0.4,D5:0.4,D5:0.4|Scale:G4:0.8,Bb4:0.4,A4:0.4,G4:0.4,F#4:0.4,G4:0.8|Variation:D5:0.4,Eb5:0.4,D5:0.4" },
+        { t: "Waterfalls", a: "TLC", m: "Verse:Eb4:0.5,G4:0.5,Bb4:0.5,C5:1,Bb4:0.5,G4:0.5,F4:0.5|Chorus:Eb4:1.5,Eb4:0.5,G4:0.5,Bb4:0.5,C5:1,Bb4:0.5,G4:0.5" },
+        { t: "Canon", a: "Pachelbel", m: "Start:F#5:0.5,E5:0.5,D5:0.5,C#5:0.5|Middle:B4:0.5,A4:0.5,B4:0.5,C#5:0.5,D5:0.5,A4:0.5|Fast:B4:0.25,F#4:0.25,G4:0.25,D4:0.25" },
+        { t: "Secret", a: "주걸륜", m: "A:C5:0.2,G4:0.2,E4:0.2,G4:0.2|B:D5:0.2,G4:0.2,F4:0.2,G4:0.2|C:E5:0.2,B4:0.2,G4:0.2,B4:0.2" },
+        { t: "Summer", a: "히사이시 조", m: "Intro:D4:0.4,E4:0.4,F#4:0.4,A4:0.4|Chorus:D5:1,C#5:0.5,B4:0.5,A4:1.5|Verse:G4:0.4,F#4:0.4,E4:0.4,D4:1.5" }
     ];
 
-    let piano, sheet = [], tiles = [], isPlaying = false, score = 0, hp = 100, sheetIdx = 0, selected = 0;
-    const lookahead = 1.6; // 타일이 꼭대기에서 판정선까지 오는 시간 (초)
+    let piano, bgm, sheet = [], tiles = [], isPlaying = false, score = 0, hp = 100, sheetIdx = 0, selected = 0;
+    const lookahead = 1.6;
 
-    // 고품질 피아노 로딩 (최적화)
+    // 🌟 로딩 1초 컷 최적화: 샘플 딱 4개만 사용
     piano = new Tone.Sampler({
         urls: { "C4": "C4.mp3", "Ds4": "Ds4.mp3", "Fs4": "Fs4.mp3", "A4": "A4.mp3" },
         baseUrl: "https://tonejs.github.io/audio/salamander/",
-        onload: () => { document.getElementById('start-btn').innerText = "게임 시작!"; document.getElementById('start-btn').classList.add('ready'); }
+        onload: () => { document.getElementById('start-btn').innerText = "콘서트 시작"; document.getElementById('start-btn').classList.add('ready'); }
     }).toDestination();
 
     const listDiv = document.getElementById('song-list');
@@ -102,24 +101,40 @@
         listDiv.appendChild(d);
     });
 
-    // 🌟 악보 생성 엔진: 1분 동안 반복 없이 선율을 구성함
+    document.getElementById('audio-upload').addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const url = URL.createObjectURL(file);
+            if(bgm) bgm.dispose();
+            bgm = new Tone.Player(url).toDestination();
+        }
+    });
+
+    // 🌟 악보 엔진: 반복을 줄이고 실제 곡의 전개를 반영함
     function buildSheet(song) {
-        const raw = song.m.split(',').map(x => { 
-            const p = x.trim().split(':'); 
-            return { n: p[0], d: parseFloat(p[1]) }; 
+        const sections = song.m.split('|').map(s => {
+            const notes = s.split(':')[1].split(',').map(n => {
+                const p = n.split(':');
+                return { n: p[0], d: parseFloat(p[1]) };
+            });
+            return notes;
         });
+
         const full = [];
         let time = 1.0, lane = 0;
         
-        // 1분(60초) 분량이 될 때까지 악보 데이터를 확장함
-        while(time < 60) {
-            for(let node of raw) {
-                if(time >= 60) break;
-                // 레인은 겹치지 않게 무작위 이동
+        // 1분 30초(90초) 동안 섹션을 순차적으로 이어 붙임
+        let secIdx = 0;
+        while(time < 90) {
+            const currentSection = sections[secIdx % sections.length];
+            for(let node of currentSection) {
+                if(time >= 90) break;
                 lane = (lane + Math.floor(Math.random() * 3) + 1) % 4;
                 full.push({ t: time, l: lane, n: node.n, d: node.d });
                 time += node.d;
             }
+            secIdx++; // 다음 섹션으로 이동 (도입 -> 절 -> 후렴 순서 보장)
+            time += 0.5; // 섹션 간 약간의 휴지기
         }
         return full;
     }
@@ -131,6 +146,9 @@
         
         sheet = buildSheet(library[selected]);
         isPlaying = true; score = 0; hp = 100; sheetIdx = 0; tiles = [];
+        document.getElementById('score').innerText = "0";
+        
+        if(bgm && bgm.loaded) bgm.start();
         Tone.Transport.stop(); Tone.Transport.position = 0; Tone.Transport.start();
         requestAnimationFrame(loop);
     });
@@ -141,7 +159,6 @@
         const hitY = window.innerHeight * 0.85;
         const speed = hitY / lookahead;
 
-        // 타일 생성
         while(sheetIdx < sheet.length && sheet[sheetIdx].t < now + lookahead) {
             const data = sheet[sheetIdx++];
             const el = document.createElement('div');
@@ -149,13 +166,14 @@
             el.className = `tile ${h > 180 ? 'long' : ''}`;
             el.style.left = (data.l * 25) + '%';
             el.style.height = h + 'px';
+            el.style.top = "-500px";
             
             const obj = { el, data, h, hit: false, miss: false };
             el.addEventListener('pointerdown', (e) => {
                 e.preventDefault();
                 if(obj.hit || obj.miss) return;
                 const dist = Math.abs(el.getBoundingClientRect().bottom - hitY);
-                if(dist < 100) {
+                if(dist < 120) {
                     piano.triggerAttackRelease(data.n, h > 180 ? "1n" : "4n");
                     obj.hit = true; el.classList.add('pressed');
                     score += (h > 180 ? 30 : 10);
@@ -167,15 +185,14 @@
             tiles.push(obj);
         }
 
-        // 타일 이동 및 제거
         for(let i = tiles.length - 1; i >= 0; i--) {
             const o = tiles[i];
             const bottom = hitY - (o.data.t - now) * speed;
-            o.el.style.top = (bottom - o.h) + 'px';
+            o.el.style.top = (bottom - o.h) + "px";
 
-            if(!o.hit && !o.miss && (o.data.t - now) < -0.2) {
+            if(!o.hit && !o.miss && (o.data.t - now) < -0.25) {
                 o.miss = true; o.el.classList.add('missed');
-                hp -= 10; score = Math.max(0, score - 20);
+                hp -= 15; score = Math.max(0, score - 20);
                 document.getElementById('score').innerText = score;
                 showJudg("MISS", "#ff0055");
                 if(hp <= 0) end(false);
@@ -194,12 +211,10 @@
     }
 
     function end(win) {
-        isPlaying = false; Tone.Transport.stop();
+        isPlaying = false; Tone.Transport.stop(); if(bgm) bgm.stop();
         document.getElementById('game').style.display = 'none';
         document.getElementById('result').style.display = 'flex';
-        document.getElementById('res-title').innerText = win ? "STAGE CLEAR!" : "GAME OVER";
-        document.getElementById('rank').innerText = win ? (score > 1000 ? "SSS" : "S") : "F";
-        document.getElementById('rank').style.color = win ? "#ffea00" : "#ff0055";
+        document.getElementById('rank').innerText = win ? "S" : "F";
     }
 </script>
 </body>
