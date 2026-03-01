@@ -1,65 +1,186 @@
-gameArea.addEventListener("pointerdown", (e) => {
-    // 1. 모바일 터치 간섭 및 스크롤 방지
-    e.preventDefault(); 
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Piano Tiles - V22 Ultimate Stable</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <style>
+        :root { --neon: #00f2ff; --pink: #ff00ea; --gold: #ffea00; }
+        * { box-sizing: border-box; user-select: none; margin: 0; padding: 0; font-family: 'Pretendard', sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { color: #000; height: 100dvh; overflow: hidden; background: #fff; touch-action: none; }
+        .screen { position: absolute; top: 0; left: 50%; width: 100%; height: 100%; max-width: 500px; transform: translateX(-50%); display: none; flex-direction: column; background: #fff; border-left: 1px solid #ddd; border-right: 1px solid #ddd; }
+        #lobby { display: flex; z-index: 100; padding: 25px; background: #050508; color: #fff; }
+        h1 { text-align: center; font-size: 30px; font-weight: 900; background: linear-gradient(90deg, var(--neon), var(--pink)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; padding: 15px 0; }
+        #song-list { flex: 1; overflow-y: auto; background: rgba(255,255,255,0.03); border-radius: 20px; padding: 10px; margin-bottom: 20px; border: 1px solid #222; }
+        .song-item { padding: 18px; border-bottom: 1px solid #222; border-radius: 12px; margin-bottom: 8px; cursor: pointer; background: rgba(255,255,255,0.02); }
+        .song-item.active { background: rgba(0,242,255,0.15); border: 1px solid var(--neon); }
+        #start-btn { width: 100%; padding: 22px; border-radius: 50px; border: none; font-size: 20px; font-weight: 900; background: linear-gradient(45deg, var(--neon), var(--pink)); color: #fff; cursor: pointer; }
+        #game { overflow: hidden; z-index: 50; position: relative; background: #fff; }
+        .lane-line { position: absolute; top: 0; width: 25%; height: 100%; border-right: 1px solid #ddd; pointer-events: none; }
+        #score { position: absolute; top: 30px; width: 100%; text-align: center; font-size: 65px; font-weight: 900; z-index: 60; color: #ff0055; pointer-events: none; text-shadow: 2px 2px 0#fff, -2px -2px 0#fff; }
+        .row { position: absolute; width: 100%; height: 25%; transition: bottom 0.1s linear; }
+        .tile { position: absolute; width: 25%; height: 100%; background: #111; border: 1px solid #000; }
+        .tile.pressed { background: #bbb !important; }
+        .tile.missed { background: #ff0055 !important; animation: blink 0.2s infinite; }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        #result { justify-content: center; align-items: center; text-align: center; z-index: 200; background: rgba(0,0,0,0.95); color: #fff; }
+    </style>
+</head>
+<body>
 
-    if (!isPlaying || activeRows.length === 0) return;
+<div id="lobby" class="screen">
+    <h1>V22 STABLE</h1>
+    <div id="song-list"></div>
+    <button id="start-btn">그랜드 피아노 조율 중...</button>
+</div>
 
-    // 🔥 V22 엔진: 배열 순서가 아니라 실제 화면의 'bottom' 위치로 맨 아래 줄을 찾음
-    const bottomRow = activeRows.reduce((lowest, r) => {
-        const currentBottom = parseFloat(r.rowEl.style.bottom);
-        const lowestBottom = parseFloat(lowest.rowEl.style.bottom);
-        return currentBottom < lowestBottom ? r : lowest;
+<div id="game" class="screen">
+    <div class="lane-line" style="left:0%"></div>
+    <div class="lane-line" style="left:25%"></div>
+    <div class="lane-line" style="left:50%"></div>
+    <div class="lane-line" style="left:75%; border:none;"></div>
+    <div id="score">0</div>
+</div>
+
+<div id="result" class="screen">
+    <h2 id="res-title">GAME OVER</h2>
+    <div id="rank" style="font-size:110px; font-weight:900; color:var(--gold);">S</div>
+    <div id="final-score">Score: 0</div>
+    <button onclick="location.reload()" style="padding: 20px 60px; border-radius: 50px; background:#fff; font-size: 20px; font-weight: bold;">다시 도전</button>
+</div>
+
+<script>
+    const songs = [
+        { t: "Canon in D", a: "Pachelbel", parts: { A: "F#5,E5,D5,C#5,B4,A4,B4,C#5" } },
+        { t: "Still D.R.E.", a: "Dr. Dre", parts: { A: "E5,E5,E5,E5,E5,E5,E5", B: "B4,B4,B4,B4,B4,B4,B4" } }
+    ];
+
+    let piano, sheet = [], activeRows = [];
+    let isPlaying = false, score = 0, currentStep = 0, selected = 0;
+    const gameArea = document.getElementById('game');
+
+    piano = new Tone.Sampler({
+        urls: { A0: "A0.mp3", C1: "C1.mp3", C4: "C4.mp3", C8: "C8.mp3" },
+        baseUrl: "https://tonejs.github.io/audio/salamander/",
+        onload: () => { document.getElementById('start-btn').innerText = "게임 시작"; }
+    }).toDestination();
+
+    function renderSongs() {
+        const listDiv = document.getElementById('song-list');
+        listDiv.innerHTML = "";
+        songs.forEach((s, idx) => {
+            const item = document.createElement('div');
+            item.className = `song-item ${idx === selected ? 'active' : ''}`;
+            item.innerHTML = `<strong>${s.t}</strong><br><small>${s.a}</small>`;
+            item.onclick = () => { selected = idx; renderSongs(); };
+            listDiv.appendChild(item);
+        });
+    }
+    renderSongs();
+
+    document.getElementById('start-btn').addEventListener('click', async () => {
+        if (isPlaying) return;
+        await Tone.start();
+        document.getElementById('lobby').style.display = 'none';
+        gameArea.style.display = 'block';
+
+        const song = songs[selected];
+        sheet = [];
+        for(let i=0; i<50; i++) {
+            const notes = song.parts.A.split(',');
+            notes.forEach(note => sheet.push({ lane: Math.floor(Math.random()*4), note }));
+        }
+
+        isPlaying = true; score = 0; currentStep = 0; activeRows = [];
+        document.getElementById('score').innerText = "0";
+        for(let i=0; i<5; i++) createRow(i);
     });
 
-    // 중복 클릭 방지
-    if (bottomRow.locked) return;
+    function createRow(offset) {
+        const sheetIdx = currentStep + offset;
+        if(sheetIdx >= sheet.length) return; 
 
-    const rect = gameArea.getBoundingClientRect();
-    const touchX = e.clientX - rect.left;
-    
-    // 레인 계산 (0~3 범위 고정)
-    let clickedLane = Math.floor(touchX / (rect.width / 4));
-    clickedLane = Math.max(0, Math.min(3, clickedLane));
+        const data = sheet[sheetIdx];
+        const rowEl = document.createElement('div');
+        rowEl.className = 'row';
+        rowEl.style.bottom = (offset * 25) + '%'; 
 
-    if (clickedLane === bottomRow.lane) {
-        // ✅ 정답 판정
-        bottomRow.locked = true;
-        piano.triggerAttackRelease(bottomRow.note, 0.5, Tone.now(), 1.0);
+        const tileEl = document.createElement('div');
+        tileEl.className = 'tile';
+        tileEl.style.left = (data.lane * 25) + '%';
         
-        // 오타 수정: tile -> tileEl
-        bottomRow.tileEl.classList.add('pressed');
+        rowEl.appendChild(tileEl);
+        gameArea.appendChild(rowEl);
         
-        score++;
-        document.getElementById('score').innerText = score;
-        
-        // 화면 위치 기준으로 정확한 인덱스를 찾아 제거
-        const index = activeRows.indexOf(bottomRow);
-        if (index > -1) {
-            const removedRow = activeRows.splice(index, 1)[0];
-            // 자연스러운 사라짐 효과 후 삭제
-            setTimeout(() => removedRow.rowEl.remove(), 100); 
-        }
-        
-        // 나머지 줄들을 아래로 한 칸씩 이동
-        activeRows.forEach((r, idx) => {
-            r.rowEl.style.bottom = (idx * 25) + '%'; 
-        });
-        
-        currentStep++;
-        createRow(4); // 새로운 줄 생성
-        
-        // 모든 곡을 다 쳤을 때
-        if(currentStep >= sheet.length && activeRows.length === 0) {
-            setTimeout(() => end(true), 300);
-        }
-
-    } else {
-        // ❌ 오답 판정
-        const errTile = document.createElement('div');
-        errTile.className = 'tile missed';
-        errTile.style.left = (clickedLane * 25) + '%';
-        bottomRow.rowEl.appendChild(errTile);
-        
-        end(false);
+        // 보관 시 변수명 통일: tileEl
+        activeRows.push({ rowEl, tileEl, lane: data.lane, note: data.note, locked: false });
     }
-});
+
+    gameArea.addEventListener("pointerdown", (e) => {
+        e.preventDefault();
+        if (!isPlaying || activeRows.length === 0) return;
+
+        // 🎯 1. 위치 기반으로 가장 아래 줄 찾기 (안전장치 포함)
+        const bottomRow = activeRows.reduce((lowest, r) => {
+            const currentBottom = parseFloat(r.rowEl.style.bottom || "0");
+            const lowestBottom = parseFloat(lowest.rowEl.style.bottom || "0");
+            return currentBottom < lowestBottom ? r : lowest;
+        });
+
+        if (!bottomRow || bottomRow.locked) return;
+
+        const rect = gameArea.getBoundingClientRect();
+        const touchX = e.clientX - rect.left;
+        let clickedLane = Math.floor(touchX / (rect.width / 4));
+        clickedLane = Math.max(0, Math.min(3, clickedLane));
+
+        if (clickedLane === bottomRow.lane) {
+            bottomRow.locked = true;
+            piano.triggerAttackRelease(bottomRow.note, 0.5);
+            
+            // 🎯 2. tileEl 존재 여부 확인 후 클래스 추가
+            if (bottomRow.tileEl) bottomRow.tileEl.classList.add('pressed');
+            
+            score++;
+            document.getElementById('score').innerText = score;
+            
+            const index = activeRows.indexOf(bottomRow);
+            if (index > -1) {
+                const removedRow = activeRows.splice(index, 1)[0];
+                setTimeout(() => removedRow.rowEl.remove(), 100);
+            }
+            
+            activeRows.forEach((r, idx) => {
+                r.rowEl.style.bottom = (idx * 25) + '%'; 
+            });
+            
+            currentStep++;
+            createRow(4);
+
+            if(currentStep >= sheet.length && activeRows.length === 0) {
+                setTimeout(() => end(true), 300);
+            }
+        } else {
+            const errTile = document.createElement('div');
+            errTile.className = 'tile missed';
+            errTile.style.left = (clickedLane * 25) + '%';
+            bottomRow.rowEl.appendChild(errTile);
+            end(false);
+        }
+    });
+
+    function end(win) {
+        if (!isPlaying) return;
+        isPlaying = false;
+        setTimeout(() => {
+            gameArea.style.display = 'none';
+            document.getElementById('result').style.display = 'flex';
+            document.getElementById('res-title').innerText = win ? "CLEAR!" : "GAME OVER";
+            document.getElementById('rank').innerText = win ? "SSS" : (score > 50 ? "A" : "F");
+            document.getElementById('final-score').innerText = `Score: ${score}`;
+        }, 500);
+    }
+</script>
+</body>
+</html>
