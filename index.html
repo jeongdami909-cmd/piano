@@ -13,8 +13,13 @@
         .screen { position: absolute; top: 0; left: 50%; width: 100%; height: 100%; max-width: 500px; transform: translateX(-50%); display: none; flex-direction: column; background: var(--bg); border-left: 1px solid #111; border-right: 1px solid #111; }
         
         #lobby { display: flex; z-index: 100; padding: 20px; }
-        h1 { text-align: center; font-size: 26px; font-weight: 900; background: linear-gradient(90deg, var(--neon), var(--pink)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; padding: 10px 0; }
+        h1 { text-align: center; font-size: 26px; font-weight: 900; background: linear-gradient(90deg, var(--neon), var(--pink)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; padding: 5px 0; }
         .desc { text-align: center; color: #aaa; font-size: 13px; margin-bottom: 15px; }
+
+        /* 🔥 상/중/하 난이도 버튼 스타일 */
+        .diff-group { display: flex; gap: 10px; margin-bottom: 15px; }
+        .diff-btn { flex: 1; padding: 12px; background: #111; border: 1px solid #333; border-radius: 8px; color: #888; font-weight: bold; font-size: 16px; cursor: pointer; transition: 0.2s; }
+        .diff-btn.active { background: var(--pink); color: #fff; border-color: #fff; box-shadow: 0 0 10px var(--pink); }
 
         #song-list { flex: 1; overflow-y: auto; background: rgba(255,255,255,0.02); border-radius: 15px; padding: 10px; margin-bottom: 10px; }
         .song-item { padding: 14px; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center; border-radius: 10px; margin-bottom: 5px; cursor: pointer; }
@@ -46,9 +51,16 @@
 
 <div id="lobby" class="screen" style="display: flex;">
     <h1>TRUE CHORD PRO</h1>
-    <p class="desc">반복은 끝! 왼손 베이스와 함께 곡이 전개됩니다.</p>
+    <p class="desc">리버브가 켜진 그랜드 피아노 사운드</p>
+    
+    <div class="diff-group">
+        <button class="diff-btn" data-diff="easy">하 (Easy)</button>
+        <button class="diff-btn active" data-diff="normal">중 (Normal)</button>
+        <button class="diff-btn" data-diff="hard">상 (Hard)</button>
+    </div>
+
     <div id="song-list"></div>
-    <button id="start-btn">피아노 로딩 중...</button>
+    <button id="start-btn">사운드 엔진 로딩 중...</button>
 </div>
 
 <div id="game" class="screen">
@@ -67,290 +79,52 @@
 </div>
 
 <script>
-    // 🎼 기계적 반복(Loop) 완전 삭제! 
-    // 도입부(A) -> 전개(B) -> 절정(C) 파트를 나누고, seq 배열에 따라 1분 30초 분량의 "하나의 완성된 곡"을 조립합니다.
-    // + 기호로 왼손 베이스와 오른손 화음을 완벽히 구현했습니다!
+    // 🎼 12곡 1분 30초 다성부 악보 데이터
     const songs = [
-        { 
-            t: "Canon in D", a: "Pachelbel", 
-            parts: {
-                A: "F#5+D3_0.5,E5+A2_0.5,D5+B2_0.5,C#5+F#2_0.5,B4+G2_0.5,A4+D3_0.5,B4+G2_0.5,C#5+A2_0.5",
-                B: "D5+D3_0.25,C#5_0.25,D5_0.25,D4_0.25,E4+A2_0.25,F#4_0.25,G4_0.25,A4_0.25,B4+B2_0.25,A4_0.25,G4_0.25,F#4_0.25,E4+F#2_0.25,D4_0.25,E4_0.25,F#4_0.25",
-                C: "G4+G2_0.25,F#4_0.25,E4_0.25,D4_0.25,C#4+D3_0.25,B3_0.25,A3_0.25,G3_0.25,F#3+G2_0.25,E3_0.25,D3_0.25,E3_0.25,F#3+A2_0.25,G3_0.25,A3_0.25,B3_0.25"
-            },
-            seq: "A,A,B,C,B,C,A,A" // 90초 동안 구조적으로 전개됨
-        },
-        { 
-            t: "Take On Me", a: "a-ha", 
-            parts: {
-                A: "F#5+B3_0.2,F#5_0.2,D5_0.2,B4_0.2,B4+E3_0.4,E5_0.2,E5_0.2,E5_0.2,G#5+A3_0.2,G#5_0.2,A5_0.2,B5_0.2,A5+D3_0.2,A5_0.2,A5_0.2,E5_0.2,D5_0.2,F#5+B3_0.2,F#5_0.2,F#5_0.2,E5_0.2,E5_0.2,F#5_0.2,E5_0.2",
-                B: "A4+D3_0.4,A4_0.4,E4_0.4,F#4_0.4,G#4+E3_0.8,A4+D3_0.4,A4_0.4,E4_0.4,F#4_0.4,G#4+E3_0.8",
-                C: "B4+B2_0.3,B4_0.3,E5_0.4,C#5+A2_0.4,C#5_0.3,G#4+E2_0.8,G#4_0.3,C#5+D3_0.4,C#5_0.4,C#5_0.4,E5_0.4,E5_0.4,E5_0.4,B4+B2_1.2"
-            },
-            seq: "A,A,B,C,A,B,C,C"
-        },
-        { 
-            t: "겨울바람", a: "쇼팽", 
-            parts: {
-                A: "E4+A2_0.5,E4_0.5,F4_0.5,E4_0.5,A4+A2_1.0,G#4_0.5,A4_0.5,C5+A2_1.0,B4_0.5,C5_0.5,E5+A2_1.5",
-                B: "A5+A2_0.15,G#5_0.15,A5_0.15,F5_0.15,E5+E2_0.15,D#5_0.15,E5_0.15,C5_0.15,B4+B2_0.15,A#4_0.15,B4_0.15,G4_0.15,F4+F2_0.15,E4_0.15,F4_0.15,D4_0.15",
-                C: "C4+A2_0.15,B3_0.15,C4_0.15,A3_0.15,G#3+E2_0.15,F##3_0.15,G#3_0.15,E3_0.15,A4+A2_0.15,B4_0.15,C5_0.15,D5_0.15,E5+E2_0.15,F5_0.15,G5_0.15,A5_0.15"
-            },
-            seq: "A,B,C,B,C,B,A,C,B"
-        },
-        { 
-            t: "Seasons of Love", a: "RENT", 
-            parts: {
-                A: "F4+Bb2_0.5,A4_0.5,C5+F2_0.5,D5_0.5,C5+Eb2_1.0,Bb4_0.5,A4_0.5,G4+Bb2_0.5,F4_1.0",
-                B: "F4+Bb2_0.5,A4_0.5,C5+F2_0.5,D5_0.5,E5+Eb2_1.0,D5_0.5,C5_0.5,Bb4+Bb2_0.5,A4_1.5"
-            },
-            seq: "A,B,A,B,A,B,A"
-        },
-        { 
-            t: "Summer", a: "히사이시 조", 
-            parts: {
-                A: "D4+D3_0.4,E4+A3_0.4,F#4+D3_0.4,A4+A3_0.4,D5+D3_1.0,C#5+A3_0.5,B4_0.5,A4+D3_1.5,G4+G2_0.4,F#4+D3_0.4,E4+A2_0.4,D4+D3_1.5",
-                B: "D4+G2_0.4,E4_0.4,F#4_0.4,A4_0.4,D5+D3_1.0,E5+A2_0.5,F#5_0.5,E5+A2_2.0"
-            },
-            seq: "A,A,B,A,B,A"
-        },
-        { 
-            t: "Secret (말할 수 없는 비밀)", a: "주걸륜", 
-            parts: {
-                A: "C5+C3_0.2,G4_0.2,E4_0.2,G4_0.2,C5+B2_0.2,G4_0.2,E4_0.2,G4_0.2,D5+A2_0.2,A4_0.2,F4_0.2,A4_0.2,D5+G2_0.2,G4_0.2,F4_0.2,G4_0.2",
-                B: "E5+F2_0.2,C5_0.2,A4_0.2,C5_0.2,E5+E2_0.2,C5_0.2,A4_0.2,C5_0.2,F5+D2_0.2,D5_0.2,A4_0.2,D5_0.2,F5+G2_0.2,D5_0.2,B4_0.2,D5_0.2"
-            },
-            seq: "A,A,B,B,A,B,A"
-        },
-        { 
-            t: "Rush", a: "리쌍", 
-            parts: {
-                A: "E4+E3_0.3,G4_0.3,B4+E3_0.3,A4_0.6,G4_0.3,F#4_0.3,E4+E3_1.0",
-                B: "E3+E2_0.3,G3_0.3,B3+E2_0.3,A3_0.6,G3_0.3,F#3_0.3,E3+E2_1.0",
-                C: "E5+E3_0.3,D5_0.3,B4+E3_0.3,A4_0.6,G4_0.3,F#4_0.3,E4+E3_1.0"
-            },
-            seq: "A,A,B,B,A,C,A,B,C,A"
-        },
-        { 
-            t: "Dying Young", a: "Kenny G", 
-            parts: {
-                A: "G4+C3_0.8,C5_0.8,D5_0.8,Eb5+G2_2.0,D5_0.8,C5_0.8,G4+C3_2.5,F4_0.8,G4_0.8,C5_0.8,D5_0.8",
-                B: "F5+F2_2.0,Eb5_0.8,D5_0.8,C5+C3_3.0,G5+Eb3_0.8,F5_0.8,Eb5_0.8,D5+Bb2_2.0,C5_0.8,Bb4_0.8,C5+C3_3.0"
-            },
-            seq: "A,B,A,B,A"
-        },
-        { 
-            t: "River Flows in You", a: "이루마", 
-            parts: {
-                A: "F#4+F#2_0.5,E4_0.5,F#4_0.5,C#4+A2_1.0,F#4+F#2_0.5,E4_0.5,F#4_0.5,C#4+A2_1.0",
-                B: "B3+D3_0.5,A3_0.5,B3_0.5,F#3+E3_1.5,F#4+F#2_0.5,E4_0.5,F#4_0.5,C#4+A2_1.0",
-                C: "A4+F#2_0.4,G#4_0.4,A4_0.4,E5+D3_0.8,A4_0.4,G#4_0.4,A4_0.4,E5+E3_0.8"
-            },
-            seq: "A,B,A,C,B,C,A"
-        },
-        { 
-            t: "Danse Macabre", a: "Saint-Saëns", 
-            parts: {
-                A: "D5+G3_0.4,D5_0.4,D5_0.4,D5_0.4,D5_0.4,D5_0.4,D5_0.4,G4+G2_0.8,Bb4_0.4,A4_0.4,G4+D3_0.4,F#4_0.4,G4+G2_0.8",
-                B: "D5+G3_0.4,Eb5_0.4,D5_0.4,D5_0.4,D5_0.4,D5_0.4,G4+G2_0.8,Bb4_0.4,A4_0.4,G4+D3_0.4,F#4_0.4,G4+G2_0.8"
-            },
-            seq: "A,B,A,B,A,B,A"
-        },
-        { 
-            t: "Waterfalls", a: "TLC", 
-            parts: {
-                A: "Eb4+Eb3_0.5,G4_0.5,Bb4_0.5,C5+F3_1.0,Bb4_0.5,G4_0.5,F4_0.5,Eb4+Eb3_1.0,Eb4_0.5,G4_0.5,Bb4_0.5,C5+F3_1.0,Bb4_0.5,G4_0.5,Ab4_0.5,G4+Eb3_1.5",
-                B: "Eb5+Eb3_0.5,D5_0.5,C5_0.5,Bb4+F3_1.0,G4_0.5,F4_0.5,Eb4_0.5,Eb4+Eb3_1.0,C5_0.5,Bb4_0.5,G4_0.5,F4+F3_1.0,Eb4_0.5,C4_0.5,Eb4+Eb3_1.5"
-            },
-            seq: "A,B,A,B,A,B"
-        },
-        { 
-            t: "Words", a: "F.R. David", 
-            parts: {
-                A: "G4+G3_0.4,A4_0.4,B4_0.4,G4_0.4,E4+C3_1.0,C5_0.4,B4_0.4,A4+D3_0.8,G4_0.4,F#4_0.4,E4+G3_1.0",
-                B: "D5+D3_0.4,C5_0.4,B4_0.4,G4_0.4,E5+C3_1.0,D5_0.4,C5_0.4,B4+G3_1.0"
-            },
-            seq: "A,A,B,A,B,A,A"
-        }
+        { t: "Canon in D", a: "Pachelbel", parts: { A: "F#5+D3_0.5,E5+A2_0.5,D5+B2_0.5,C#5+F#2_0.5,B4+G2_0.5,A4+D3_0.5,B4+G2_0.5,C#5+A2_0.5", B: "D5+D3_0.25,C#5_0.25,D5_0.25,D4_0.25,E4+A2_0.25,F#4_0.25,G4_0.25,A4_0.25,B4+B2_0.25,A4_0.25,G4_0.25,F#4_0.25,E4+F#2_0.25,D4_0.25,E4_0.25,F#4_0.25", C: "G4+G2_0.25,F#4_0.25,E4_0.25,D4_0.25,C#4+D3_0.25,B3_0.25,A3_0.25,G3_0.25,F#3+G2_0.25,E3_0.25,D3_0.25,E3_0.25,F#3+A2_0.25,G3_0.25,A3_0.25,B3_0.25" }, seq: "A,A,B,C,B,C,A,A" },
+        { t: "Take On Me", a: "a-ha", parts: { A: "F#5+B3_0.2,F#5_0.2,D5_0.2,B4_0.2,B4+E3_0.4,E5_0.2,E5_0.2,E5_0.2,G#5+A3_0.2,G#5_0.2,A5_0.2,B5_0.2,A5+D3_0.2,A5_0.2,A5_0.2,E5_0.2,D5_0.2,F#5+B3_0.2,F#5_0.2,F#5_0.2,E5_0.2,E5_0.2,F#5_0.2,E5_0.2", B: "A4+D3_0.4,A4_0.4,E4_0.4,F#4_0.4,G#4+E3_0.8,A4+D3_0.4,A4_0.4,E4_0.4,F#4_0.4,G#4+E3_0.8", C: "B4+B2_0.3,B4_0.3,E5_0.4,C#5+A2_0.4,C#5_0.3,G#4+E2_0.8,G#4_0.3,C#5+D3_0.4,C#5_0.4,C#5_0.4,E5_0.4,E5_0.4,E5_0.4,B4+B2_1.2" }, seq: "A,A,B,C,A,B,C,C" },
+        { t: "겨울바람", a: "쇼팽", parts: { A: "E4+A2_0.5,E4_0.5,F4_0.5,E4_0.5,A4+A2_1.0,G#4_0.5,A4_0.5,C5+A2_1.0,B4_0.5,C5_0.5,E5+A2_1.5", B: "A5+A2_0.15,G#5_0.15,A5_0.15,F5_0.15,E5+E2_0.15,D#5_0.15,E5_0.15,C5_0.15,B4+B2_0.15,A#4_0.15,B4_0.15,G4_0.15,F4+F2_0.15,E4_0.15,F4_0.15,D4_0.15", C: "C4+A2_0.15,B3_0.15,C4_0.15,A3_0.15,G#3+E2_0.15,F##3_0.15,G#3_0.15,E3_0.15,A4+A2_0.15,B4_0.15,C5_0.15,D5_0.15,E5+E2_0.15,F5_0.15,G5_0.15,A5_0.15" }, seq: "A,B,C,B,C,B,A,C,B" },
+        { t: "Seasons of Love", a: "RENT", parts: { A: "F4+Bb2_0.5,A4_0.5,C5+F2_0.5,D5_0.5,C5+Eb2_1.0,Bb4_0.5,A4_0.5,G4+Bb2_0.5,F4_1.0", B: "F4+Bb2_0.5,A4_0.5,C5+F2_0.5,D5_0.5,E5+Eb2_1.0,D5_0.5,C5_0.5,Bb4+Bb2_0.5,A4_1.5" }, seq: "A,B,A,B,A,B,A" },
+        { t: "Summer", a: "히사이시 조", parts: { A: "D4+D3_0.4,E4+A3_0.4,F#4+D3_0.4,A4+A3_0.4,D5+D3_1.0,C#5+A3_0.5,B4_0.5,A4+D3_1.5,G4+G2_0.4,F#4+D3_0.4,E4+A2_0.4,D4+D3_1.5", B: "D4+G2_0.4,E4_0.4,F#4_0.4,A4_0.4,D5+D3_1.0,E5+A2_0.5,F#5_0.5,E5+A2_2.0" }, seq: "A,A,B,A,B,A" },
+        { t: "Secret", a: "주걸륜", parts: { A: "C5+C3_0.2,G4_0.2,E4_0.2,G4_0.2,C5+B2_0.2,G4_0.2,E4_0.2,G4_0.2,D5+A2_0.2,A4_0.2,F4_0.2,A4_0.2,D5+G2_0.2,G4_0.2,F4_0.2,G4_0.2", B: "E5+F2_0.2,C5_0.2,A4_0.2,C5_0.2,E5+E2_0.2,C5_0.2,A4_0.2,C5_0.2,F5+D2_0.2,D5_0.2,A4_0.2,D5_0.2,F5+G2_0.2,D5_0.2,B4_0.2,D5_0.2" }, seq: "A,A,B,B,A,B,A" },
+        { t: "Rush", a: "리쌍", parts: { A: "E4+E3_0.3,G4_0.3,B4+E3_0.3,A4_0.6,G4_0.3,F#4_0.3,E4+E3_1.0", B: "E3+E2_0.3,G3_0.3,B3+E2_0.3,A3_0.6,G3_0.3,F#3_0.3,E3+E2_1.0", C: "E5+E3_0.3,D5_0.3,B4+E3_0.3,A4_0.6,G4_0.3,F#4_0.3,E4+E3_1.0" }, seq: "A,A,B,B,A,C,A,B,C,A" },
+        { t: "Dying Young", a: "Kenny G", parts: { A: "G4+C3_0.8,C5_0.8,D5_0.8,Eb5+G2_2.0,D5_0.8,C5_0.8,G4+C3_2.5,F4_0.8,G4_0.8,C5_0.8,D5_0.8", B: "F5+F2_2.0,Eb5_0.8,D5_0.8,C5+C3_3.0,G5+Eb3_0.8,F5_0.8,Eb5_0.8,D5+Bb2_2.0,C5_0.8,Bb4_0.8,C5+C3_3.0" }, seq: "A,B,A,B,A" },
+        { t: "River Flows in You", a: "이루마", parts: { A: "F#4+F#2_0.5,E4_0.5,F#4_0.5,C#4+A2_1.0,F#4+F#2_0.5,E4_0.5,F#4_0.5,C#4+A2_1.0", B: "B3+D3_0.5,A3_0.5,B3_0.5,F#3+E3_1.5,F#4+F#2_0.5,E4_0.5,F#4_0.5,C#4+A2_1.0", C: "A4+F#2_0.4,G#4_0.4,A4_0.4,E5+D3_0.8,A4_0.4,G#4_0.4,A4_0.4,E5+E3_0.8" }, seq: "A,B,A,C,B,C,A" },
+        { t: "Danse Macabre", a: "Saint-Saëns", parts: { A: "D5+G3_0.4,D5_0.4,D5_0.4,D5_0.4,D5_0.4,D5_0.4,D5_0.4,G4+G2_0.8,Bb4_0.4,A4_0.4,G4+D3_0.4,F#4_0.4,G4+G2_0.8", B: "D5+G3_0.4,Eb5_0.4,D5_0.4,D5_0.4,D5_0.4,D5_0.4,G4+G2_0.8,Bb4_0.4,A4_0.4,G4+D3_0.4,F#4_0.4,G4+G2_0.8" }, seq: "A,B,A,B,A,B,A" },
+        { t: "Waterfalls", a: "TLC", parts: { A: "Eb4+Eb3_0.5,G4_0.5,Bb4_0.5,C5+F3_1.0,Bb4_0.5,G4_0.5,F4_0.5,Eb4+Eb3_1.0,Eb4_0.5,G4_0.5,Bb4_0.5,C5+F3_1.0,Bb4_0.5,G4_0.5,Ab4_0.5,G4+Eb3_1.5", B: "Eb5+Eb3_0.5,D5_0.5,C5_0.5,Bb4+F3_1.0,G4_0.5,F4_0.5,Eb4_0.5,Eb4+Eb3_1.0,C5_0.5,Bb4_0.5,G4_0.5,F4+F3_1.0,Eb4_0.5,C4_0.5,Eb4+Eb3_1.5" }, seq: "A,B,A,B,A,B" },
+        { t: "Words", a: "F.R. David", parts: { A: "G4+G3_0.4,A4_0.4,B4_0.4,G4_0.4,E4+C3_1.0,C5_0.4,B4_0.4,A4+D3_0.8,G4_0.4,F#4_0.4,E4+G3_1.0", B: "D5+D3_0.4,C5_0.4,B4_0.4,G4_0.4,E5+C3_1.0,D5_0.4,C5_0.4,B4+G3_1.0" }, seq: "A,A,B,A,B,A,A" }
     ];
 
     let piano, sheet = [], tiles = [], isPlaying = false, score = 0, hp = 100, sheetIdx = 0, selected = 0;
-    const LOOKAHEAD = 1.6; 
+    
+    // 🔥 지피티 피드백: 난이도 설정 변수
+    let difficulty = "normal"; 
+    let speedMult = 1.0; 
+
     let hitLineY, isLoaded = false;
     const gameArea = document.getElementById('game');
 
-    // 🔥 고품질 신디사이저: 화음을 풍성하게 울리게 하기 위한 잔향(release) 설정!
-    piano = new Tone.PolySynth(Tone.Synth, {
-        volume: -8,
-        oscillator: { type: "triangle" },
-        envelope: { attack: 0.01, decay: 0.2, sustain: 0.4, release: 1.5 } // 피아노 페달 효과 (Release 1.5초)
-    }).toDestination();
+    // 🔥 지피티 피드백 적용: 쇳소리를 없애고 콘서트홀 피아노 소리(Sampler + Reverb) 완벽 구현
+    // 무한 로딩 방지를 위해 핵심 음원(C3~C6) 딱 4개만 로드!
+    const reverb = new Tone.Reverb({ decay: 3, wet: 0.5 }).toDestination(); // 잔향 빵빵하게!
+    
+    function useEmergencySynth() {
+        if(isLoaded) return;
+        if(piano) piano.dispose(); 
+        piano = new Tone.PolySynth(Tone.Synth, { volume: -10, envelope: { attack: 0.01, release: 2 } }).connect(reverb);
+        setReady();
+    }
+
+    piano = new Tone.Sampler({
+        urls: { "C3": "C3.mp3", "C4": "C4.mp3", "C5": "C5.mp3", "C6": "C6.mp3" },
+        baseUrl: "https://tonejs.github.io/audio/salamander/",
+        release: 2, // 건반 뗐을 때 피아노처럼 서서히 꺼지는 효과
+        onload: () => { if(!isLoaded) setReady(); },
+        onerror: () => useEmergencySynth()
+    }).connect(reverb);
+
+    setTimeout(() => { if(!isLoaded) useEmergencySynth(); }, 3500);
 
     function setReady() {
         if(isLoaded) return;
-        isLoaded = true;
-        const btn = document.getElementById('start-btn');
-        btn.innerText = "연주 시작!"; 
-        btn.classList.add('ready');
-    }
-    setReady();
-
-    const listDiv = document.getElementById('song-list');
-    songs.forEach((s, i) => {
-        const d = document.createElement('div');
-        d.className = `song-item ${i === 0 ? 'active' : ''}`;
-        d.innerHTML = `<div><div class="song-title">${s.t}</div><div class="song-artist">다성부 화음 연주 (${s.a})</div></div>`;
-        d.onclick = () => { document.querySelectorAll('.song-item').forEach(el => el.classList.remove('active')); d.classList.add('active'); selected = i; };
-        listDiv.appendChild(d);
-    });
-
-    // 🌟 구조적 악보 생성 엔진: A, B, C 파트를 seq 배열에 맞춰 90초간 조립
-    function buildArrangement(songObj) {
-        const noteArray = [];
-        let time = 1.0;
-        let lane = 0;
-        const sequence = songObj.seq.split(',');
-
-        for (let partKey of sequence) {
-            if (time > 90) break; // 정확히 1분 30초에서 컷!
-            
-            const partStr = songObj.parts[partKey];
-            if (!partStr) continue;
-
-            const items = partStr.split(',');
-            for (let item of items) {
-                if (!item) continue;
-                
-                const [noteStr, durStr] = item.split('_');
-                const dur = parseFloat(durStr);
-                const notes = noteStr.split('+'); // 🎹 화음(+)을 배열로 분리!
-                
-                lane = (lane + 1) % 4; // 리듬감을 살리는 순차적 1-2-3-4 레인 배치
-                
-                noteArray.push({ t: time, l: lane, n: notes, d: dur });
-                time += dur;
-            }
-        }
-        return noteArray;
-    }
-
-    document.getElementById('start-btn').addEventListener('pointerdown', async () => {
-        if(!isLoaded) return;
-        await Tone.start();
-        document.getElementById('lobby').style.display = 'none';
-        gameArea.style.display = 'block';
-        
-        hitLineY = gameArea.offsetHeight * 0.85;
-
-        // 선택된 곡의 구조적 악보를 파싱
-        sheet = buildArrangement(songs[selected]);
-        isPlaying = true; score = 0; hp = 100; sheetIdx = 0; tiles = [];
-        document.getElementById('score').innerText = "0";
-        updateHP();
-        
-        Tone.Transport.stop();
-        Tone.Transport.seconds = 0;
-        Tone.Transport.start();
-        requestAnimationFrame(loop);
-    });
-
-    function showJudg(txt, col) {
-        const j = document.getElementById('judgment');
-        j.innerText = txt; j.style.color = col; j.style.opacity = 1;
-        j.style.transform = "scale(1.1)";
-        setTimeout(() => { j.style.opacity = 0; j.style.transform = "scale(1)"; }, 250);
-    }
-
-    function updateHP() {
-        const hpBar = document.getElementById('hp-bar');
-        hpBar.style.width = `${hp}%`;
-        hpBar.style.background = hp > 60 ? "#00ff00" : (hp > 30 ? "#ffea00" : "#ff0055");
-    }
-
-    function loop() {
-        if(!isPlaying) return;
-        const now = Tone.Transport.seconds;
-        const speed = hitLineY / LOOKAHEAD;
-
-        while(sheetIdx < sheet.length && sheet[sheetIdx].t < now + LOOKAHEAD) {
-            const data = sheet[sheetIdx++];
-            const el = document.createElement('div');
-            
-            // 시각적 타일 길이(h)도 실제 박자 길이에 완벽하게 비례함
-            const h = Math.max(100, data.d * speed * 0.8);
-            const isLong = data.d >= 0.5;
-            
-            el.className = `tile ${isLong ? 'long' : ''}`;
-            el.style.left = (data.l * 25) + '%';
-            el.style.height = h + 'px';
-            el.style.top = "-500px";
-            
-            const obj = { el, data, h, hit: false, miss: false };
-            
-            el.addEventListener('pointerdown', (e) => {
-                e.preventDefault();
-                if(obj.hit || obj.miss) return;
-
-                const rect = el.getBoundingClientRect();
-                const gameRect = gameArea.getBoundingClientRect();
-                const tileTop = rect.top - gameRect.top;
-                const tileBottom = rect.bottom - gameRect.top;
-                
-                if (tileBottom > hitLineY - 150 && tileTop < hitLineY + 150) {
-                    
-                    // 🎹 배열로 담긴 화음(data.n)과 오리지널 박자(data.d)를 그대로 재생!
-                    piano.triggerAttackRelease(data.n, data.d);
-                    
-                    obj.hit = true; 
-                    el.classList.add('pressed');
-                    
-                    const dist = Math.abs(tileBottom - hitLineY);
-                    const isPerfect = dist < 70;
-                    
-                    score += (isLong ? 30 : (isPerfect ? 20 : 10)); 
-                    hp = Math.min(100, hp + 3);
-                    document.getElementById('score').innerText = score;
-                    
-                    showJudg(isPerfect ? "PERFECT" : "GOOD", isPerfect ? "var(--neon)" : "#fff");
-                    updateHP();
-                }
-            });
-            gameArea.appendChild(el);
-            tiles.push(obj);
-        }
-
-        for(let i = tiles.length - 1; i >= 0; i--) {
-            const o = tiles[i];
-            const bottom = hitLineY - (o.data.t - now) * speed;
-            o.el.style.top = (bottom - o.h) + "px";
-
-            if(!o.hit && !o.miss && (o.data.t - now) < -0.2) {
-                o.miss = true; o.el.classList.add('missed');
-                hp -= 15; score = Math.max(0, score - 15);
-                document.getElementById('score').innerText = score;
-                showJudg("MISS", "#ff0055");
-                updateHP();
-                if(hp <= 0) end(false);
-            }
-            
-            if(bottom - o.h > gameArea.offsetHeight + 100) { 
-                o.el.remove(); 
-                tiles.splice(i, 1); 
-            }
-        }
-
-        if(sheetIdx >= sheet.length && tiles.length === 0) end(true);
-        else requestAnimationFrame(loop);
-    }
-
-    function end(win) {
-        isPlaying = false; Tone.Transport.stop();
-        gameArea.style.display = 'none';
-        document.getElementById('result').style.display = 'flex';
-        document.getElementById('res-title').innerText = win ? "STAGE CLEAR!" : "GAME OVER";
-        document.getElementById('rank').innerText = win ? (score > (sheet.length * 15) ? "SSS" : "S") : "F";
-        document.getElementById('final-score').innerText = `Score: ${score}`;
-    }
-</script>
-</body>
-</html>
+        isLoaded =
