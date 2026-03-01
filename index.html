@@ -16,7 +16,6 @@
         h1 { text-align: center; font-size: 26px; font-weight: 900; background: linear-gradient(90deg, var(--neon), var(--pink)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; padding: 5px 0; }
         .desc { text-align: center; color: #aaa; font-size: 13px; margin-bottom: 15px; }
 
-        /* 🔥 상/중/하 난이도 버튼 스타일 */
         .diff-group { display: flex; gap: 10px; margin-bottom: 15px; }
         .diff-btn { flex: 1; padding: 12px; background: #111; border: 1px solid #333; border-radius: 8px; color: #888; font-weight: bold; font-size: 16px; cursor: pointer; transition: 0.2s; }
         .diff-btn.active { background: var(--pink); color: #fff; border-color: #fff; box-shadow: 0 0 10px var(--pink); }
@@ -79,7 +78,7 @@
 </div>
 
 <script>
-    // 🎼 12곡 1분 30초 다성부 악보 데이터
+    // 🎼 다성부 화음 완벽 지원 12곡
     const songs = [
         { t: "Canon in D", a: "Pachelbel", parts: { A: "F#5+D3_0.5,E5+A2_0.5,D5+B2_0.5,C#5+F#2_0.5,B4+G2_0.5,A4+D3_0.5,B4+G2_0.5,C#5+A2_0.5", B: "D5+D3_0.25,C#5_0.25,D5_0.25,D4_0.25,E4+A2_0.25,F#4_0.25,G4_0.25,A4_0.25,B4+B2_0.25,A4_0.25,G4_0.25,F#4_0.25,E4+F#2_0.25,D4_0.25,E4_0.25,F#4_0.25", C: "G4+G2_0.25,F#4_0.25,E4_0.25,D4_0.25,C#4+D3_0.25,B3_0.25,A3_0.25,G3_0.25,F#3+G2_0.25,E3_0.25,D3_0.25,E3_0.25,F#3+A2_0.25,G3_0.25,A3_0.25,B3_0.25" }, seq: "A,A,B,C,B,C,A,A" },
         { t: "Take On Me", a: "a-ha", parts: { A: "F#5+B3_0.2,F#5_0.2,D5_0.2,B4_0.2,B4+E3_0.4,E5_0.2,E5_0.2,E5_0.2,G#5+A3_0.2,G#5_0.2,A5_0.2,B5_0.2,A5+D3_0.2,A5_0.2,A5_0.2,E5_0.2,D5_0.2,F#5+B3_0.2,F#5_0.2,F#5_0.2,E5_0.2,E5_0.2,F#5_0.2,E5_0.2", B: "A4+D3_0.4,A4_0.4,E4_0.4,F#4_0.4,G#4+E3_0.8,A4+D3_0.4,A4_0.4,E4_0.4,F#4_0.4,G#4+E3_0.8", C: "B4+B2_0.3,B4_0.3,E5_0.4,C#5+A2_0.4,C#5_0.3,G#4+E2_0.8,G#4_0.3,C#5+D3_0.4,C#5_0.4,C#5_0.4,E5_0.4,E5_0.4,E5_0.4,B4+B2_1.2" }, seq: "A,A,B,C,A,B,C,C" },
@@ -97,17 +96,17 @@
 
     let piano, sheet = [], tiles = [], isPlaying = false, score = 0, hp = 100, sheetIdx = 0, selected = 0;
     
-    // 🔥 지피티 피드백: 난이도 설정 변수
+    // 난이도 및 속도 변수
     let difficulty = "normal"; 
     let speedMult = 1.0; 
 
     let hitLineY, isLoaded = false;
     const gameArea = document.getElementById('game');
 
-    // 🔥 지피티 피드백 적용: 쇳소리를 없애고 콘서트홀 피아노 소리(Sampler + Reverb) 완벽 구현
-    // 무한 로딩 방지를 위해 핵심 음원(C3~C6) 딱 4개만 로드!
-    const reverb = new Tone.Reverb({ decay: 3, wet: 0.5 }).toDestination(); // 잔향 빵빵하게!
+    // 리버브 적용 (콘서트홀 사운드)
+    const reverb = new Tone.Reverb({ decay: 3, wet: 0.5 }).toDestination(); 
     
+    // 비상용 신디사이저 (로딩 실패 대비)
     function useEmergencySynth() {
         if(isLoaded) return;
         if(piano) piano.dispose(); 
@@ -115,16 +114,216 @@
         setReady();
     }
 
+    // 메인 샘플러 로딩
     piano = new Tone.Sampler({
         urls: { "C3": "C3.mp3", "C4": "C4.mp3", "C5": "C5.mp3", "C6": "C6.mp3" },
         baseUrl: "https://tonejs.github.io/audio/salamander/",
-        release: 2, // 건반 뗐을 때 피아노처럼 서서히 꺼지는 효과
+        release: 2,
         onload: () => { if(!isLoaded) setReady(); },
         onerror: () => useEmergencySynth()
     }).connect(reverb);
 
+    // 무한 로딩 방지 타이머
     setTimeout(() => { if(!isLoaded) useEmergencySynth(); }, 3500);
 
+    // 🔥 1. 완벽하게 수정된 setReady 및 renderSongs 함수
     function setReady() {
-        if(isLoaded) return;
-        isLoaded =
+        if (isLoaded) return;
+        isLoaded = true;
+
+        const btn = document.getElementById("start-btn");
+        btn.textContent = "연주 시작!";
+        btn.classList.add("ready");
+        
+        renderSongs(); // 버튼이 활성화될 때 곡 리스트 렌더링!
+    }
+
+    // 🔥 2. 곡 리스트 생성 및 선택 로직 분리
+    function renderSongs() {
+        const listDiv = document.getElementById('song-list');
+        listDiv.innerHTML = ""; // 초기화
+
+        songs.forEach((s, idx) => {
+            const item = document.createElement('div');
+            item.className = `song-item ${idx === selected ? 'active' : ''}`;
+            item.innerHTML = `
+                <div>
+                    <div class="song-title">${s.t}</div>
+                    <div class="song-artist">다성부 피아노 연주 (${s.a})</div>
+                </div>
+            `;
+            
+            // 곡을 클릭하면 selected 업데이트하고 리스트 다시 그리기
+            item.onclick = () => { 
+                selected = idx; 
+                renderSongs(); 
+            };
+            
+            listDiv.appendChild(item);
+        });
+    }
+
+    // 난이도 버튼 이벤트 등록
+    document.querySelectorAll('.diff-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('active'));
+            e.target.classList.add('active');
+            difficulty = e.target.getAttribute('data-diff');
+        });
+    });
+
+    // 🌟 구조적 악보 생성 엔진
+    function buildArrangement(songObj) {
+        const noteArray = [];
+        let time = 1.0;
+        let lane = 0;
+        const sequence = songObj.seq.split(',');
+
+        for (let partKey of sequence) {
+            if (time > 90) break;
+            const partStr = songObj.parts[partKey];
+            if (!partStr) continue;
+
+            const items = partStr.split(',');
+            for (let item of items) {
+                if (!item) continue;
+                
+                const [noteStr, durStr] = item.split('_');
+                const dur = parseFloat(durStr);
+                const notes = noteStr.split('+'); // 화음 분리
+                
+                lane = (lane + 1) % 4; // 자연스러운 레인 흐름
+                noteArray.push({ t: time, l: lane, n: notes, d: dur });
+                time += dur;
+            }
+        }
+        return noteArray;
+    }
+
+    // 🔥 3. 시작 버튼 이벤트 완벽 구성
+    document.getElementById('start-btn').addEventListener('pointerdown', async () => {
+        if(!isLoaded) return;
+        
+        await Tone.start();
+        
+        if (difficulty === "easy") speedMult = 0.7;
+        else if (difficulty === "hard") speedMult = 1.4;
+        else speedMult = 1.0;
+
+        document.getElementById('lobby').style.display = 'none';
+        gameArea.style.display = 'block';
+        hitLineY = gameArea.offsetHeight * 0.85;
+
+        sheet = buildArrangement(songs[selected]);
+        isPlaying = true; score = 0; hp = 100; sheetIdx = 0; tiles = [];
+        document.getElementById('score').innerText = "0";
+        updateHP();
+        
+        Tone.Transport.stop();
+        Tone.Transport.seconds = 0;
+        Tone.Transport.start();
+        requestAnimationFrame(loop);
+    });
+
+    function showJudg(txt, col) {
+        const j = document.getElementById('judgment');
+        j.innerText = txt; j.style.color = col; j.style.opacity = 1;
+        j.style.transform = "scale(1.1)";
+        setTimeout(() => { j.style.opacity = 0; j.style.transform = "scale(1)"; }, 250);
+    }
+
+    function updateHP() {
+        const hpBar = document.getElementById('hp-bar');
+        hpBar.style.width = `${hp}%`;
+        hpBar.style.background = hp > 60 ? "#00ff00" : (hp > 30 ? "#ffea00" : "#ff0055");
+    }
+
+    function loop() {
+        if(!isPlaying) return;
+        const now = Tone.Transport.seconds;
+        
+        const baseLookahead = 1.6;
+        const currentLookahead = baseLookahead / speedMult;
+        const speed = hitLineY / currentLookahead;
+
+        while(sheetIdx < sheet.length && sheet[sheetIdx].t < now + currentLookahead) {
+            const data = sheet[sheetIdx++];
+            const el = document.createElement('div');
+            
+            const visualDur = data.d * 1.4; 
+            const h = Math.max(120, visualDur * speed * 0.8);
+            const isLong = data.d >= 0.5;
+            
+            el.className = `tile ${isLong ? 'long' : ''}`;
+            el.style.left = (data.l * 25) + '%';
+            el.style.height = h + 'px';
+            el.style.top = "-500px";
+            
+            const obj = { el, data, h, hit: false, miss: false };
+            
+            el.addEventListener('pointerdown', (e) => {
+                e.preventDefault();
+                if(obj.hit || obj.miss) return;
+
+                const rect = el.getBoundingClientRect();
+                const gameRect = gameArea.getBoundingClientRect();
+                const tileTop = rect.top - gameRect.top;
+                const tileBottom = rect.bottom - gameRect.top;
+                
+                if (tileBottom > hitLineY - 150 && tileTop < hitLineY + 150) {
+                    
+                    piano.triggerAttackRelease(data.n, data.d * 1.3);
+                    
+                    obj.hit = true; 
+                    el.classList.add('pressed');
+                    
+                    const dist = Math.abs(tileBottom - hitLineY);
+                    const isPerfect = dist < 70;
+                    
+                    score += (isLong ? 30 : (isPerfect ? 20 : 10)); 
+                    hp = Math.min(100, hp + 3);
+                    document.getElementById('score').innerText = score;
+                    
+                    showJudg(isPerfect ? "PERFECT" : "GOOD", isPerfect ? "var(--neon)" : "#fff");
+                    updateHP();
+                }
+            });
+            gameArea.appendChild(el);
+            tiles.push(obj);
+        }
+
+        for(let i = tiles.length - 1; i >= 0; i--) {
+            const o = tiles[i];
+            const bottom = hitLineY - (o.data.t - now) * speed;
+            o.el.style.top = (bottom - o.h) + "px";
+
+            if(!o.hit && !o.miss && (o.data.t - now) < -0.2) {
+                o.miss = true; o.el.classList.add('missed');
+                hp -= 15; score = Math.max(0, score - 15);
+                document.getElementById('score').innerText = score;
+                showJudg("MISS", "#ff0055");
+                updateHP();
+                if(hp <= 0) end(false);
+            }
+            
+            if(bottom - o.h > gameArea.offsetHeight + 100) { 
+                o.el.remove(); 
+                tiles.splice(i, 1); 
+            }
+        }
+
+        if(sheetIdx >= sheet.length && tiles.length === 0) end(true);
+        else requestAnimationFrame(loop);
+    }
+
+    function end(win) {
+        isPlaying = false; Tone.Transport.stop();
+        gameArea.style.display = 'none';
+        document.getElementById('result').style.display = 'flex';
+        document.getElementById('res-title').innerText = win ? "STAGE CLEAR!" : "GAME OVER";
+        document.getElementById('rank').innerText = win ? (score > (sheet.length * 15) ? "SSS" : "S") : "F";
+        document.getElementById('final-score').innerText = `Score: ${score}`;
+    }
+</script>
+</body>
+</html>
