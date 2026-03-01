@@ -3,117 +3,252 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Piano Tiles: Take On Me Edition</title>
+    <title>Piano Tiles Master</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
     <style>
-        :root { --neon: #00f2ff; --pink: #ff00ea; --gold: #ffea00; }
-        * { box-sizing: border-box; user-select: none; font-family: 'Pretendard', sans-serif; touch-action: none; }
-        body { margin: 0; color: #fff; height: 100dvh; overflow: hidden; background: #000; }
+        :root { --neon: #00f2ff; --pink: #ff00ea; --gold: #ffea00; --bg: #050508; }
+        * { box-sizing: border-box; user-select: none; font-family: 'Pretendard', sans-serif; touch-action: none; margin: 0; padding: 0; }
+        body { color: #fff; height: 100dvh; overflow: hidden; background: var(--bg); }
 
-        #lobby { display: flex; flex-direction: column; height: 100%; width: 100%; max-width: 500px; margin: 0 auto; background: #000; z-index: 100; position: relative; padding: 40px 20px; text-align: center; }
-        h1 { font-size: 32px; background: linear-gradient(to right, var(--neon), var(--pink)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        /* 로비 화면 */
+        #lobby { display: flex; flex-direction: column; height: 100%; width: 100%; max-width: 500px; margin: 0 auto; background: var(--bg); z-index: 100; position: relative; }
+        .header { padding: 20px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.5); }
+        .header h1 { font-size: 28px; font-weight: 900; background: linear-gradient(90deg, var(--neon), var(--pink)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         
-        .instruction { color: #888; font-size: 14px; margin-bottom: 30px; }
-        
-        #start-btn { width: 100%; padding: 25px; border-radius: 50px; border: none; font-size: 22px; font-weight: 900; background: #222; color: #555; pointer-events: none; transition: 0.4s; }
-        #start-btn.ready { background: linear-gradient(45deg, var(--neon), var(--pink)); color: #fff; pointer-events: auto; box-shadow: 0 0 30px rgba(0, 242, 255, 0.4); }
+        /* 12곡 리스트 */
+        #song-list { flex: 1; overflow-y: auto; padding: 15px; }
+        .song-item { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 15px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: 0.2s; }
+        .song-item.active { border-color: var(--neon); background: rgba(0, 242, 255, 0.1); transform: scale(1.02); }
+        .song-title { font-size: 16px; font-weight: bold; }
+        .song-artist { font-size: 12px; color: #888; margin-top: 5px; }
+        .song-time { font-size: 12px; color: var(--neon); font-weight: bold; }
 
-        #game { display: none; width: 100vw; max-width: 500px; height: 100%; margin: 0 auto; position: relative; background: #050505; overflow: hidden; }
-        .lane-line { position: absolute; width: 25%; height: 100%; border-right: 1px solid rgba(255,255,255,0.1); }
+        /* 난이도 & 플레이 버튼 */
+        .bottom-panel { padding: 20px; background: #000; border-top: 1px solid rgba(255,255,255,0.1); }
+        .diff-grid { display: flex; gap: 10px; margin-bottom: 15px; }
+        .diff-btn { flex: 1; padding: 12px 0; background: #111; border: 1px solid #333; border-radius: 8px; color: #aaa; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .diff-btn.active { background: var(--pink); color: #fff; border-color: #fff; }
         
-        /* 🎹 건반 스타일: 롱노트와 일반노트 시각화 */
-        .tile { 
-            position: absolute; width: 24%; margin-left: 0.5%; border-radius: 4px; 
-            background: linear-gradient(to bottom, #fff, var(--neon)); 
-            box-shadow: 0 0 15px var(--neon); z-index: 10;
-        }
+        #start-btn { width: 100%; padding: 18px; border-radius: 50px; border: none; font-size: 20px; font-weight: 900; background: #333; color: #777; pointer-events: none; transition: 0.3s; }
+        #start-btn.ready { background: linear-gradient(45deg, var(--neon), var(--pink)); color: #fff; pointer-events: auto; box-shadow: 0 5px 20px rgba(255, 0, 234, 0.4); }
+
+        /* 게임 화면 */
+        #game { display: none; width: 100vw; max-width: 500px; height: 100%; margin: 0 auto; position: relative; background: #000; overflow: hidden; }
+        .lane-bg { position: absolute; width: 25%; height: 100%; border-right: 1px dashed rgba(255,255,255,0.1); }
+        
+        /* 상단 UI (곡 제목, 점수) */
+        #game-ui { position: absolute; top: 0; width: 100%; padding: 40px 20px 0; text-align: center; z-index: 50; pointer-events: none; background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent); }
+        #now-playing { font-size: 16px; color: var(--neon); margin-bottom: 10px; font-weight: bold; }
+        #score { font-size: 50px; font-weight: 900; text-shadow: 0 0 15px var(--pink); }
+
+        /* 판정 라인 */
+        #hit-line { position: absolute; bottom: 15%; width: 100%; height: 4px; background: rgba(255,255,255,0.8); z-index: 5; box-shadow: 0 0 10px #fff; }
+        
+        /* 🎹 건반 스타일 */
+        .tile { position: absolute; width: 24%; margin-left: 0.5%; border-radius: 6px; background: linear-gradient(to bottom, #fff, var(--neon)); box-shadow: 0 0 15px var(--neon); z-index: 10; }
         .tile.long { background: linear-gradient(to bottom, #fff, var(--gold)); box-shadow: 0 0 20px var(--gold); }
-        .tile.pressed { opacity: 0; transform: scale(1.1); transition: 0.2s; }
-
-        #score { position: absolute; top: 60px; width: 100%; text-align: center; font-size: 60px; font-weight: 900; z-index: 50; pointer-events: none; }
+        .tile.pressed { opacity: 0.4; filter: brightness(2); }
+        .tile.missed { background: #ff0055; opacity: 0.5; }
     </style>
 </head>
 <body>
 
 <div id="lobby">
-    <h1>Piano Tiles Pro</h1>
-    <p class="instruction">Take On Me 전용 악보가 탑재되었습니다.<br>음악의 길이에 맞춰 건반이 생성됩니다.</p>
-    <button id="start-btn">PIANO LOADING...</button>
+    <div class="header">
+        <h1>PIANO TILES</h1>
+    </div>
+    
+    <div id="song-list">
+        </div>
+
+    <div class="bottom-panel">
+        <div class="diff-grid">
+            <button class="diff-btn active" data-speed="8">Easy</button>
+            <button class="diff-btn" data-speed="12">Normal</button>
+            <button class="diff-btn" data-speed="18">Hard</button>
+        </div>
+        <button id="start-btn">피아노 음원 로딩중...</button>
+    </div>
 </div>
 
 <div id="game">
-    <div id="score">0</div>
-    <div class="lane-line" style="left:0%"></div><div class="lane-line" style="left:25%"></div><div class="lane-line" style="left:50%"></div><div class="lane-line" style="left:75%; border:none;"></div>
+    <div id="game-ui">
+        <div id="now-playing">곡 제목</div>
+        <div id="score">0</div>
+    </div>
+    <div id="hit-line"></div>
+    <div class="lane-bg" style="left:0%"></div><div class="lane-bg" style="left:25%"></div><div class="lane-bg" style="left:50%"></div><div class="lane-bg" style="left:75%; border:none;"></div>
 </div>
 
 <script>
-    let piano, isPlaying = false, score = 0, tiles = [];
-    const speed = 10; // 하강 속도
-
-    // 🌟 'Take On Me' 도입부 악보 데이터 (내가 직접 짰어!)
-    // time: 등장 시간, lane: 0~3, note: 음정, len: 건반 길이 (음 길이)
-    const sheetMusic = [
-        { time: 0.5, lane: 0, note: "B4", len: 120 },
-        { time: 0.8, lane: 0, note: "B4", len: 120 },
-        { time: 1.1, lane: 1, note: "E5", len: 120 },
-        { time: 1.4, lane: 2, note: "C#5", len: 120 },
-        { time: 1.9, lane: 2, note: "C#5", len: 120 },
-        { time: 2.2, lane: 3, note: "G#4", len: 250 }, // 롱노트
-        { time: 2.8, lane: 3, note: "G#4", len: 120 },
-        { time: 3.1, lane: 2, note: "C#5", len: 120 },
-        { time: 3.4, lane: 2, note: "C#5", len: 120 },
-        { time: 3.7, lane: 2, note: "C#5", len: 300 }, // 더 긴 노트
-        { time: 4.4, lane: 1, note: "E5", len: 120 },
-        { time: 4.7, lane: 1, note: "E5", len: 120 },
-        { time: 5.0, lane: 1, note: "E5", len: 120 },
-        { time: 5.3, lane: 0, note: "B4", len: 120 }
+    // 🎵 12곡 리스트 (최소 2분 이상의 악보 데이터를 자동 생성하기 위한 설정값)
+    const songLibrary = [
+        { title: "겨울바람 (Winter Wind)", artist: "쇼팽", type: "arpeggio", root: "Am", lengthSec: 130 },
+        { title: "Take On Me", artist: "a-ha", type: "pop", root: "A", lengthSec: 140 },
+        { title: "Seasons of Love", artist: "Rent OST", type: "ballad", root: "F", lengthSec: 150 },
+        { title: "캐논 변주곡 (Canon in D)", artist: "파헬벨", type: "arpeggio", root: "D", lengthSec: 120 },
+        { title: "Rush", artist: "리쌍", type: "hiphop", root: "Em", lengthSec: 135 },
+        { title: "말할 수 없는 비밀 OST", artist: "주걸륜", type: "arpeggio", root: "C", lengthSec: 125 },
+        { title: "할아버지의 11개월", artist: "쿠리코더 콰르텟", type: "pop", root: "G", lengthSec: 120 },
+        { title: "Summer", artist: "히사이시 조", type: "ballad", root: "D", lengthSec: 140 },
+        { title: "베토벤 바이러스", artist: "베토벤", type: "arpeggio", root: "Cm", lengthSec: 130 },
+        { title: "인생의 회전목마", artist: "하울의 움직이는 성", type: "ballad", root: "Gm", lengthSec: 150 },
+        { title: "River Flows in You", artist: "이루마", type: "ballad", root: "A", lengthSec: 145 },
+        { title: "Dying Young OST", artist: "Kenny G", type: "ballad", root: "Eb", lengthSec: 130 }
     ];
 
+    let piano, isPlaying = false, score = 0, tiles = [];
+    let loopId, selectedSongIdx = 0, fallSpeed = 8;
+    let generatedSheetMusic = []; // 2분짜리 악보가 저장될 배열
+
+    // 고품질 피아노 샘플러 로딩
     piano = new Tone.Sampler({
         urls: { A0: "A0.mp3", C1: "C1.mp3", "D#1": "Ds1.mp3", "F#1": "Fs1.mp3", A1: "A1.mp3", C2: "C2.mp3", "D#2": "Ds2.mp3", "F#2": "Fs2.mp3", A2: "A2.mp3", C3: "C3.mp3", "D#3": "Ds3.mp3", "F#3": "Fs3.mp3", A3: "A3.mp3", C4: "C4.mp3", "D#4": "Ds4.mp3", "F#4": "Fs4.mp3", A4: "A4.mp3", C5: "C5.mp3", "D#5": "Ds5.mp3", "F#5": "Fs5.mp3", A5: "A5.mp3", C6: "C6.mp3", "D#6": "Ds6.mp3", "F#6": "Fs6.mp3", A6: "A6.mp3", C7: "C7.mp3", "D#7": "Ds7.mp3", "F#7": "Fs7.mp3", A7: "A7.mp3", C8: "C8.mp3" },
         baseUrl: "https://tonejs.github.io/audio/salamander/",
+        release: 1.5,
         onload: () => {
-            const btn = document.getElementById('start-btn');
-            btn.innerText = "START CONCERT";
-            btn.classList.add('ready');
+            document.getElementById('start-btn').innerText = "PLAY NOW";
+            document.getElementById('start-btn').classList.add('ready');
         }
     }).toDestination();
+    piano.volume.value = 5;
+
+    // UI 리스트 생성
+    const listDiv = document.getElementById('song-list');
+    songLibrary.forEach((song, i) => {
+        const item = document.createElement('div');
+        item.className = `song-item ${i === 0 ? 'active' : ''}`;
+        item.innerHTML = `
+            <div>
+                <div class="song-title">${song.title}</div>
+                <div class="song-artist">${song.artist}</div>
+            </div>
+            <div class="song-time">${Math.floor(song.lengthSec / 60)}:${(song.lengthSec % 60).toString().padStart(2, '0')}</div>
+        `;
+        item.onclick = () => {
+            document.querySelectorAll('.song-item').forEach(el => el.classList.remove('active'));
+            item.classList.add('active');
+            selectedSongIdx = i;
+        };
+        listDiv.appendChild(item);
+    });
+
+    // 난이도 선택
+    document.querySelectorAll('.diff-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('active'));
+            e.target.classList.add('active');
+            fallSpeed = parseInt(e.target.getAttribute('data-speed'));
+        });
+    });
+
+    // 🌟 핵심: 2분 분량의 악보 자동 생성 엔진 (곡 스타일에 따라 패턴 다름)
+    function generateFullSong(song) {
+        generatedSheetMusic = [];
+        const notes = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"];
+        const rootIdx = notes.indexOf(song.root.replace('m', ''));
+        const isMinor = song.root.includes('m');
+        
+        // 메이저/마이너스케일(조성) 설정
+        const intervals = isMinor ? [0, 3, 5, 7, 10] : [0, 2, 4, 7, 9];
+        let scale = [];
+        for(let oct = 4; oct <= 6; oct++) {
+            for(let i of intervals) scale.push(notes[(rootIdx + i) % 12] + oct);
+        }
+
+        let currentTime = 1.0; // 1초부터 시작
+        let noteIdx = Math.floor(scale.length / 2);
+
+        // 곡 길이에 도달할 때까지 무한정 노트 찍기 (최소 2분)
+        while(currentTime < song.lengthSec) {
+            let lane = Math.floor(Math.random() * 4);
+            let noteLen = 140; // 기본 짧은 건반
+            let timeStep = 0.4; // 기본 간격
+
+            // 곡 스타일에 따른 건반 배치 로직
+            if (song.type === "arpeggio") {
+                // 쇼팽처럼 빠르고 물결치는 타일
+                timeStep = Math.random() < 0.3 ? 0.15 : 0.3; // 쏟아지는 구간
+                noteIdx += (Math.random() < 0.5 ? 1 : -1);
+                noteLen = 120; // 거의 다 짧은 노트
+            } 
+            else if (song.type === "ballad") {
+                // 부드럽고 롱노트가 많은 타일
+                timeStep = Math.random() < 0.4 ? 0.8 : 0.4;
+                if (Math.random() < 0.3) noteLen = 400; // 30% 확률로 롱노트 발생!
+                noteIdx += (Math.random() < 0.5 ? 2 : -2);
+            } 
+            else { // pop, hiphop
+                // 비트감 있는 정박자 타일 + 가끔 롱노트
+                timeStep = 0.5;
+                if (Math.random() < 0.2) { noteLen = 300; timeStep = 1.0; } // 롱노트 후 휴식
+            }
+
+            // 음계 이탈 방지
+            if(noteIdx < 0) noteIdx = 2;
+            if(noteIdx >= scale.length) noteIdx = scale.length - 3;
+
+            generatedSheetMusic.push({
+                time: currentTime,
+                lane: lane,
+                note: scale[noteIdx],
+                len: noteLen
+            });
+
+            currentTime += timeStep; // 시간 앞으로 이동
+        }
+    }
 
     document.getElementById('start-btn').addEventListener('click', async () => {
+        if(!document.getElementById('start-btn').classList.contains('ready')) return;
+        
         await Tone.start();
+        const song = songLibrary[selectedSongIdx];
+        
+        // 곡 제목 화면에 띄우고 시작
+        document.getElementById('now-playing').innerText = `🎵 ${song.title} - ${song.artist}`;
         document.getElementById('lobby').style.display = 'none';
         document.getElementById('game').style.display = 'block';
+        
         isPlaying = true;
-        Tone.Transport.start(); // 시간 흐르기 시작
+        score = 0;
+        document.getElementById('score').innerText = '0';
+        
+        // 2분짜리 악보 생성!
+        generateFullSong(song);
+        
+        Tone.Transport.stop();
+        Tone.Transport.position = 0;
+        Tone.Transport.start();
+        
         gameLoop();
     });
 
-    function spawnTile(data) {
+    function spawnVisualTile(data) {
         const t = document.createElement('div');
-        // 길이에 따라 'long' 클래스 부여
         t.className = `tile ${data.len > 200 ? 'long' : ''}`;
         t.style.left = (data.lane * 25) + '%';
         t.style.height = data.len + 'px';
-        t.style.top = '-500px'; 
+        t.style.top = `-${data.len + 100}px`; 
         t.dataset.note = data.note;
         t.dataset.hit = "false";
 
-        // 터치/클릭 이벤트
+        // 피아노 타일 터치 판정
         t.addEventListener('pointerdown', (e) => {
             e.preventDefault();
             if (t.dataset.hit === "true") return;
             
             const rect = t.getBoundingClientRect();
-            const hitLine = window.innerHeight * 0.85; // 하단 판정선
+            const hitLine = window.innerHeight * 0.85; 
             
-            // 판정 (정확히 하단 라인 근처일 때)
             if (rect.bottom > hitLine - 150) {
-                piano.triggerAttackRelease(t.dataset.note, "2n");
+                // 피아노 소리 울림
+                piano.triggerAttackRelease(t.dataset.note, data.len > 200 ? "1n" : "4n");
+                
                 t.classList.add('pressed');
                 t.dataset.hit = "true";
-                score += 10;
+                score += (data.len > 200 ? 30 : 10); // 롱노트는 점수 3배!
                 document.getElementById('score').innerText = score;
-                setTimeout(() => t.remove(), 200);
             }
         });
 
@@ -121,35 +256,47 @@
         tiles.push(t);
     }
 
-    let musicIdx = 0;
+    let sheetIdx = 0;
     function gameLoop() {
         if (!isPlaying) return;
 
         const currentTime = Tone.Transport.seconds;
 
-        // 악보 데이터에 정의된 시간에 타일 생성
-        if (musicIdx < sheetMusic.length && currentTime + 1.5 > sheetMusic[musicIdx].time) {
-            spawnTile(sheetMusic[musicIdx]);
-            musicIdx++;
+        // 악보 배열에서 시간에 맞춰 타일을 계속 꺼내옴
+        while (sheetIdx < generatedSheetMusic.length && currentTime + (20 / fallSpeed) > generatedSheetMusic[sheetIdx].time) {
+            spawnVisualTile(generatedSheetMusic[sheetIdx]);
+            sheetIdx++;
         }
 
         const h = window.innerHeight;
         for (let i = tiles.length - 1; i >= 0; i--) {
             const t = tiles[i];
-            let top = parseFloat(t.style.top) + speed;
+            let top = parseFloat(t.style.top) + fallSpeed;
             t.style.top = top + 'px';
 
-            // 화면을 완전히 벗어나면
-            if (top > h + 500) {
+            // 완전히 놓친 경우 (밑으로 사라짐)
+            if (top > h + parseInt(t.style.height) + 50) {
                 if (t.dataset.hit === "false") {
-                    score = Math.max(0, score - 5); // 놓치면 페널티
+                    score = Math.max(0, score - 15);
                     document.getElementById('score').innerText = score;
                 }
                 t.remove();
                 tiles.splice(i, 1);
             }
         }
-        requestAnimationFrame(gameLoop);
+
+        // 곡이 완전히 끝나면 클리어
+        if (sheetIdx >= generatedSheetMusic.length && tiles.length === 0) {
+            isPlaying = false;
+            Tone.Transport.stop();
+            setTimeout(() => { 
+                alert(`✨ 연주 완료! ✨\n최종 점수: ${score}`); 
+                location.reload(); 
+            }, 1000);
+            return;
+        }
+
+        loopId = requestAnimationFrame(gameLoop);
     }
 </script>
 </body>
