@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Piano Tiles - Passthrough Stable V4.1</title>
+    <title>Piano Tiles - V5 Combo Pro</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
     <style>
         :root { --neon: #00f2ff; --pink: #ff00ea; --gold: #ffea00; --bg: #050508; }
@@ -25,24 +25,23 @@
         #song-list { flex: 1; overflow-y: auto; background: rgba(255,255,255,0.02); border-radius: 15px; padding: 10px; margin-bottom: 10px; }
         .song-item { padding: 14px; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center; border-radius: 10px; margin-bottom: 5px; cursor: pointer; }
         .song-item.active { background: rgba(0, 242, 255, 0.15); border: 1px solid var(--neon); }
-        .song-title { font-size: 15px; font-weight: bold; }
-        .song-artist { font-size: 11px; color: var(--gold); margin-top: 3px; }
         
-        #start-btn { width: 100%; padding: 18px; border-radius: 50px; border: none; font-size: 18px; font-weight: bold; background: #222; color: #555; transition: 0.3s; }
-        #start-btn.ready { background: linear-gradient(45deg, var(--neon), var(--pink)); color: #fff; pointer-events: auto; box-shadow: 0 5px 20px rgba(255, 0, 234, 0.4); cursor: pointer;}
+        #start-btn { width: 100%; padding: 18px; border-radius: 50px; border: none; font-size: 18px; font-weight: bold; background: linear-gradient(45deg, var(--neon), var(--pink)); color: #fff; cursor: pointer; box-shadow: 0 5px 20px rgba(255, 0, 234, 0.4); }
 
         #game { overflow: hidden; z-index: 50; position: relative; touch-action: none; }
-        
         .lane-bg { position: absolute; top: 0; width: 25%; height: 100%; border-right: 1px dashed rgba(255,255,255,0.1); pointer-events: none; }
         #hit-line { position: absolute; bottom: 15%; width: 100%; height: 4px; background: rgba(255,255,255,0.8); z-index: 5; box-shadow: 0 0 15px #fff; pointer-events: none; }
         
-        #score { position: absolute; top: 40px; width: 100%; text-align: center; font-size: 50px; font-weight: 900; z-index: 60; text-shadow: 0 0 15px var(--neon); pointer-events: none; }
-        #judgment { position: absolute; top: 45%; width: 100%; text-align: center; font-size: 45px; font-weight: 900; z-index: 70; opacity: 0; pointer-events: none; transition: 0.1s; }
+        #score-container { position: absolute; top: 40px; width: 100%; text-align: center; z-index: 60; pointer-events: none; }
+        #score { font-size: 50px; font-weight: 900; text-shadow: 0 0 15px var(--neon); }
+        #combo { font-size: 20px; color: var(--pink); font-weight: bold; opacity: 0; transform: translateY(-10px); transition: 0.2s; }
+        #combo.show { opacity: 1; transform: translateY(0); }
 
-        .tile { position: absolute; width: 24%; margin-left: 0.5%; border-radius: 6px; background: linear-gradient(to bottom, #fff, var(--neon)); z-index: 10; pointer-events: none; }
-        .tile.long { background: linear-gradient(to bottom, #fff, var(--gold)); box-shadow: 0 0 15px var(--gold); }
-        .tile.pressed { opacity: 0.2; transform: scale(1.05); transition: 0.1s; box-shadow: 0 0 40px #fff; }
-        .tile.missed { background: #ff0055 !important; opacity: 0.5; }
+        #judgment { position: absolute; top: 45%; width: 100%; text-align: center; font-size: 45px; font-weight: 900; z-index: 70; opacity: 0; pointer-events: none; }
+
+        .tile { position: absolute; width: 24%; margin-left: 0.5%; border-radius: 6px; background: linear-gradient(to bottom, #fff, var(--neon)); z-index: 10; pointer-events: none; box-shadow: 0 0 10px rgba(0, 242, 255, 0.3); }
+        .tile.pressed { opacity: 0; transform: scale(1.2); transition: 0.2s; }
+        .tile.missed { background: #ff0055 !important; }
 
         #result { justify-content: center; align-items: center; text-align: center; z-index: 200; background: rgba(0,0,0,0.95); }
     </style>
@@ -50,21 +49,22 @@
 <body>
 
 <div id="lobby" class="screen" style="display: flex;">
-    <h1>PASSTHROUGH ENGINE V4.1</h1>
-    <p class="desc">모바일 동기화 및 렌더링 완벽 안정화</p>
-    
+    <h1>COMBO MASTER V5</h1>
+    <p class="desc">더 정밀해진 판정과 콤보 시스템</p>
     <div class="diff-group">
-        <button class="diff-btn" data-diff="easy">하 (Easy)</button>
-        <button class="diff-btn active" data-diff="normal">중 (Normal)</button>
-        <button class="diff-btn" data-diff="hard">상 (Hard)</button>
+        <button class="diff-btn" data-diff="easy">하</button>
+        <button class="diff-btn active" data-diff="normal">중</button>
+        <button class="diff-btn" data-diff="hard">상</button>
     </div>
-
     <div id="song-list"></div>
     <button id="start-btn" class="ready">게임 시작!</button>
 </div>
 
 <div id="game" class="screen">
-    <div id="score">0</div>
+    <div id="score-container">
+        <div id="score">0</div>
+        <div id="combo">0 COMBO</div>
+    </div>
     <div id="judgment"></div>
     <div id="hit-line"></div>
     <div class="lane-bg" style="left:0%"></div><div class="lane-bg" style="left:25%"></div><div class="lane-bg" style="left:50%"></div><div class="lane-bg" style="left:75%; border:none;"></div>
@@ -72,46 +72,25 @@
 
 <div id="result" class="screen">
     <h2 id="res-title" style="font-size:28px;">GAME OVER</h2>
-    <div id="rank" style="font-size:90px; font-weight:900; color:var(--gold); margin: 20px 0;">S</div>
+    <div id="rank" style="font-size:90px; font-weight:900; color:var(--gold); margin: 10px 0;">S</div>
     <div id="final-score" style="font-size:20px; margin-bottom: 30px; color:#aaa;">Score: 0</div>
-    <button onclick="location.reload()" style="padding: 15px 40px; border-radius: 30px; border: none; font-weight: bold; background:#fff; cursor: pointer; font-size: 18px;">로비로 돌아가기</button>
+    <button onclick="location.reload()" style="padding: 15px 40px; border-radius: 30px; border: none; font-weight: bold; background:#fff; cursor: pointer; font-size: 18px;">다시 하기</button>
 </div>
 
 <script>
     const songs = [
         { t: "Canon in D", a: "Pachelbel", parts: { A: "F#5+D3_0.5,E5+A2_0.5,D5+B2_0.5,C#5+F#2_0.5,B4+G2_0.5,A4+D3_0.5,B4+G2_0.5,C#5+A2_0.5", B: "D5+D3_0.25,C#5_0.25,D5_0.25,D4_0.25,E4+A2_0.25,F#4_0.25,G4_0.25,A4_0.25,B4+B2_0.25,A4_0.25,G4_0.25,F#4_0.25,E4+F#2_0.25,D4_0.25,E4_0.25,F#4_0.25", C: "G4+G2_0.25,F#4_0.25,E4_0.25,D4_0.25,C#4+D3_0.25,B3_0.25,A3_0.25,G3_0.25,F#3+G2_0.25,E3_0.25,D3_0.25,E3_0.25,F#3+A2_0.25,G3_0.25,A3_0.25,B3_0.25", D: "D5+D3_0.5,F#5_0.5,A5+A2_0.5,G5_0.5,F#5+B2_0.5,D5_0.5,F#5+F#2_0.5,E5_0.5,D5+G2_0.5,B4_0.5,D5+D3_0.5,A4_0.5,G4+G2_0.5,B4_0.5,A4+A2_0.5,C#5_0.5" }, seq: "A,A,B,B,C,C,D,D,B,A" },
         { t: "Take On Me", a: "a-ha", parts: { A: "F#5+B3_0.2,F#5_0.2,D5_0.2,B4_0.2,B4+E3_0.4,E5_0.2,E5_0.2,E5_0.2,G#5+A3_0.2,G#5_0.2,A5_0.2,B5_0.2,A5+D3_0.2,A5_0.2,A5_0.2,E5_0.2,D5_0.2,F#5+B3_0.2,F#5_0.2,F#5_0.2,E5_0.2,E5_0.2,F#5_0.2,E5_0.2", B: "A4+D3_0.4,A4_0.4,E4_0.4,F#4_0.4,G#4+E3_0.8,A4+D3_0.4,A4_0.4,E4_0.4,F#4_0.4,G#4+E3_0.8", C: "B4+B2_0.3,B4_0.3,E5_0.4,C#5+A2_0.4,C#5_0.3,G#4+E2_0.8,G#4_0.3,C#5+D3_0.4,C#5_0.4,C#5_0.4,E5_0.4,E5_0.4,E5_0.4,B4+B2_1.2", D: "A4+D3_0.4,B4_0.4,C#5_0.4,D5_0.4,E5+A2_0.8,D5_0.4,C#5_0.4,B4+E3_1.6" }, seq: "A,A,B,B,C,C,D,A,A" },
-        { t: "겨울바람", a: "쇼팽", parts: { A: "E4+A2_0.5,E4_0.5,F4_0.5,E4_0.5,A4+A2_1.0,G#4_0.5,A4_0.5,C5+A2_1.0,B4_0.5,C5_0.5,E5+A2_1.5", B: "A5+A2_0.15,G#5_0.15,A5_0.15,F5_0.15,E5+E2_0.15,D#5_0.15,E5_0.15,C5_0.15,B4+B2_0.15,A#4_0.15,B4_0.15,G4_0.15,F4+F2_0.15,E4_0.15,F4_0.15,D4_0.15", C: "C4+A2_0.15,B3_0.15,C4_0.15,A3_0.15,G#3+E2_0.15,G3_0.15,G#3_0.15,E3_0.15,A4+A2_0.15,B4_0.15,C5_0.15,D5_0.15,E5+E2_0.15,F5_0.15,G5_0.15,A5_0.15", D: "C6+A2_0.15,B5_0.15,C6_0.15,A5_0.15,G#5+E2_0.15,G5_0.15,G#5_0.15,E5_0.15,C5+A2_0.15,B4_0.15,C5_0.15,A4_0.15,E4+E2_0.15,D#4_0.15,E4_0.15,C4_0.15" }, seq: "A,B,C,B,D,C,B,D,A" },
-        { t: "Seasons of Love", a: "RENT", parts: { A: "F4+Bb2_0.5,A4_0.5,C5+F2_0.5,D5_0.5,C5+Eb2_1.0,Bb4_0.5,A4_0.5,G4+Bb2_0.5,F4_1.0", B: "F4+Bb2_0.5,A4_0.5,C5+F2_0.5,D5_0.5,E5+Eb2_1.0,D5_0.5,C5_0.5,Bb4+Bb2_0.5,A4_1.5", C: "A4+F2_0.5,Bb4_0.5,C5+F2_0.5,D5_0.5,F5+Eb2_1.0,D5_0.5,C5_0.5,Bb4+Bb2_0.5,A4_1.5" }, seq: "A,B,A,C,A,B,C" },
-        { t: "Summer", a: "히사이시 조", parts: { A: "D4+D3_0.4,E4+A3_0.4,F#4+D3_0.4,A4+A3_0.4,D5+D3_1.0,C#5+A3_0.5,B4_0.5,A4+D3_1.5,G4+G2_0.4,F#4+D3_0.4,E4+A2_0.4,D4+D3_1.5", B: "D4+G2_0.4,E4_0.4,F#4_0.4,A4_0.4,D5+D3_1.0,E5+A2_0.5,F#5_0.5,E5+A2_2.0", C: "B4+G2_0.4,C#5_0.4,D5_0.4,E5_0.4,F#5+D3_1.0,E5+A2_0.5,D5_0.5,C#5+A2_2.0" }, seq: "A,A,B,C,A,B,C,A" },
-        { t: "Secret", a: "주걸륜", parts: { A: "C5+C3_0.25,G4_0.25,E4_0.25,G4_0.25,C5+B2_0.25,G4_0.25,E4_0.25,G4_0.25,D5+A2_0.25,A4_0.25,F4_0.25,A4_0.25,D5+G2_0.25,G4_0.25,F4_0.25,G4_0.25", B: "E5+F2_0.25,C5_0.25,A4_0.25,C5_0.25,E5+E2_0.25,C5_0.25,A4_0.25,C5_0.25,F5+D2_0.25,D5_0.25,A4_0.25,D5_0.25,F5+G2_0.25,D5_0.25,B4_0.25,D5_0.25" }, seq: "A,A,B,B,A,B,A,B,A" },
-        { t: "Rush", a: "리쌍", parts: { A: "E4+E3_0.3,G4_0.3,B4+E3_0.3,A4_0.6,G4_0.3,F#4_0.3,E4+E3_1.0", B: "E3+E2_0.3,G3_0.3,B3+E2_0.3,A3_0.6,G3_0.3,F#3_0.3,E3+E2_1.0", C: "E5+E3_0.3,D5_0.3,B4+E3_0.3,A4_0.6,G4_0.3,F#4_0.3,E4+E3_1.0" }, seq: "A,A,B,B,C,C,A,B,C,A" },
-        { t: "Dying Young", a: "Kenny G", parts: { A: "G4+C3_0.8,C5_0.8,D5_0.8,Eb5+G2_2.0,D5_0.8,C5_0.8,G4+C3_2.5,F4_0.8,G4_0.8,C5_0.8,D5_0.8", B: "F5+F2_2.0,Eb5_0.8,D5_0.8,C5+C3_3.0,G5+Eb3_0.8,F5_0.8,Eb5_0.8,D5+Bb2_2.0,C5_0.8,Bb4_0.8,C5+C3_3.0" }, seq: "A,B,A,B,A,B" },
-        { t: "River Flows in You", a: "이루마", parts: { A: "F#4+F#2_0.5,E4_0.5,F#4_0.5,C#4+A2_1.0,F#4+F#2_0.5,E4_0.5,F#4_0.5,C#4+A2_1.0", B: "B3+D3_0.5,A3_0.5,B3_0.5,F#3+E3_1.5,F#4+F#2_0.5,E4_0.5,F#4_0.5,C#4+A2_1.0", C: "A4+F#2_0.4,G#4_0.4,A4_0.4,E5+D3_0.8,A4_0.4,G#4_0.4,A4_0.4,E5+E3_0.8" }, seq: "A,B,A,C,B,C,A,C" },
-        { t: "Danse Macabre", a: "Saint-Saëns", parts: { A: "D5+G3_0.4,D5_0.4,D5_0.4,D5_0.4,D5_0.4,D5_0.4,D5_0.4,G4+G2_0.8,Bb4_0.4,A4_0.4,G4+D3_0.4,F#4_0.4,G4+G2_0.8", B: "D5+G3_0.4,Eb5_0.4,D5_0.4,D5_0.4,D5_0.4,D5_0.4,G4+G2_0.8,Bb4_0.4,A4_0.4,G4+D3_0.4,F#4_0.4,G4+G2_0.8" }, seq: "A,B,A,B,A,B,A,B" },
-        { t: "Waterfalls", a: "TLC", parts: { A: "Eb4+Eb3_0.5,G4_0.5,Bb4_0.5,C5+F3_1.0,Bb4_0.5,G4_0.5,F4_0.5,Eb4+Eb3_1.0,Eb4_0.5,G4_0.5,Bb4_0.5,C5+F3_1.0,Bb4_0.5,G4_0.5,Ab4_0.5,G4+Eb3_1.5", B: "Eb5+Eb3_0.5,D5_0.5,C5_0.5,Bb4+F3_1.0,G4_0.5,F4_0.5,Eb4_0.5,Eb4+Eb3_1.0,C5_0.5,Bb4_0.5,G4_0.5,F4+F3_1.0,Eb4_0.5,C4_0.5,Eb4+Eb3_1.5" }, seq: "A,B,A,B,A,B" },
-        { t: "Words", a: "F.R. David", parts: { A: "G4+G3_0.4,A4_0.4,B4_0.4,G4_0.4,E4+C3_1.0,C5_0.4,B4_0.4,A4+D3_0.8,G4_0.4,F#4_0.4,E4+G3_1.0", B: "D5+D3_0.4,C5_0.4,B4_0.4,G4_0.4,E5+C3_1.0,D5_0.4,C5_0.4,B4+G3_1.0" }, seq: "A,A,B,A,B,A,A,B" }
+        { t: "겨울바람", a: "쇼팽", parts: { A: "E4+A2_0.5,E4_0.5,F4_0.5,E4_0.5,A4+A2_1.0,G#4_0.5,A4_0.5,C5+A2_1.0,B4_0.5,C5_0.5,E5+A2_1.5", B: "A5+A2_0.15,G#5_0.15,A5_0.15,F5_0.15,E5+E2_0.15,D#5_0.15,E5_0.15,C5_0.15,B4+B2_0.15,A#4_0.15,B4_0.15,G4_0.15,F4+F2_0.15,E4_0.15,F4_0.15,D4_0.15", C: "C4+A2_0.15,B3_0.15,C4_0.15,A3_0.15,G#3+E2_0.15,G3_0.15,G#3_0.15,E3_0.15,A4+A2_0.15,B4_0.15,C5_0.15,D5_0.15,E5+E2_0.15,F5_0.15,G5_0.15,A5_0.15", D: "C6+A2_0.15,B5_0.15,C6_0.15,A5_0.15,G#5+E2_0.15,G5_0.15,G#5_0.15,E5_0.15,C5+A2_0.15,B4_0.15,C5_0.15,A4_0.15,E4+E2_0.15,D#4_0.15,E4_0.15,C4_0.15" }, seq: "A,B,C,B,D,C,B,D,A" }
     ];
 
-    let masterPiano, hitSound, sheet = [], tiles = [], isPlaying = false, score = 0, sheetIdx = 0, selected = 0;
+    let masterPiano, hitSound, sheet = [], tiles = [], isPlaying = false, score = 0, combo = 0, sheetIdx = 0, selected = 0;
     let difficulty = "normal", speedMult = 1.0, hitLineY;
     const gameArea = document.getElementById('game');
 
     const reverb = new Tone.Reverb({ decay: 1.5, wet: 0.2 }).toDestination();
-    
-    masterPiano = new Tone.PolySynth(Tone.Synth, {
-        volume: -2,
-        oscillator: { type: "triangle" },
-        envelope: { attack: 0.01, decay: 0.2, sustain: 0.5, release: 1.0 }
-    }).connect(reverb);
-
-    hitSound = new Tone.MembraneSynth({
-        pitchDecay: 0.05,
-        octaves: 10,
-        oscillator: { type: "sine" },
-        envelope: { attack: 0.001, decay: 0.1, sustain: 0, release: 0.1 },
-        volume: -10
-    }).toDestination();
+    masterPiano = new Tone.PolySynth(Tone.Synth, { volume: -2, oscillator: { type: "triangle" }, envelope: { attack: 0.01, decay: 0.2, sustain: 0.5, release: 1.0 } }).connect(reverb);
+    hitSound = new Tone.MembraneSynth({ pitchDecay: 0.05, octaves: 10, oscillator: { type: "sine" }, envelope: { attack: 0.001, decay: 0.1, sustain: 0, release: 0.1 }, volume: -10 }).toDestination();
 
     function renderSongs() {
         const listDiv = document.getElementById('song-list');
@@ -119,7 +98,7 @@
         songs.forEach((s, idx) => {
             const item = document.createElement('div');
             item.className = `song-item ${idx === selected ? 'active' : ''}`;
-            item.innerHTML = `<div><div class="song-title">${s.t}</div><div class="song-artist">통과형(Passthrough) 리듬 엔진</div></div>`;
+            item.innerHTML = `<div><div class="song-title">${s.t}</div><div class="song-artist">V5 정밀 엔진 (${s.a})</div></div>`;
             item.onclick = () => { selected = idx; renderSongs(); };
             listDiv.appendChild(item);
         });
@@ -138,18 +117,13 @@
         const noteArray = [];
         let time = 1.0;
         const sequence = songObj.seq.split(',');
-
         Tone.Transport.cancel(0); 
 
         for (let partKey of sequence) {
-            if (time > 90) break;
             const partStr = songObj.parts[partKey];
             if (!partStr) continue;
-
             const items = partStr.split(',');
             for (let item of items) {
-                if (!item) continue;
-                
                 const [noteStr, durStr] = item.split('_');
                 const dur = parseFloat(durStr);
                 const notes = noteStr.split('+'); 
@@ -159,55 +133,39 @@
                 }, time);
 
                 notes.sort((a, b) => Tone.Frequency(b).toMidi() - Tone.Frequency(a).toMidi());
-                const highestNote = notes[0]; 
-                const midi = Tone.Frequency(highestNote).toMidi();
-                let lane = isNaN(midi) ? Math.floor(Math.random() * 4) : midi % 4;
-                
-                noteArray.push({ t: time, l: lane, n: highestNote, d: dur });
+                const midi = Tone.Frequency(notes[0]).toMidi();
+                let lane = isNaN(midi) ? 0 : midi % 4;
+                noteArray.push({ t: time, l: lane, n: notes[0], d: dur });
                 time += dur;
             }
         }
         return noteArray;
     }
 
-    // 🔥 지피티 피드백 적용: 모바일 렌더링 딜레이 및 동기화 이슈 완벽 해결!
     document.getElementById('start-btn').addEventListener('pointerdown', async (e) => {
-        e.preventDefault(); // 유령 터치 방지
-        e.stopPropagation();
-
+        e.preventDefault(); e.stopPropagation();
         await Tone.start(); 
         
-        if (difficulty === "easy") speedMult = 0.7;
-        else if (difficulty === "hard") speedMult = 1.5;
-        else speedMult = 1.0;
-
+        speedMult = difficulty === "easy" ? 0.7 : (difficulty === "hard" ? 1.5 : 1.0);
         Tone.Transport.playbackRate = speedMult;
 
         document.getElementById('lobby').style.display = 'none';
         gameArea.style.display = 'block';
-
-        // 화면이 block된 후 계산해야 정확한 높이가 나옴
         hitLineY = gameArea.offsetHeight * 0.85;
 
-        sheet = parseAndSchedule(songs[selected]);
-
-        // 🔥 악보 로딩 실패 방지 (안전 장치)
-        if (!sheet || sheet.length === 0) {
-            alert("악보 로딩에 실패했습니다.");
-            return;
-        }
-
-        isPlaying = true; // 상태값을 먼저 켜둠
-        score = 0; 
-        sheetIdx = 0; 
+        // 🔥 지피티 피드백 2: 시작 전 타일 완전 정리
+        tiles.forEach(t => t.el.remove());
         tiles = [];
+
+        sheet = parseAndSchedule(songs[selected]);
+        isPlaying = true; score = 0; combo = 0; sheetIdx = 0;
         document.getElementById('score').innerText = "0";
+        document.getElementById('combo').classList.remove('show');
         
+        // 🔥 지피티 피드백 1: Transport 초기화 정석 코드
         Tone.Transport.stop();
-        Tone.Transport.seconds = 0;
+        Tone.Transport.position = 0;
         
-        // 🔥 핵심: 모바일 DOM 렌더링과 Audio Context 활성화 시간을 100ms 벌어줌
-        // 이렇게 하면 loop가 빈 화면에서 혼자 돌아 게임 오버를 내는 버그가 100% 사라짐!
         setTimeout(() => {
             Tone.Transport.start();
             requestAnimationFrame(loop);
@@ -221,41 +179,47 @@
         setTimeout(() => { j.style.opacity = 0; j.style.transform = "scale(1)"; }, 200);
     }
 
+    function updateScore(isHit, diff = 0) {
+        if (isHit) {
+            combo++;
+            score += (10 + Math.floor(combo / 5)); // 콤보 가산점
+            const comboEl = document.getElementById('combo');
+            comboEl.innerText = `${combo} COMBO`;
+            comboEl.classList.add('show');
+            document.getElementById('score').innerText = score;
+            showJudg(diff < 0.08 ? "PERFECT" : "GOOD", "var(--neon)");
+        } else {
+            combo = 0;
+            document.getElementById('combo').classList.remove('show');
+        }
+    }
+
     gameArea.addEventListener("pointerdown", (e) => {
         if (!isPlaying) return;
-
         const rect = gameArea.getBoundingClientRect();
-        const x = e.clientX - rect.left;
+        const x = (e.clientX || e.touches[0].clientX) - rect.left;
         const lane = Math.floor(x / (rect.width / 4));
+        
+        // 🔥 지피티 피드백 3: 정밀 오디오 시간 획득
         const now = Tone.Transport.seconds;
 
         let hitSomething = false;
-
         for (let i = 0; i < tiles.length; i++) {
             const o = tiles[i];
             if (o.hit || o.miss) continue;
             if (o.data.l !== lane) continue; 
 
             const diff = Math.abs(o.data.t - now);
-
             if (diff < 0.22) { 
                 hitSound.triggerAttackRelease("C4", "8n");
-                
                 o.hit = true;
                 o.el.classList.add("pressed");
-
-                score += 20;
-                document.getElementById('score').innerText = score;
-                showJudg(diff < 0.08 ? "PERFECT" : "GOOD", "var(--neon)");
-                
+                updateScore(true, diff);
                 hitSomething = true;
                 break; 
             }
         }
-
-        if (!hitSomething) {
-            end(false); // 빈 곳 누르면 즉시 아웃
-        }
+        if (!hitSomething) end(false);
     });
 
     function loop() {
@@ -267,16 +231,12 @@
         while(sheetIdx < sheet.length && sheet[sheetIdx].t < now + LOOKAHEAD) {
             const data = sheet[sheetIdx++];
             const el = document.createElement('div');
-            
             const visualDur = data.d * 1.4; 
             const h = Math.max(100, visualDur * speed * 0.8);
-            const isLong = data.d >= 0.6; 
-            
-            el.className = `tile ${isLong ? 'long' : ''}`;
+            el.className = `tile ${data.d >= 0.6 ? 'long' : ''}`;
             el.style.left = (data.l * 25) + '%';
             el.style.height = h + 'px';
             el.style.top = "-500px";
-            
             const obj = { el, data, h, hit: false, miss: false };
             gameArea.appendChild(el);
             tiles.push(obj);
@@ -289,19 +249,14 @@
 
             if(!o.hit && !o.miss && (o.data.t - now) < -0.2) {
                 o.miss = true; 
-                o.el.classList.add('missed');
-                
-                end(false); // 타일 놓쳐도 즉시 아웃
+                end(false);
                 return;
             }
-            
             if(bottom - o.h > gameArea.offsetHeight + 100) { 
                 o.el.remove(); 
                 tiles.splice(i, 1); 
             }
         }
-
-        // 🔥 지피티 힌트: 곡이 정상적으로 끝나면 win 처리!
         if(sheetIdx >= sheet.length && tiles.length === 0) end(true);
         else requestAnimationFrame(loop);
     }
@@ -310,11 +265,10 @@
         isPlaying = false; 
         Tone.Transport.pause(); 
         masterPiano.releaseAll(); 
-        
         gameArea.style.display = 'none';
         document.getElementById('result').style.display = 'flex';
         document.getElementById('res-title').innerText = win ? "STAGE CLEAR!" : "GAME OVER";
-        document.getElementById('rank').innerText = win ? (score > (sheet.length * 15) ? "SSS" : "S") : "F";
+        document.getElementById('rank').innerText = win ? (score > 1000 ? "SSS" : "S") : "F";
         document.getElementById('final-score').innerText = `Score: ${score}`;
     }
 </script>
