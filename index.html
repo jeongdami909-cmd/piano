@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Piano Tiles - Pro Digital Synth</title>
+    <title>Piano Tiles - Passthrough Engine V4</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
     <style>
         :root { --neon: #00f2ff; --pink: #ff00ea; --gold: #ffea00; --bg: #050508; }
@@ -28,7 +28,8 @@
         .song-title { font-size: 15px; font-weight: bold; }
         .song-artist { font-size: 11px; color: var(--gold); margin-top: 3px; }
         
-        #start-btn { width: 100%; padding: 18px; border-radius: 50px; border: none; font-size: 18px; font-weight: bold; background: linear-gradient(45deg, var(--neon), var(--pink)); color: #fff; box-shadow: 0 5px 20px rgba(255, 0, 234, 0.4); cursor: pointer;}
+        #start-btn { width: 100%; padding: 18px; border-radius: 50px; border: none; font-size: 18px; font-weight: bold; background: #222; color: #555; transition: 0.3s; }
+        #start-btn.ready { background: linear-gradient(45deg, var(--neon), var(--pink)); color: #fff; pointer-events: auto; box-shadow: 0 5px 20px rgba(255, 0, 234, 0.4); cursor: pointer;}
 
         #game { overflow: hidden; z-index: 50; position: relative; touch-action: none; }
         
@@ -36,8 +37,6 @@
         #hit-line { position: absolute; bottom: 15%; width: 100%; height: 4px; background: rgba(255,255,255,0.8); z-index: 5; box-shadow: 0 0 15px #fff; pointer-events: none; }
         
         #score { position: absolute; top: 40px; width: 100%; text-align: center; font-size: 50px; font-weight: 900; z-index: 60; text-shadow: 0 0 15px var(--neon); pointer-events: none; }
-        #hp-container { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); width: 150px; height: 6px; background: #333; border-radius: 3px; z-index: 60; pointer-events: none; }
-        #hp-bar { width: 100%; height: 100%; background: #00ff00; transition: width 0.2s; }
         #judgment { position: absolute; top: 45%; width: 100%; text-align: center; font-size: 45px; font-weight: 900; z-index: 70; opacity: 0; pointer-events: none; transition: 0.1s; }
 
         .tile { position: absolute; width: 24%; margin-left: 0.5%; border-radius: 6px; background: linear-gradient(to bottom, #fff, var(--neon)); z-index: 10; pointer-events: none; }
@@ -51,8 +50,8 @@
 <body>
 
 <div id="lobby" class="screen" style="display: flex;">
-    <h1>PRO DIGITAL ENGINE</h1>
-    <p class="desc">부드럽고 맑은 프로 리듬게임용 신디사이저 탑재</p>
+    <h1>PASSTHROUGH ENGINE V4</h1>
+    <p class="desc">완벽한 오디오 스트림 & 생존형 리듬게임 구조</p>
     
     <div class="diff-group">
         <button class="diff-btn" data-diff="easy">하 (Easy)</button>
@@ -61,11 +60,10 @@
     </div>
 
     <div id="song-list"></div>
-    <button id="start-btn">게임 시작!</button>
+    <button id="start-btn" class="ready">게임 시작!</button>
 </div>
 
 <div id="game" class="screen">
-    <div id="hp-container"><div id="hp-bar"></div></div>
     <div id="score">0</div>
     <div id="judgment"></div>
     <div id="hit-line"></div>
@@ -73,7 +71,7 @@
 </div>
 
 <div id="result" class="screen">
-    <h2 id="res-title" style="font-size:28px;">STAGE CLEAR</h2>
+    <h2 id="res-title" style="font-size:28px;">GAME OVER</h2>
     <div id="rank" style="font-size:90px; font-weight:900; color:var(--gold); margin: 20px 0;">S</div>
     <div id="final-score" style="font-size:20px; margin-bottom: 30px; color:#aaa;">Score: 0</div>
     <button onclick="location.reload()" style="padding: 15px 40px; border-radius: 30px; border: none; font-weight: bold; background:#fff; cursor: pointer; font-size: 18px;">로비로 돌아가기</button>
@@ -95,24 +93,27 @@
         { t: "Words", a: "F.R. David", parts: { A: "G4+G3_0.4,A4_0.4,B4_0.4,G4_0.4,E4+C3_1.0,C5_0.4,B4_0.4,A4+D3_0.8,G4_0.4,F#4_0.4,E4+G3_1.0", B: "D5+D3_0.4,C5_0.4,B4_0.4,G4_0.4,E5+C3_1.0,D5_0.4,C5_0.4,B4+G3_1.0" }, seq: "A,A,B,A,B,A,A,B" }
     ];
 
-    let piano, sheet = [], tiles = [], isPlaying = false, score = 0, hp = 100, sheetIdx = 0, selected = 0;
+    let masterPiano, hitSound, sheet = [], tiles = [], isPlaying = false, score = 0, sheetIdx = 0, selected = 0;
     let difficulty = "normal", speedMult = 1.0, hitLineY;
     const gameArea = document.getElementById('game');
 
-    // 🔥 전자레인지 쇳소리(Square), 비트크러셔 전면 폐기!! 
-    // 🔥 지피티 피드백 적용: 맑고 영롱한 Triangle 파형 + 부드러운 Envelope 구성
-    piano = new Tone.PolySynth(Tone.Synth, {
-        volume: -4,
-        oscillator: { 
-            type: "triangle" // 듣기 좋은 맑은 디지털 피아노/벨 소리
-        }, 
-        envelope: { 
-            attack: 0.01,  // 딱딱함을 줄이고 부드럽게 시작
-            decay: 0.2,    
-            sustain: 0.3,  // 소리가 자연스럽게 유지됨
-            release: 0.4   // 뚝 끊기지 않고 잔향이 남게 처리
-        }
-    }).toDestination(); // 스피커 직결 (딜레이 제로)
+    // 🔥 1. 마스터 피아노 엔진: 완벽하게 믹싱된 원곡(BGM)을 1ms 오차 없이 렌더링
+    const reverb = new Tone.Reverb({ decay: 1.5, wet: 0.2 }).toDestination();
+    
+    masterPiano = new Tone.PolySynth(Tone.Synth, {
+        volume: -2,
+        oscillator: { type: "triangle" },
+        envelope: { attack: 0.01, decay: 0.2, sustain: 0.5, release: 1.0 }
+    }).connect(reverb);
+
+    // 🔥 2. 타격감용 틱(Tick) 사운드: 건반을 누를 때마다 경쾌하게 반응
+    hitSound = new Tone.MembraneSynth({
+        pitchDecay: 0.05,
+        octaves: 10,
+        oscillator: { type: "sine" },
+        envelope: { attack: 0.001, decay: 0.1, sustain: 0, release: 0.1 },
+        volume: -10
+    }).toDestination();
 
     function renderSongs() {
         const listDiv = document.getElementById('song-list');
@@ -120,7 +121,7 @@
         songs.forEach((s, idx) => {
             const item = document.createElement('div');
             item.className = `song-item ${idx === selected ? 'active' : ''}`;
-            item.innerHTML = `<div><div class="song-title">${s.t}</div><div class="song-artist">프로 디지털 신스 톤</div></div>`;
+            item.innerHTML = `<div><div class="song-title">${s.t}</div><div class="song-artist">통과형(Passthrough) 리듬 엔진</div></div>`;
             item.onclick = () => { selected = idx; renderSongs(); };
             listDiv.appendChild(item);
         });
@@ -135,11 +136,13 @@
         });
     });
 
-    // 지피티 피드백: "음악성을 파괴하지 마라" -> 화성 2개음 유지 파싱
-    function parseSheet(songObj) {
+    // 악보 파싱 및 마스터 트랙(BGM) 스케줄링
+    function parseAndSchedule(songObj) {
         const noteArray = [];
         let time = 1.0;
         const sequence = songObj.seq.split(',');
+
+        Tone.Transport.cancel(0); // 이전 스케줄 초기화
 
         for (let partKey of sequence) {
             if (time > 90) break;
@@ -154,13 +157,18 @@
                 const dur = parseFloat(durStr);
                 const notes = noteStr.split('+'); 
 
-                notes.sort((a, b) => Tone.Frequency(b).toMidi() - Tone.Frequency(a).toMidi());
-                const playNotes = notes.slice(0, 2); 
+                // 🔥 3. 엔진이 알아서 음악을 연주하도록 타임라인에 완벽하게 박아버림!
+                Tone.Transport.schedule((t) => {
+                    masterPiano.triggerAttackRelease(notes, dur * 0.9, t);
+                }, time);
 
-                const midi = Tone.Frequency(playNotes[0]).toMidi();
+                // 최고음을 기준으로 플레이어가 쳐야 할 "시각적 타일" 좌표 생성
+                notes.sort((a, b) => Tone.Frequency(b).toMidi() - Tone.Frequency(a).toMidi());
+                const highestNote = notes[0]; 
+                const midi = Tone.Frequency(highestNote).toMidi();
                 let lane = isNaN(midi) ? Math.floor(Math.random() * 4) : midi % 4;
                 
-                noteArray.push({ t: time, l: lane, n: playNotes, d: dur });
+                noteArray.push({ t: time, l: lane, n: highestNote, d: dur });
                 time += dur;
             }
         }
@@ -180,14 +188,14 @@
         gameArea.style.display = 'block';
         hitLineY = gameArea.offsetHeight * 0.85;
 
-        sheet = parseSheet(songs[selected]);
-        isPlaying = true; score = 0; hp = 100; sheetIdx = 0; tiles = [];
+        sheet = parseAndSchedule(songs[selected]);
+        isPlaying = true; score = 0; sheetIdx = 0; tiles = [];
         document.getElementById('score').innerText = "0";
-        updateHP();
         
-        Tone.Transport.cancel(0); 
         Tone.Transport.stop();
         Tone.Transport.seconds = 0;
+        
+        // 🔥 음악 재생 시작! 플레이어는 이제 이 음악의 흐름을 쫓아가야 합니다.
         Tone.Transport.start();
         requestAnimationFrame(loop);
     });
@@ -199,12 +207,7 @@
         setTimeout(() => { j.style.opacity = 0; j.style.transform = "scale(1)"; }, 200);
     }
 
-    function updateHP() {
-        const hpBar = document.getElementById('hp-bar');
-        hpBar.style.width = `${hp}%`;
-        hpBar.style.background = hp > 60 ? "#00ff00" : (hp > 30 ? "#ffea00" : "#ff0055");
-    }
-
+    // 🔥 플레이어의 입력은 이제 "음악을 만드는 것"이 아니라 "음악을 허락하는 것"입니다.
     gameArea.addEventListener("pointerdown", (e) => {
         if (!isPlaying) return;
 
@@ -223,19 +226,15 @@
             const diff = Math.abs(o.data.t - now);
 
             if (diff < 0.22) { 
-                
-                // 🔥 지피티 피드백 적용: 강제 0.1초 고정 해제!
-                // 악보 본연의 길이(o.data.d * 0.9)를 존중하고, 벨로시티를 0.8로 부드럽게 세팅
-                piano.triggerAttackRelease(o.data.n, o.data.d * 0.9, Tone.now(), 0.8);
+                // 타일 명중! 음악은 이미 배경에서 완벽하게 흐르고 있으니, 타격감만 줍니다.
+                hitSound.triggerAttackRelease("C4", "8n");
                 
                 o.hit = true;
                 o.el.classList.add("pressed");
 
                 score += 20;
-                hp = Math.min(100, hp + 3);
                 document.getElementById('score').innerText = score;
                 showJudg(diff < 0.08 ? "PERFECT" : "GOOD", "var(--neon)");
-                updateHP();
                 
                 hitSomething = true;
                 break; 
@@ -243,8 +242,8 @@
         }
 
         if (!hitSomething) {
-            hp -= 10;
-            updateHP();
+            // 빈 공간을 누르면 즉시 게임 오버!
+            end(false);
         }
     });
 
@@ -277,14 +276,14 @@
             const bottom = hitLineY - (o.data.t - now) * speed;
             o.el.style.top = (bottom - o.h) + "px";
 
+            // 🔥 핵심: 타일이 판정선을 무사히 통과하지 못하고 놓쳐버린 경우 -> 미스!
             if(!o.hit && !o.miss && (o.data.t - now) < -0.2) {
                 o.miss = true; 
                 o.el.classList.add('missed');
-                hp -= 15; score = Math.max(0, score - 15);
-                document.getElementById('score').innerText = score;
-                showJudg("MISS", "#ff0055");
-                updateHP();
-                if(hp <= 0) end(false);
+                
+                // 타일을 놓치는 순간 음악이 즉시 멈추며 게임 오버! (진짜 리듬게임 룰)
+                end(false);
+                return;
             }
             
             if(bottom - o.h > gameArea.offsetHeight + 100) { 
@@ -298,7 +297,11 @@
     }
 
     function end(win) {
-        isPlaying = false; Tone.Transport.stop(); Tone.Transport.cancel(0);
+        isPlaying = false; 
+        // ❌ 실패하는 순간 자비 없이 음악을 멈춰버립니다.
+        Tone.Transport.pause(); 
+        masterPiano.releaseAll(); // 잔향까지 즉시 소거
+        
         gameArea.style.display = 'none';
         document.getElementById('result').style.display = 'flex';
         document.getElementById('res-title').innerText = win ? "STAGE CLEAR!" : "GAME OVER";
