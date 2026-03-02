@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Piano Tiles - V28 Masterpiece</title>
+    <title>Piano Tiles - V29 Falling Master</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
     <style>
         :root { --neon: #00f2ff; --pink: #ff00ea; --gold: #ffea00; }
@@ -22,10 +22,10 @@
         .lane-line { position: absolute; top: 0; width: 25%; height: 100%; border-right: 1px solid #eee; pointer-events: none; }
         #score { position: absolute; top: 40px; width: 100%; text-align: center; font-size: 70px; font-weight: 900; z-index: 60; color: #ff0055; pointer-events: none; text-shadow: 2px 2px 0#fff, -2px -2px 0#fff; }
         
-        /* 🔥 지피티의 CSS 수정 제안 반영: 터치를 막지 않도록 설정 */
-        .row { position: absolute; width: 100%; height: 25%; transition: bottom 0.1s linear; pointer-events: auto; }
-        .tile { position: absolute; width: 25%; height: 100%; background: #111; border: 1px solid #000; pointer-events: auto; box-shadow: inset 0 -4px 10px rgba(255,255,255,0.1); }
-        .tile.pressed { background: #bbb !important; box-shadow: none; }
+        /* 🔥 V29 핵심: transition 제거 (스크립트가 직접 제어) 및 터치 활성화 */
+        .row { position: absolute; width: 100%; height: 25%; pointer-events: auto; }
+        .tile { position: absolute; width: 25%; height: 100%; background: #111; border: 1px solid #000; pointer-events: auto; }
+        .tile.pressed { background: #bbb !important; }
         .tile.missed { background: #ff0055 !important; animation: blink 0.2s infinite; }
         
         @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
@@ -35,7 +35,7 @@
 <body>
 
 <div id="lobby" class="screen" style="display: flex;">
-    <h1>V28 FINAL MASTER</h1>
+    <h1>V29 FALLING PIANO</h1>
     <div id="song-list"></div>
     <button id="start-btn">웅장한 무대 조율 중...</button>
 </div>
@@ -49,7 +49,7 @@
 </div>
 
 <div id="result" class="screen">
-    <h2 id="res-title">BRAVO!</h2>
+    <h2 id="res-title">SONG FINISHED!</h2>
     <div id="rank" style="font-size:100px; font-weight:900; color:var(--gold);">S</div>
     <div id="final-score">Score: 0</div>
     <button onclick="location.reload()" style="padding: 20px 60px; border-radius: 50px; background:#fff; font-size: 18px; font-weight: bold; color:#000;">Encore (다시 연주)</button>
@@ -74,12 +74,12 @@
 
     let piano, sheet = [], activeRows = [];
     let isPlaying = false, score = 0, currentStep = 0, selected = 0, canClick = false;
+    let speed = 0.5; // 🔥 초당 떨어지는 퍼센트 (%)
     const gameArea = document.getElementById('game');
 
-    // 🎧 지피티 제안: 콘서트홀 파이널 사운드 엔진 세팅
+    // 🎧 콘서트홀 사운드 엔진 세팅
     const hall = new Tone.Reverb({ decay: 6, wet: 0.4 }).toDestination();
     const compressor = new Tone.Compressor(-10, 3).connect(hall);
-    
     piano = new Tone.Sampler({
         urls: {
             A0:"A0.mp3",C1:"C1.mp3","D#1":"Ds1.mp3","F#1":"Fs1.mp3",
@@ -90,22 +90,18 @@
             A5:"A5.mp3",C6:"C6.mp3","D#6":"Ds6.mp3","F#6":"Fs6.mp3",
             A6:"A6.mp3",C7:"C7.mp3",A7:"A7.mp3",C8:"C8.mp3"
         },
-        release: 5, // 페달감 향상
+        release: 5,
         baseUrl: "https://tonejs.github.io/audio/salamander/",
-        onload: () => { document.getElementById('start-btn').innerText = "콘서트 연주 시작"; }
+        onload: () => { document.getElementById('start-btn').innerText = "그랜드 피아노 연주 시작"; }
     }).connect(compressor);
 
-    // 🎹 사람다운 연주를 위한 왼손+오른손 시간차 함수
     function playHuman(note){
         const velocity = 0.7 + Math.random()*0.3;
         piano.triggerAttackRelease(note, "8n", undefined, velocity);
-
         try {
             const low = Tone.Frequency(note).transpose(-24).toNote();
             const root = Tone.Frequency(note).transpose(-12).toNote();
             const fifth = Tone.Frequency(note).transpose(-7).toNote();
-
-            // 왼손 시간차 구현 (사람 감성 핵심)
             piano.triggerAttackRelease(low, "4n", "+0.04", velocity-0.3);
             piano.triggerAttackRelease([root, fifth], "8n", "+0.08", velocity-0.2);
         } catch(e) {}
@@ -134,26 +130,27 @@
         const song = songs[selected];
         sheet = [];
         const notes = song.p.split(',');
-        for(let i=0; i<100; i++) {
+        for(let i=0; i<150; i++) {
             sheet.push({ lane: Math.floor(Math.random()*4), note: notes[i % notes.length] });
         }
 
-        isPlaying = true; score = 0; currentStep = 0; activeRows = []; canClick = false;
+        isPlaying = true; score = 0; currentStep = 0; activeRows = []; speed = 0.5;
         document.getElementById('score').innerText = "0";
-        for(let i=0; i<5; i++) createRow(i);
         
-        // 🛡️ 즉사 보호막
+        // 초기 4줄 생성
+        for(let i=0; i<4; i++) createRow(100 + (i * 25)); 
+        
         setTimeout(() => { canClick = true; }, 300);
+        requestAnimationFrame(gameLoop); // 🔥 연속 낙하 엔진 시작
     });
 
-    function createRow(offset) {
-        const sheetIdx = currentStep + offset;
-        if(sheetIdx >= sheet.length) return; 
+    function createRow(bottomVal) {
+        if(currentStep >= sheet.length) return; 
 
-        const data = sheet[sheetIdx];
+        const data = sheet[currentStep];
         const rowEl = document.createElement('div');
         rowEl.className = 'row';
-        rowEl.style.bottom = (offset * 25) + '%'; 
+        rowEl.style.bottom = bottomVal + '%'; 
 
         const tileEl = document.createElement('div');
         tileEl.className = 'tile';
@@ -162,44 +159,66 @@
         rowEl.appendChild(tileEl);
         gameArea.appendChild(rowEl);
         activeRows.push({ rowEl, tileEl, lane: data.lane, note: data.note, locked: false });
+        currentStep++;
     }
 
-    // 🛠️ V28 무결점 클릭 엔진
+    // 🔥 V29 핵심: 게임 루프 (프레임마다 건반 이동)
+    function gameLoop() {
+        if (!isPlaying) return;
+
+        for (let i = activeRows.length - 1; i >= 0; i--) {
+            const row = activeRows[i];
+            const currentBottom = parseFloat(row.rowEl.style.bottom);
+            const newBottom = currentBottom - speed;
+            row.rowEl.style.bottom = newBottom + "%";
+
+            // 바닥(0%)을 지나친 타일을 못 눌렀을 경우 GAME OVER
+            if (newBottom < -25 && !row.locked) {
+                end(false);
+                return;
+            }
+        }
+
+        // 속도 서서히 증가
+        speed += 0.0002;
+
+        requestAnimationFrame(gameLoop);
+    }
+
     gameArea.addEventListener("pointerdown", (e) => {
         if (!isPlaying || !canClick || activeRows.length === 0) return;
         e.preventDefault();
 
-        // 물리적 위치(bottom) 정렬
-        activeRows.sort((a, b) => parseFloat(a.rowEl.style.bottom) - parseFloat(b.rowEl.style.bottom));
-        const bottomRow = activeRows[0];
+        // 가장 아래에 있는 타일을 찾아 판정
+        const bottomRow = activeRows.find(r => !r.locked);
+        if (!bottomRow) return;
 
-        // 🎯 터치된 요소가 정답 타일인지 직접 확인
         const hitTarget = (e.target === bottomRow.tileEl);
 
-        if (hitTarget && !bottomRow.locked) {
+        if (hitTarget) {
             bottomRow.locked = true;
-            playHuman(bottomRow.note); // 🔥 업그레이드된 휴먼 사운드
+            playHuman(bottomRow.note);
             bottomRow.tileEl.classList.add('pressed');
             
             score++;
             document.getElementById('score').innerText = score;
             
-            const removed = activeRows.shift();
-            setTimeout(() => removed.rowEl.remove(), 80);
+            // 누른 타일은 잠시 후 제거
+            setTimeout(() => {
+                bottomRow.rowEl.remove();
+                activeRows = activeRows.filter(r => r !== bottomRow);
+            }, 50);
             
-            // 모든 건반 즉시 재정렬 (멈춤 현상 방지)
-            activeRows.forEach((r, idx) => {
-                r.rowEl.style.bottom = (idx * 25) + '%'; 
-            });
-            
-            currentStep++;
-            createRow(4);
+            // 새 타일 보충 (가장 위에 있는 타일보다 25% 높은 곳에 생성)
+            const topRow = activeRows[activeRows.length - 1];
+            const topPos = topRow ? parseFloat(topRow.rowEl.style.bottom) : 100;
+            createRow(topPos + 25);
 
             if(currentStep >= sheet.length && activeRows.length === 0) {
                 setTimeout(() => end(true), 300);
             }
         } else if (!e.target.classList.contains('pressed')) {
-            // ❌ 오답 판정: 흰 바탕이나 엉뚱한 타일을 누름
+            // 빈 바탕 클릭 시 즉사
             const rect = gameArea.getBoundingClientRect();
             const lane = Math.floor((e.clientX - rect.left) / (rect.width / 4));
             const errTile = document.createElement('div');
@@ -216,10 +235,10 @@
         setTimeout(() => {
             gameArea.style.display = 'none';
             document.getElementById('result').style.display = 'flex';
-            document.getElementById('res-title').innerText = win ? "PERFECT!" : "GAME OVER";
-            document.getElementById('rank').innerText = win ? "SSS" : (score > 60 ? "S" : (score > 20 ? "A" : "F"));
+            document.getElementById('res-title').innerText = win ? "PERFECT PERFORMANCE" : "CONCERT OVER";
+            document.getElementById('rank').innerText = win ? "SSS" : (score > 100 ? "S" : (score > 50 ? "A" : "F"));
             document.getElementById('final-score').innerText = `Score: ${score}`;
-        }, 400);
+        }, 300);
     }
 </script>
 </body>
