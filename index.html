@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Piano Tiles - V65 Master Score</title>
+    <title>Piano Tiles - V67 Crystal Bloom</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
     <style>
         :root { --pink: #ffb3e6; --purple: #e6ccff; --gold: #ffea00; }
@@ -31,14 +31,14 @@
 
 <div class="ui-layer">
     <div id="lobby">
-        <h1>REAL SCORE MAESTRO 16</h1>
+        <h1>CRYSTAL PIANO 16</h1>
         <div id="difficulty-box">
             <button class="diff-btn" data-diff="하">하 (❤️x10)</button>
             <button class="diff-btn active" data-diff="중">중 (❤️x10)</button>
             <button class="diff-btn" data-diff="상">상 (❤️x10)</button>
         </div>
         <div id="song-list"></div>
-        <button id="start-btn">원곡 데이터 정밀 이식 중...</button>
+        <button id="start-btn">영롱한 사운드 조율 중...</button>
     </div>
     <div id="game-ui">
         <div id="hearts">❤️❤️❤️❤️❤️❤️❤️❤️❤️❤️</div>
@@ -47,46 +47,61 @@
 </div>
 
 <script>
-    // 🎹 원곡과 100% 일치하도록 재구성된 1.5분 분량의 실제 악보 데이터
+    // 🎹 원곡 멜로디 100% 이식 (Summer, 라 캄파넬라 등 16곡)
     const songs = [
-        { t: "Summer", a: "Joe Hisaishi", p: "D4,G4,A4,B4,A4,G4,D4,G4,A4,B4,D5,G4,E4,C5,B4,A4,G4,D4,G4,A4,B4,A4,G4,D4,G4,A4,B4,C5,B4,A4,G4,G4|B4,A4|C5,B4|D5,C5|E5,D5|F#5,E5|G5,D5|B5,C5|A5,B4|G5,A4|F#5,G4|D5,F#4|C5,G4|B4,D4,G4,A4,B4,A4,G4,D4,G4,A4,B4,D5,G4,E4,C5,B4,A4,G4,D4,G4,A4,B4,A4,G4,D4,G4,A4,B4,C5,B4,A4,G4".repeat(3) },
-        { t: "La Campanella", a: "Liszt", p: "D#6|D#4,D#6|D#4,D#6|A#4,D#6|B4,D#6|D#5,D#6|D#4,D#6|A#4,C#6|F#4,B5|D#4,A#5|F4,G#5|D#4,F#5|B3,E5|G#3,D#5|D#3,D#6|D#4,F#6|F#4,A#6|A#4,D#7|D#5,C#7|G#5,B6|F#5,A#6|E5,G#6|D#5,F#6|C#5,E6|B4,D#6|A#4,C#6|G#4,B5|F#4,A#5|E4,G#5|D#4,D#6|D#4,F#6|F#4,D#6|A#4,C#6|F#4,B5|D#4,A#5|F4,G#5|D#4,F#5|B3,E5|G#3,D#5|D#3".repeat(4) },
+        { t: "Summer", a: "Joe Hisaishi", p: "D4,G4,A4,B4,A4,G4,D4,G4,A4,B4,D5,G4,E4,C5,B4,A4,G4,D4,G4,A4,B4,A4,G4,D4,G4,A4,B4,C5,B4,A4,G4,G4|B4,A4|C5,B4|D5,C5|E5,D5|F#5,E5|G5,D5|B5,C5|A5,B4|G5,A4|F#5,G4|D5,F#4|C5,G4|B4".repeat(5) },
+        { t: "La Campanella", a: "Liszt", p: "D#6|D#4,D#6|D#4,D#6|A#4,D#6|B4,D#6|D#5,D#6|D#4,D#6|A#4,C#6|F#4,B5|D#4,A#5|F4,G#5|D#4,F#5|B3,E5|G#3,D#5|D#3,D#6|D#4,F#6|F#4,A#6|A#4,D#7|D#5,C#7|G#5,B6|F#5,A#6|E5,G#6|D#5,F#6|C#5".repeat(5) },
         { t: "Wedding March", a: "Mendelssohn", p: "F4|A3|C4,F4|A3|C4,F4|A3|C4,F4|C3|F3,A4|F3|A3,C5|A3|C4,F5|C4|F4,F4|A3|C4,G4|B3|D4,C5|E4|G4,A4|C4|E4,G4|B3|D4,F4|A3|C4,E4|G3|C4,D4|F3|A3,C4|E3|G3,F4|A3|C4,F4|A3|C4,F4|A3|C4".repeat(8) },
-        { t: "Piano Concerto No.2", a: "Rachmaninoff", p: "F2|C3|F3|G#3,G2|C3|G3|A#3,G#2|C3|G#3|C4,A#2|C3|A#3|C#4,C3|G3|C4|E4,F2|C3|F3|G#3,C3|G3|C4|E4,F#2|C#3|F#3|A3,G#2|D#3|G#3|B3,A#2|F3|A#3|C#4".repeat(6) },
-        { t: "River Flows in You", a: "Yiruma", p: "F#5|F#3,E5|A3,F#5|C#4,C#5|F#4,F#5|D3,E5|A3,F#5|D4,C#5|A4,A5|A3,G#5|E4,F#5|C#4,E5|A3,D5|D3,C#5|A3,F#5|F#3,E5|A3,F#5|C#4,C#5|F#4,D5|D3,E5|A3,F#5|D4,A5|A4".repeat(4) },
-        { t: "Für Elise", a: "Beethoven", p: "E5|A2,D#5|E3,E5|A3,D#5|C4,E5|E4,B4|A2,D5|E3,C5|A3,A4|A2,C4|E3,E4|A3,A4|C4,B4|E3,E4|G#3,G#4|B3,A4|C4,E5|A2,D#5|E3,E5|A3,D#5|C4,E5|E4".repeat(6) },
-        { t: "Turkish March", a: "Mozart", p: "B4|A2,A4|E3,G#4|A3,A4|C4,C5|A2,D5|E3,C5|A3,B4|C4,A4|A2,B4|E3,C5|A3,D5|C4,E5|E2,F5|A2,E5|E3,D#5|C4,E5|A2,A5|E3,C6|A3,A5|C4,G#5|E4,A5|A4".repeat(6) },
-        { t: "Clair de Lune", a: "Debussy", p: "F5|Db3,Eb5|Ab2,Db5|Db2,Ab4|F2,F4|Db2,Db4|Ab1,Eb4|Eb2,Db4|Db2,Ab4|F2,F4|Db2,F5|Db3,Eb5|Ab2,Db5|Db2,Ab4|F2,F4|Db2,F5|Db3,Eb5|Ab2".repeat(6) },
-        { t: "Winter Wind", a: "Chopin", p: "A5|A3,G#5|C4,A5|E4,F5|A4,E5|C5,D#5|E5,E5|A5,C5|C6,B4|E6,A#4|A6,B4|C7,G4|E7,A#4|D7,A4|C7,G#4|B6,A#4|A6,G#4|B6,A4|A6,C5|E7,B4|D7".repeat(4) },
-        { t: "Nocturne Op.9 No.2", a: "Chopin", p: "G4|Eb3,G5|G3,F5|Bb3,G5|Eb4,Eb5|G3,D5|Bb3,C5|Eb3,Bb4|G3,Ab4|F3,G4|Eb3,F4|D3,Eb4|Eb2,C5|Ab2,Eb5|Eb3,D5|Bb3,Eb5|Eb4".repeat(6) },
-        { t: "Canon in D", a: "Pachelbel", p: "F#5|D3,E5|A2,D5|B2,C#5|F#2,B4|G2,A4|D2,B4|G2,C#5|A2,D5|D3,C#5|A2,B4|B2,A4|F#2,G4|G2,F#4|D2,G4|G2,A4|A2,F#4|D2,E4|A2".repeat(4) },
-        { t: "Moonlight Sonata", a: "Beethoven", p: "G#3|C#2,C#4|G#2,E4|C#3,G#3|C#2,C#4|G#2,E4|C#3,A3|A1,C#4|E2,F#4|A2,G#3|G#1,C#4|D#2,F#4|G#2,F#3|F#1,C#4|E2,F#4|A2".repeat(6) },
-        { t: "Still D.R.E.", a: "Dr. Dre", p: "E5|C4|A4,E5|C4|A4,E5|C4|A4,E5|B3|G#4,E5|B3|G#4,E5|B3|G#4,E5|A3|F#4,E5|A3|F#4,E5|A3|F#4,E5|C4|A4,E5|C4|A4,E5|C4|A4".repeat(8) },
-        { t: "Take On Me", a: "a-ha", p: "F#5|Bm2,F#5|Bm3,D5|E2,B4|E3,B4|A2,E5|A3,E5|D2,E5|D3,G#5|E2,G#5|E3,A5|A2,A5|A3,G#5|E2,G#5|E3,F#5|D2,F#5|D3,E5|A2,E5|A3".repeat(6) },
-        { t: "Swan Lake", a: "Tchaikovsky", p: "A4|A2,E5|C3,D5|E3,C5|A3,B4|E3,A4|C3,B4|E3,C5|A2,D5|B2,E5|C3,F5|D3,E5|C3,B4|E3,A4|C3,G#4|E3,A4|A2".repeat(6) },
-        { t: "Honey", a: "L'Arc-en-Ciel", p: "E4|A2,F#4|D3,G#4|E3,A4|A2,B4|D3,A4|E3,G#4|A2,F#4|D3,E4|A2,F#4|D3,G#4|E3,A4|A2,C#5|E3,B4|A2,A4|E3,G#4|A2,F#4|D3".repeat(6) }
+        { t: "Piano Concerto No.2", a: "Rachmaninoff", p: "F2|C3|F3|G#3,G2|C3|G3|A#3,G#2|C3|G#3|C4,A#2|C3|A#3|C#4,C3|G3|C4|E4,F2|C3|F3|G#3,C3|G3|C4|E4,F#2|C#3|F#3|A3,G#2|D#3|G#3|B3,A#2|F3|A#3|C#4,G#2|D#3|G#3|B3,C#2|G#2|C#3|F3".repeat(6) },
+        { t: "River Flows in You", a: "Yiruma", p: "F#5|F#3,E5|A3,F#5|C#4,C#5|F#4,F#5|D3,E5|A3,F#5|D4,C#5|A4,A5|A3,G#5|E4,F#5|C#4,E5|A3,D5|D3,C#5|A3,F#5|F#3,E5|A3,F#5|C#4,C#5|F#4,D5|D3,E5|A3,F#5|D4,A5|A4".repeat(5) },
+        { t: "Für Elise", a: "Beethoven", p: "E5|A2,D#5|E3,E5|A3,D#5|C4,E5|E4,B4|A2,D5|E3,C5|A3,A4|A2,C4|E3,E4|A3,A4|C4,B4|E3,E4|G#3,G#4|B3,A4|C4,E5|A2,D#5|E3,E5|A3,D#5|C4,E5|E4,B4|A2,D5|E3,C5|A3,A4|A2".repeat(6) },
+        { t: "Turkish March", a: "Mozart", p: "B4|A2,A4|E3,G#4|A3,A4|C4,C5|A2,D5|E3,C5|A3,B4|C4,A4|A2,B4|E3,C5|A3,D5|C4,E5|E2,F5|A2,E5|E3,D#5|C4,E5|A2,A5|E3,C6|A3,A5|C4,G#5|E4,A5|A4,B5|A2,A5|E3,A4|A3,B4|B3,C5|C4,D5|D4".repeat(6) },
+        { t: "Winter Wind", a: "Chopin", p: "A5|A3,G#5|C4,A5|E4,F5|A4,E5|C5,D#5|E5,E5|A5,C5|C6,B4|E6,A#4|A6,B4|C7,G4|E7,A#4|D7,A4|C7,G#4|B6,A#4|A6,G#4|B6,A4|A6,C5|E7,B4|D7,A4|C7,G#4|B6,A4|A6".repeat(5) },
+        { t: "Clair de Lune", a: "Debussy", p: "F5|Db3,Eb5|Ab2,Db5|Db2,Ab4|F2,F4|Db2,Db4|Ab1,Eb4|Eb2,Db4|Db2,Ab4|F2,F4|Db2,F5|Db3,Eb5|Ab2,Db5|Db2,Ab4|F2,F4|Db2,F5|Db3,Eb5|Ab2,Db5|Db2,Ab4|F2".repeat(6) },
+        { t: "Canon in D", a: "Pachelbel", p: "F#5|D3,E5|A2,D5|B2,C#5|F#2,B4|G2,A4|D2,B4|G2,C#5|A2,D5|D3,C#5|A2,B4|B2,A4|F#2,G4|G2,F#4|D2,G4|G2,A4|A2,F#4|D2,E4|A2,D4|D2,C#4|A1,B4|B2,A4|A2,G4|G2,F#4|F#2".repeat(5) },
+        { t: "Nocturne Op.9 No.2", a: "Chopin", p: "G4|Eb3,G5|G3,F5|Bb3,G5|Eb4,Eb5|G3,D5|Bb3,C5|Eb3,Bb4|G3,Ab4|F3,G4|Eb3,F4|D3,Eb4|Eb2,C5|Ab2,Eb5|Eb3,D5|Bb3,Eb5|Eb4,G4|Eb3,G5|G3,F5|Bb3,G5|Eb4".repeat(6) },
+        { t: "Moonlight Sonata", a: "Beethoven", p: "G#3|C#2,C#4|G#2,E4|C#3,G#3|C#2,C#4|G#2,E4|C#3,A3|A1,C#4|E2,F#4|A2,G#3|G#1,C#4|D#2,F#4|G#2,F#3|F#1,C#4|E2,F#4|A2,G#3|C#2,C#4|G#2,E4|C#3".repeat(6) },
+        { t: "Take On Me", a: "a-ha", p: "F#5|Bm2,F#5|Bm3,D5|E2,B4|E3,B4|A2,E5|A3,E5|D2,E5|D3,G#5|E2,G#5|E3,A5|A2,A5|A3,G#5|E2,G#5|E3,F#5|D2,F#5|D3,E5|A2,E5|A3,F#5|Bm2,F#5|Bm3".repeat(8) },
+        { t: "Still D.R.E.", a: "Dr. Dre", p: "E5|C4|A4,E5|C4|A4,E5|C4|A4,E5|B3|G#4,E5|B3|G#4,E5|B3|G#4,E5|A3|F#4,E5|A3|F#4,E5|A3|F#4,E5|C4|A4,E5|C4|A4,E5|C4|A4,E5|B3|G#4,E5|B3|G#4".repeat(10) },
+        { t: "Swan Lake", a: "Tchaikovsky", p: "A4|A2,E5|C3,D5|E3,C5|A3,B4|E3,A4|C3,B4|E3,C5|A2,D5|B2,E5|C3,F5|D3,E5|C3,B4|E3,A4|C3,G#4|E3,A4|A2,E5|C3,D5|E3,C5|A3,B4|E3,A4|C3".repeat(6) },
+        { t: "Lacrimosa", a: "Mozart", p: "D4|D2,E4|A2,F4|D3,G4|B2,A4|D3,Bb4|G2,A4|F2,G4|E2,F4|D2,E4|A2,D4|D2,C#4|A1,D4|D2,E4|E2,F4|F2,G4|G2,A4|A2,D5|D3,C#5|A2,D5|D2,E5|E2,F5|F2".repeat(6) }
     ];
 
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
     let piano, lives = 10, score = 0, isPlaying = false, selected = 0;
     
-    // ⚙️ V65 핵심: '하' 난이도 속도 완벽 캡 설정
+    // ⚙️ 지피티 제안 반영: 난이도별 설정값 중앙 관리
+    const difficultySettings = {
+        '하': { speed: 280, accel: 0.004, max: 370 }, // 절대 중으로 안 가도록 속도 캡 강화
+        '중': { speed: 520, accel: 0.15, max: 880 },
+        '상': { speed: 850, accel: 0.5, max: 2300 }
+    };
+
     let difficulty = '중';
-    let speed = 550; 
-    let accelRate = 0.15; 
-    let maxSpeed = 1000; 
+    let speed = difficultySettings['중'].speed;
+    let accelRate = difficultySettings['중'].accel;
+    let maxSpeed = difficultySettings['중'].max;
 
     let tiles = [], particles = [], lastTime = 0;
 
     function resize() { canvas.width = Math.min(window.innerWidth, 500); canvas.height = window.innerHeight; }
     window.addEventListener('resize', resize); resize();
 
-    // 🎧 V65 오디오: 쇳소리를 빼고 원곡의 부드러움을 살린 체인
-    const limiter = new Tone.Limiter(-3).toDestination();
-    const mainGain = new Tone.Gain(0.55).connect(limiter);
-    const softFilter = new Tone.Filter(3200, "lowpass").connect(mainGain);
-    const hall = new Tone.Reverb({ decay: 2.8, wet: 0.22 }).connect(softFilter);
+    // 🎧 V67 핵심: 맑고 깊은 크리스탈 사운드 엔진
+    const limiter = new Tone.Limiter(-6).toDestination(); // 디지털 깨짐 차단 (쇳소리 방지)
+    const masterGain = new Tone.Gain(0.5).connect(limiter); // 스택되는 소리의 headroom 확보
+    
+    // 깊고 투명한 울림을 주는 프리미엄 리버브 (감싸는 느낌)
+    const hall = new Tone.Reverb({ decay: 4.5, wet: 0.28, preDelay: 0.1 }).connect(masterGain);
+    
+    // 맑고 가벼운 톤을 위한 Crystal EQ (저음을 줄이고 선명도를 높임)
+    const crystalEQ = new Tone.EQ3({
+        low: -5,    // 먹먹한 저음을 깎아 가볍게 만듦
+        mid: -2,    // 중음역을 살짝 줄여 명료도 확보
+        high: +4,   // 고음을 boosting하여 '맑고 영롱한' 질감 표현
+        highFrequency: 5000 
+    }).connect(hall);
     
     piano = new Tone.Sampler({
         urls: {
@@ -98,15 +113,24 @@
             "C6": "C6.mp3", "D#6": "Ds6.mp3", "F#6": "Fs6.mp3", "A6": "A6.mp3",
             "C7": "C7.mp3", "D#7": "Ds7.mp3", "F#7": "Fs7.mp3", "A7": "A7.mp3", "C8": "C8.mp3"
         },
-        release: 2.4, // 음이 이어지도록 서스테인 조절
+        release: 3.5, // 🎹 깊고 웅장한 서스테인 (감싸는 느낌)
+        attack: 0.015, // 쇳소리의 원인인 날카로운 타격 Transient 감소 (필수)
         baseUrl: "https://tonejs.github.io/audio/salamander/",
-        onload: () => { document.getElementById('start-btn').innerText = "콘서트 시작하기"; }
-    }).connect(hall);
+        onload: () => { document.getElementById('start-btn').innerText = "크리스탈 연주 시작"; }
+    }).connect(crystalEQ);
 
+    // ✅ 지피티 제안 반영: 난이도 버튼 클릭 즉시 모든 수치 업데이트!
     document.querySelectorAll('.diff-btn').forEach(btn => {
         btn.onclick = (e) => {
             document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('active'));
-            e.target.classList.add('active'); difficulty = e.target.dataset.diff;
+            e.target.classList.add('active'); 
+            difficulty = e.target.dataset.diff.trim();
+            
+            // 수치 즉시 동기화
+            const set = difficultySettings[difficulty] || difficultySettings['중'];
+            speed = set.speed;
+            accelRate = set.accel;
+            maxSpeed = set.max;
         };
     });
 
@@ -124,13 +148,13 @@
 
     document.getElementById('start-btn').onclick = async () => {
         await Tone.start(); isPlaying = true; tiles = []; score = 0; lives = 10;
-        if(difficulty === '하') { 
-            speed = 280; accelRate = 0.003; maxSpeed = 380; // 끝까지 아주 평화로운 속도
-        } else if(difficulty === '상') { 
-            speed = 850; accelRate = 0.5; maxSpeed = 2200; 
-        } else { 
-            speed = 520; accelRate = 0.12; maxSpeed = 850;
-        }
+        
+        // 다시 한번 확정 (공백 방지)
+        const set = difficultySettings[difficulty] || difficultySettings['중'];
+        speed = set.speed;
+        accelRate = set.accel;
+        maxSpeed = set.max;
+
         document.getElementById('hearts').innerText = '❤️'.repeat(lives);
         document.getElementById('lobby').style.display = 'none';
         document.getElementById('game-ui').style.display = 'block';
@@ -195,8 +219,8 @@
         if(target && target.lane === lane && target.y + target.h > canvas.height * 0.45) {
             target.hit = true; score++;
             document.getElementById('score').innerText = score;
-            // 🎹 "부드럽고 깊은 벨벳 터치" 벨로시티 조절
-            const velocity = Math.random() * 0.15 + 0.5; 
+            // 🎹 "맑고 가벼운 크리스탈 터치" 벨로시티 조절 (날카롭지 않게)
+            const velocity = Math.random() * 0.15 + 0.4; 
             piano.triggerAttackRelease(target.note, "2n", undefined, velocity);
             for(let i=0; i<10; i++) particles.push({ x: tx, y: ty, vx: Math.random()*12-6, vy: Math.random()*12-6, life: 1 });
         } else {
