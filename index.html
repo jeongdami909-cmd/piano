@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Piano Tiles - V32 Final Master</title>
+    <title>Piano Tiles - V33 Pro</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
     <style>
         :root { --neon: #00f2ff; --pink: #ff00ea; --gold: #ffea00; }
@@ -34,9 +34,9 @@
 <body>
 
 <div id="lobby" class="screen" style="display: flex;">
-    <h1>V32 FINAL MASTER</h1>
+    <h1>V33 MASTER PRO</h1>
     <div id="song-list"></div>
-    <button id="start-btn">무대 장치 확인 중...</button>
+    <button id="start-btn">웅장한 무대 준비 중...</button>
 </div>
 
 <div id="game" class="screen">
@@ -55,7 +55,7 @@
 </div>
 
 <script>
-    // 🎹 소희님의 12곡 완벽 세팅
+    // 🎹 소희님의 12곡 리스트 (라흐마니노프, 프린스, 드레 박사 등)
     const songs = [
         { t: "Piano Concerto No.2", a: "Rachmaninoff", p: "C4,Eb4,G4,C5,G4,Eb4,C4,G3" },
         { t: "Swan Lake", a: "Tchaikovsky", p: "A4,E5,D5,C5,B4,A4,B4,C5" },
@@ -73,163 +73,8 @@
 
     let piano, sheet = [], activeRows = [];
     let isPlaying = false, score = 0, currentStep = 0, selected = 0, canClick = false;
-    let speed = 0.5; 
+    let speed = 0.55; 
     const gameArea = document.getElementById('game');
 
-    // 🎧 쇳소리 없는 클린 사운드 엔진
-    const hall = new Tone.Reverb({ decay: 2.5, wet: 0.25 }).toDestination(); 
-    const compressor = new Tone.Compressor(-15, 2).connect(hall); 
-
-    piano = new Tone.Sampler({
-        urls: {
-            A0:"A0.mp3",C1:"C1.mp3",C4:"C4.mp3",C8:"C8.mp3"
-        },
-        release: 1.8, 
-        baseUrl: "https://tonejs.github.io/audio/salamander/",
-        onload: () => { document.getElementById('start-btn').innerText = "콘서트 연주 시작"; }
-    }).connect(compressor);
-
-    function playHuman(note){
-        const velocity = 0.75 + Math.random()*0.2;
-        piano.triggerAttackRelease(note, "8n", undefined, velocity);
-        if(Math.random() < 0.3){
-            const octave = Tone.Frequency(note).transpose(-12).toNote();
-            piano.triggerAttackRelease(octave, "8n", "+0.02", velocity-0.25);
-        }
-    }
-
-    function renderSongs() {
-        const listDiv = document.getElementById('song-list');
-        listDiv.innerHTML = "";
-        songs.forEach((s, idx) => {
-            const item = document.createElement('div');
-            item.className = `song-item ${idx === selected ? 'active' : ''}`;
-            item.innerHTML = `<strong>${s.t}</strong><br><small style="color:#aaa">${s.a}</small>`;
-            item.onclick = () => { selected = idx; renderSongs(); };
-            listDiv.appendChild(item);
-        });
-    }
-    renderSongs();
-
-    document.getElementById('start-btn').addEventListener('click', async (e) => {
-        e.stopPropagation(); 
-        await Tone.start();
-        document.getElementById('lobby').style.display = 'none';
-        gameArea.style.display = 'block';
-
-        const song = songs[selected];
-        sheet = [];
-        const notes = song.p.split(',');
-        for(let i=0; i<200; i++) {
-            sheet.push({ lane: Math.floor(Math.random()*4), note: notes[i % notes.length] });
-        }
-
-        isPlaying = true; score = 0; currentStep = 0; activeRows = []; speed = 0.6;
-        document.getElementById('score').innerText = "0";
-        for(let i=0; i<4; i++) createRow(100 + (i * 25)); 
-        
-        setTimeout(() => { canClick = true; }, 300);
-        requestAnimationFrame(gameLoop); 
-    });
-
-    function createRow(bottomVal) {
-        if(currentStep >= sheet.length) return; 
-        const data = sheet[currentStep];
-        const rowEl = document.createElement('div');
-        rowEl.className = 'row';
-        rowEl.style.bottom = bottomVal + '%'; 
-        const tileEl = document.createElement('div');
-        tileEl.className = 'tile';
-        tileEl.style.left = (data.lane * 25) + '%';
-        rowEl.appendChild(tileEl);
-        gameArea.appendChild(rowEl);
-        activeRows.push({ rowEl, tileEl, lane: data.lane, note: data.note, locked: false });
-        currentStep++;
-    }
-
-    function gameLoop() {
-        if (!isPlaying) return;
-        for (let i = activeRows.length - 1; i >= 0; i--) {
-            const row = activeRows[i];
-            const currentBottom = parseFloat(row.rowEl.style.bottom);
-            const newBottom = currentBottom - speed;
-            row.rowEl.style.bottom = newBottom + "%";
-            if (newBottom < -25 && !row.locked) {
-                end(false);
-                return;
-            }
-        }
-        speed += 0.0001;
-        requestAnimationFrame(gameLoop);
-    }
-
-    // 🛠️ V32 핵심: 실제 물리 위치 기반 판정 엔진
-    gameArea.addEventListener("pointerdown", (e) => {
-        if (!isPlaying || !canClick || activeRows.length === 0) return;
-        e.preventDefault();
-        
-        // 🔥 지피티 제안: 배열 순서가 아니라 실제 style.bottom이 가장 낮은 타겟 찾기
-        let bottomRow = null;
-        let lowestPos = Infinity;
-
-        activeRows.forEach(r => {
-            if (!r.locked) {
-                const currentBottom = parseFloat(r.rowEl.style.bottom);
-                if (currentBottom < lowestPos) {
-                    lowestPos = currentBottom;
-                    bottomRow = r;
-                }
-            }
-        });
-
-        if (!bottomRow) return;
-
-        // 정확히 그 타일을 눌렀는지 확인
-        const hitTarget = (e.target === bottomRow.tileEl);
-
-        if (hitTarget) {
-            bottomRow.locked = true;
-            playHuman(bottomRow.note); 
-            bottomRow.tileEl.classList.add('pressed');
-            score++;
-            document.getElementById('score').innerText = score;
-            
-            setTimeout(() => {
-                bottomRow.rowEl.remove();
-                activeRows = activeRows.filter(r => r !== bottomRow);
-            }, 50);
-            
-            // 새 타일 생성 (가장 위에 있는 타일보다 25% 높은 곳)
-            const topRow = activeRows[activeRows.length - 1];
-            const topPos = topRow ? parseFloat(topRow.rowEl.style.bottom) : 100;
-            createRow(topPos + 25);
-            
-            if(currentStep >= sheet.length && activeRows.length === 0) {
-                setTimeout(() => end(true), 300);
-            }
-        } else if (!e.target.classList.contains('pressed')) {
-            // 빈 흰 바탕을 누르면 즉시 실패 판정
-            const rect = gameArea.getBoundingClientRect();
-            const lane = Math.floor((e.clientX - rect.left) / (rect.width / 4));
-            const errTile = document.createElement('div');
-            errTile.className = 'tile missed';
-            errTile.style.left = (Math.max(0, Math.min(3, lane)) * 25) + '%';
-            bottomRow.rowEl.appendChild(errTile);
-            end(false);
-        }
-    });
-
-    function end(win) {
-        if (!isPlaying) return;
-        isPlaying = false;
-        setTimeout(() => {
-            gameArea.style.display = 'none';
-            document.getElementById('result').style.display = 'flex';
-            document.getElementById('res-title').innerText = win ? "PERFECT PERFORMANCE" : "CONCERT OVER";
-            document.getElementById('rank').innerText = win ? "SSS" : (score > 100 ? "S" : (score > 30 ? "A" : "F"));
-            document.getElementById('final-score').innerText = `Score: ${score}`;
-        }, 300);
-    }
-</script>
-</body>
-</html>
+    // 🎧 쇳소리 박멸 클린 사운드 세팅
+    const hall = new Tone.
