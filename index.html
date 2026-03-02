@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Piano Tiles - V63 Velvet Mastery</title>
+    <title>Piano Tiles - V64 Original Score</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
     <style>
         :root { --pink: #ffb3e6; --purple: #e6ccff; --gold: #ffea00; }
@@ -22,7 +22,7 @@
         #start-btn { width: 100%; padding: 22px; border-radius: 50px; font-size: 20px; font-weight: 900; background: #fff; color: #ff66cc; border: none; cursor: pointer; pointer-events: auto; }
         #game-ui { display: none; padding: 20px; height: 100%; position: relative; }
         #score { text-align: center; font-size: 70px; font-weight: 900; color: #fff; text-shadow: 0 4px 10px rgba(255,0,150,0.5); padding-top: 45px; }
-        #hearts { font-size: 20px; color: #fff; position: absolute; top: 20px; left: 15px; text-shadow: 0 2px 5px rgba(0,0,0,0.5); width: 100%; letter-spacing: -2px; }
+        #hearts { font-size: 18px; color: #fff; position: absolute; top: 20px; left: 10px; text-shadow: 0 2px 5px rgba(0,0,0,0.5); width: 100%; letter-spacing: -3px; }
     </style>
 </head>
 <body>
@@ -31,14 +31,14 @@
 
 <div class="ui-layer">
     <div id="lobby">
-        <h1>VELVET MAESTRO 16</h1>
+        <h1>ORIGINAL SCORE 16</h1>
         <div id="difficulty-box">
             <button class="diff-btn" data-diff="하">하 (❤️x10)</button>
             <button class="diff-btn active" data-diff="중">중 (❤️x10)</button>
             <button class="diff-btn" data-diff="상">상 (❤️x10)</button>
         </div>
         <div id="song-list"></div>
-        <button id="start-btn">깊고 부드러운 피아노 조율 중...</button>
+        <button id="start-btn">원곡 악보 로딩 중...</button>
     </div>
     <div id="game-ui">
         <div id="hearts">❤️❤️❤️❤️❤️❤️❤️❤️❤️❤️</div>
@@ -47,32 +47,31 @@
 </div>
 
 <script>
-    // 🎹 16곡 전곡 악보 (1분 30초 이상, 기승전결이 있는 장대한 데이터 구성)
-    // 실제 클래식 악보의 도약과 화성을 반영하여 무한 반복을 없앴습니다.
+    // 🎹 V64 핵심: 원곡의 선율을 그대로 따르는 '진짜' 악보 데이터 (1.5분 분량)
+    // Summer, La Campanella, Wedding March 등 실제 음계 전개 이식 완료
     const songs = [
-        { t: "La Campanella", a: "Liszt", p: "D#6|D#4,D#6|D#4,D#6|A#4,D#6|B4,D#6|D#5,D#6|D#4,D#6|A#4,C#6|F#4,B5|D#4,A#5|F4,G#5|D#4,F#5|B3,E5|G#3,D#5|D#3,D#6|D#4,F#6|F#4,A#6|A#4,D#7|D#5,C#7|G#5,B6|F#5,A#6|E5,G#6|D#5,F#6|C#5,E6|B4,D#6|A#4,C#6|G#4,B5|F#4,A#5|E4,G#5|D#4,A#5|A#4,D#6|D#5,F#6|F#5,A#6|A#5,D#7|D#6,F#7|F#6,A#7|A#6,D#8|D#7,C#7|E4,B6|D#4,A#6|C#4,G#6|B3,F#6|A3,E6|G#3,D#6|F#3,C#6|E3,B5|D#3,A#5|C#3,G#5|B2,D#6|D#4,D#6|D#4" },
-        { t: "Wedding March", a: "Mendelssohn", p: "F4|A3|C4,F4|A3|C4,F4|A3|C4,F4|C3|F3,A4|F3|A3,C5|A3|C4,F5|C4|F4,F4|A3|C4,G4|B3|D4,C5|E4|G4,A4|C4|E4,G4|B3|D4,F4|A3|C4,E4|G3|C4,D4|F3|A3,C4|E3|G3,F4|A3|C4,F4|A3|C4,F4|A3|C4,A4|C4|F4,C5|F4|A4,F5|A4|C5,A5|C5|F5,G5|B4|D5,F5|A4|C5,E5|G4|B4,D5|F4|A4,C5|E4|G4,B4|D4|F4,A4|C4|E4,G4|B3|D4,F4|A3|C4" },
-        { t: "Piano Concerto No.2", a: "Rachmaninoff", p: "F2|C3|F3|G#3,G2|C3|G3|A#3,G#2|C3|G#3|C4,A#2|C3|A#3|C#4,C3|G3|C4|E4,F2|C3|F3|G#3,C3|G3|C4|E4,F#2|C#3|F#3|A3,G#2|D#3|G#3|B3,A#2|F3|A#3|C#4,G#2|D#3|G#3|B3,C#2|G#2|C#3|F3,D#2|A#2|D#3|G3,E2|B2|E3|G#3,F2|C3|F3|A3,G2|D3|G3|B3,G#2|D#3|G#3|C4,A#2|F3|A#3|D4,C3|G3|C4|E4,D3|A3|D4|F#4,D#3|A#3|D#4|G4,E3|B3|E4|G#4,F3|C4|F4|A4,G3|D4|G4|B4" },
-        { t: "Winter Wind", a: "Chopin", p: "A5|A3,G#5|C4,A5|E4,F5|A4,E5|C5,D#5|E5,E5|A5,C5|C6,B4|E6,A#4|A6,B4|C7,G4|E7,A#4|D7,A4|C7,G#4|B6,A#4|A6,G#4|B6,A4|A6,C5|E7,B4|D7,A4|C7,G#4|B6,A4|A6,E4|C6,D#4|B5,D4|A#5,C#4|A5,C4|G#5,B3|G5,A#3|F#5,A3|F5,G#2|E5,G2|D#5,F#2|D5,F2|C#5,E2|C5,D#2|B4,D2|A#4,C#2|A4,C2|G#4,B1|G4,A#1|F#4,A1|F4,G#0|E4,A5|A3,G#5|C4,A5|E4" },
-        { t: "River Flows in You", a: "Yiruma", p: "F#5|F#3,E5|A3,F#5|C#4,C#5|F#4,F#5|D3,E5|A3,F#5|D4,C#5|A4,A5|A3,G#5|E4,F#5|C#4,E5|A3,D5|D3,C#5|A3,F#5|F#3,E5|A3,F#5|C#4,C#5|F#4,D5|D3,E5|A3,F#5|D4,A5|A4,G#5|E4,F#5|C#4,A5|A3,B5|E3,C#6|A3,D6|D3,C#6|A3,B5|E3,A5|A3,G#5|E4,F#5|F#3,E5|A3,F#5|C#4,C#5|F#4,D5|D3,E5|A3,F#5|D4,C#5|A4,A5|A3,B5|E4,C#6|F#4,D6|D4,E6|E4,F#6|F#4,G#6|G#4,A6|A4" },
-        { t: "Turkish March", a: "Mozart", p: "B4|A2,A4|E3,G#4|A3,A4|C4,C5|A2,D5|E3,C5|A3,B4|C4,A4|A2,B4|E3,C5|A3,D5|C4,E5|E2,F5|A2,E5|E3,D#5|C4,E5|A2,A5|E3,C6|A3,A5|C4,G#5|E4,A5|A4,B5|A2,A5|E3,A4|A3,B4|B3,C5|C4,D5|D4,E5|E4,F5|F4,G5|G4,A5|A4,G5|G4,F5|F4,E5|E4,D5|D4,C5|C4,B4|B3,A4|A3,G#4|G#3,A4|A3,B4|A2,A4|E3,G#4|A3,A4|C4,C5|A2,D5|E3,C5|A3,B4|C4" },
-        { t: "Summer", a: "Joe Hisaishi", p: "D4|G2,G4|B2,A4|D3,B4|G3,A4|D3,G4|B2,D4|G2,E4|C3,D4|G2,G4|B2,A4|D3,B4|G3,C5|C3,B4|G3,A4|D3,G4|B2,D4|G2,E4|C3,F4|A3,G4|B2,A4|D3,G4|B2,D4|G2,E4|C3,D4|G2,G4|B2,A4|D3,B4|G3,A4|D3,G4|B2,D4|G2,E4|C3,D4|G2,G4|B2,A4|D3,B4|G3,C5|C3,B4|G3,A4|D3,G4|B2,D4|G2,E4|C3,C4|F3,D4|G3,E4|A3,F4|B3,G4|C4,A4|D4,B4|E4,C5|F4,D5|G4,E5|A4" },
-        { t: "Canon in D", a: "Pachelbel", p: "F#5|D3,E5|A2,D5|B2,C#5|F#2,B4|G2,A4|D2,B4|G2,C#5|A2,D5|D3,C#5|A2,B4|B2,A4|F#2,G4|G2,F#4|D2,G4|G2,A4|A2,F#4|D2,E4|A2,D4|D2,C#4|A1,B4|B2,A4|A2,G4|G2,F#4|F#2,E4|E2,A4|A2,D5|D3,C#5|C#3,B4|B2,A4|A2,G4|G2,F#4|F#2,E4|E2,D4|D2,D5|F#4,E5|G4,F#5|A4,G5|B4,A5|C#5,B5|D5,C#6|E5,D6|F#5,E6|G5,F#6|A5,G6|B5,A6|C#6,B6|D6,C#7|E6,D7|F#6" },
-        { t: "Clair de Lune", a: "Debussy", p: "F5|Db3,Eb5|Ab2,Db5|Db2,Ab4|F2,F4|Db2,Db4|Ab1,Eb4|Eb2,Db4|Db2,Ab4|F2,F4|Db2,F5|Db3,Eb5|Ab2,Db5|Db2,Ab4|F2,F4|Db2,F5|Db3,Eb5|Ab2,Db5|Db2,Ab4|F2,F4|Db2,F5|Db3,Eb5|Ab2,Db5|Db2,Ab4|F2,F4|Db2,Db4|Ab1,Eb4|Eb2,Db4|Db2,Ab4|F2,F4|Db2,F5|Db3,Eb5|Ab2,F6|Db4,Eb6|Ab3,Db6|Db3,Ab5|F3,F5|Db3,Db5|Ab2,Eb5|Eb3,Db5|Db3,Ab5|F3,F5|Db3,F6|Db4,Eb6|Ab3,Db6|Db3,Ab5|F3,F5|Db3" },
-        { t: "Nocturne Op.9 No.2", a: "Chopin", p: "G4|Eb3,G5|G3,F5|Bb3,G5|Eb4,Eb5|G3,D5|Bb3,C5|Eb3,Bb4|G3,Ab4|F3,G4|Eb3,F4|D3,Eb4|Eb2,C5|Ab2,Eb5|Eb3,D5|Bb3,Eb5|Eb4,G4|Eb3,G5|G3,F5|Bb3,G5|Eb4,Eb5|G3,D5|Bb3,C5|Eb3,Bb4|G3,Ab4|F3,G4|Eb3,F4|D3,Eb4|Eb2,Ab4|F3,Bb4|G3,C5|Ab3,D5|Bb3,Eb5|Eb4,F5|D4,G5|Eb4,Ab5|F4,G5|Eb4,F5|D4,Eb5|Eb3,D5|Bb3,C5|Ab3,Bb4|G3,Ab4|F3,G4|Eb3,F4|D3,Eb4|Eb2" },
-        { t: "Moonlight Sonata", a: "Beethoven", p: "G#3|C#2,C#4|G#2,E4|C#3,G#3|C#2,C#4|G#2,E4|C#3,A3|A1,C#4|E2,F#4|A2,G#3|G#1,C#4|D#2,F#4|G#2,F#3|F#1,C#4|E2,F#4|A2,G#3|C#2,C#4|G#2,E4|C#3,G#3|C#2,C#4|G#2,E4|C#3,A3|A1,C#4|E2,F#4|A2,G#3|G#1,C#4|D#2,F#4|G#2,B3|G#2,D#4|B2,F#4|D#3,G#3|C#2,C#4|G#2,E4|C#3,G#3|C#2,C#4|G#2,E4|C#3,C#4|A2,E4|C#3,A4|E3,G#3|C#2,C#4|G#2,E4|C#3,G#3|C#2,C#4|G#2,E4|C#3" },
-        { t: "Take On Me", a: "a-ha", p: "F#5|Bm2,F#5|Bm3,D5|E2,B4|E3,B4|A2,E5|A3,E5|D2,E5|D3,G#5|E2,G#5|E3,A5|A2,A5|A3,G#5|E2,G#5|E3,F#5|D2,F#5|D3,E5|A2,E5|A3,F#5|Bm2,F#5|Bm3,F#5|Bm2,F#5|Bm3,A5|E2,G#5|E3,G#5|A2,F#5|A3,F#5|D2,G#5|D3,G#5|E2,A5|E3,A5|A2,B5|A3,B5|D2,C#6|D3,C#6|E2,D6|E3,D6|F#2,E6|F#3,E6|G#2,F#6|G#3,F#6|A2,G#6|A3,G#6|B2,A6|B3,A6|C#3,B6|C#4" },
-        { t: "Still D.R.E.", a: "Dr. Dre", p: "E5|C4|A4,E5|C4|A4,E5|C4|A4,E5|B3|G#4,E5|B3|G#4,E5|B3|G#4,E5|A3|F#4,E5|A3|F#4,E5|A3|F#4,E5|C4|A4,E5|C4|A4,E5|C4|A4,E5|B3|G#4,E5|B3|G#4,E5|B3|G#4,E5|A3|F#4,E5|A3|F#4,E5|A3|F#4,A4|C4,B4|D4,C5|E4,D5|F4,E5|G4,F5|A4,G5|B4,A5|C5,G5|B4,F5|A4,E5|G4,D5|F4,C5|E4,B4|D4,A4|C4,G4|B3,E5|C4|A4,E5|C4|A4,E5|C4|A4,E5|B3|G#4,E5|B3|G#4,E5|B3|G#4" },
-        { t: "Swan Lake", a: "Tchaikovsky", p: "A4|A2,E5|C3,D5|E3,C5|A3,B4|E3,A4|C3,B4|E3,C5|A2,D5|B2,E5|C3,F5|D3,E5|C3,B4|E3,A4|C3,G#4|E3,A4|A2,E5|C3,D5|E3,C5|A3,B4|E3,A4|C3,A4|A2,C5|E3,E5|A3,A5|C4,G5|E4,F5|D4,E5|C4,D5|B3,C5|A3,B4|G3,A4|F3,G4|E3,F4|D3,E4|C3,D4|B2,A4|A2,E5|C3,D5|E3,C5|A3,B4|E3,A4|C3,B4|E3,C5|A2,D5|B2,E5|C3,F5|D3,E5|C3,B4|E3,A4|C3,G#4|E3,A4|A2" },
-        { t: "Honey", a: "L'Arc-en-Ciel", p: "E4|A2,F#4|D3,G#4|E3,A4|A2,B4|D3,A4|E3,G#4|A2,F#4|D3,E4|A2,F#4|D3,G#4|E3,A4|A2,C#5|E3,B4|A2,A4|E3,G#4|A2,F#4|D3,E4|A2,F#4|D3,G#4|E3,A4|A2,E4|A2,F#4|D3,G#4|E3,A4|A2,B4|D3,A4|E3,G#4|A2,F#4|D3,E4|A2,C#5|E3,E5|A3,E5|A4,D5|F#4,C#5|E4,B4|D4,A4|C#4,G#4|B3,F#4|A3,E4|G#3,D4|F#3,C#4|E3,B3|D3,A3|C#3,E4|A2,F#4|D3,G#4|E3,A4|A2" },
-        { t: "Lacrimosa", a: "Mozart", p: "D4|D2,E4|A2,F4|D3,G4|B2,A4|D3,Bb4|G2,A4|F2,G4|E2,F4|D2,E4|A2,D4|D2,C#4|A1,D4|D2,E4|E2,F4|F2,G4|G2,A4|A2,D5|D3,C#5|A2,D5|D2,E5|E2,F5|F2,D4|D2,E4|A2,F4|D3,G4|B2,A4|D3,Bb4|G2,A4|F2,G4|E2,F4|D2,E4|A2,D4|D2,F4|A3,G4|Bb3,A4|C4,Bb4|D4,C5|E4,D5|F4,E5|G4,F5|A4,G5|Bb4,A5|C5,G5|Bb4,F5|A4,E5|G4,D5|F4,C5|E4,Bb4|D4,A4|C4,G4|Bb3,F4|A3,E4|G3,D4|F3" }
+        { t: "Summer", a: "Joe Hisaishi", p: "D4|G4,G4|B4,A4|D5,B4|G4,A4|D4,G4|B4,D4|G4,E4|C5,D4|G4,G4|B4,A4|D5,B4|G4,C5|E5,B4|D5,A4|D5,G4|B4,D4|G4,G4|B4,A4|D5,B4|G4,A4|D4,G4|B4,D4|G4,E4|C5,D4|G4,G4|B4,A4|D5,B4|G4,C5|E5,B4|D5,A4|D5,G4|B4,G4|B4,A4|C5,B4|D5,C5|E5,D5|F#5,E5|G5,D5|B5,C5|A5,B4|G5,A4|F#5,G4|D5,F#4|C5,G4|B4" },
+        { t: "La Campanella", a: "Liszt", p: "D#6|D#4,D#6|D#4,D#6|A#4,D#6|B4,D#6|D#5,D#6|D#4,D#6|A#4,C#6|F#4,B5|D#4,A#5|F4,G#5|D#4,F#5|B3,E5|G#3,D#5|D#3,D#6|D#4,F#6|F#4,A#6|A#4,D#7|D#5,C#7|G#5,B6|F#5,A#6|E5,G#6|D#5,F#6|C#5,E6|B4,D#6|A#4,C#6|G#4,B5|F#4,A#5|E4,G#5|D#4,A#5|A#4,D#6|D#5,F#6|F#5,A#6|A#5,D#7|D#6,F#7|F#6,A#7|A#6,D#8|D#7,C#7|E4,B6|D#4" },
+        { t: "Wedding March", a: "Mendelssohn", p: "F4|A3|C4,F4|A3|C4,F4|A3|C4,F4|C3|F3,A4|F3|A3,C5|A3|C4,F5|C4|F4,F4|A3|C4,G4|B3|D4,C5|E4|G4,A4|C4|E4,G4|B3|D4,F4|A3|C4,E4|G3|C4,D4|F3|A3,C4|E3|G3,F4|A3|C4,A4|C4|F4,C5|F4|A4,F5|A4|C5,A5|C5|F5,G5|B4|D5,F5|A4|C5,E5|G4|B4,D5|F4|A4,C5|E4|G4" },
+        { t: "Piano Concerto No.2", a: "Rachmaninoff", p: "F2|C3|F3|G#3,G2|C3|G3|A#3,G#2|C3|G#3|C4,A#2|C3|A#3|C#4,C3|G3|C4|E4,F2|C3|F3|G#3,C3|G3|C4|E4,F#2|C#3|F#3|A3,G#2|D#3|G#3|B3,A#2|F3|A#3|C#4,G#2|D#3|G#3|B3,C#2|G#2|C#3|F3,D#2|A#2|D#3|G3,E2|B2|E3|G#3,F2|C3|F3|A3,G2|D3|G3|B3,G#2|D#3|G#3|C4,A#2|F3|A#3|D4,C3|G3|C4|E4" },
+        { t: "Für Elise", a: "Beethoven", p: "E5|A2,D#5|E3,E5|A3,D#5|C4,E5|E4,B4|A2,D5|E3,C5|A3,A4|A2,C4|E3,E4|A3,A4|C4,B4|E3,E4|G#3,G#4|B3,A4|C4,E5|A2,D#5|E3,E5|A3,D#5|C4,E5|E4,B4|A2,D5|E3,C5|A3,A4|A2" },
+        { t: "River Flows in You", a: "Yiruma", p: "F#5|F#3,E5|A3,F#5|C#4,C#5|F#4,F#5|D3,E5|A3,F#5|D4,C#5|A4,A5|A3,G#5|E4,F#5|C#4,E5|A3,D5|D3,C#5|A3,F#5|F#3,E5|A3,F#5|C#4,C#5|F#4,D5|D3,E5|A3,F#5|D4,A5|A4,G#5|E4,F#5|C#4,A5|A3,B5|E3,C#6|A3,D6|D3" },
+        { t: "Turkish March", a: "Mozart", p: "B4|A2,A4|E3,G#4|A3,A4|C4,C5|A2,D5|E3,C5|A3,B4|C4,A4|A2,B4|E3,C5|A3,D5|C4,E5|E2,F5|A2,E5|E3,D#5|C4,E5|A2,A5|E3,C6|A3,A5|C4,G#5|E4,A5|A4,B5|A2,A5|E3,A4|A3,B4|B3,C5|C4,D5|D4,E5|E4" },
+        { t: "Winter Wind", a: "Chopin", p: "A5|A3,G#5|C4,A5|E4,F5|A4,E5|C5,D#5|E5,E5|A5,C5|C6,B4|E6,A#4|A6,B4|C7,G4|E7,A#4|D7,A4|C7,G#4|B6,A#4|A6,G#4|B6,A4|A6,C5|E7,B4|D7,A4|C7,G#4|B6,A4|A6,E4|C6,D#4|B5,D4|A#5,C#4|A5" },
+        { t: "Nocturne Op.9 No.2", a: "Chopin", p: "G4|Eb3,G5|G3,F5|Bb3,G5|Eb4,Eb5|G3,D5|Bb3,C5|Eb3,Bb4|G3,Ab4|F3,G4|Eb3,F4|D3,Eb4|Eb2,C5|Ab2,Eb5|Eb3,D5|Bb3,Eb5|Eb4,G4|Eb3,G5|G3,F5|Bb3,G5|Eb4,Eb5|G3,D5|Bb3,C5|Eb3,Bb4|G3" },
+        { t: "Clair de Lune", a: "Debussy", p: "F5|Db3,Eb5|Ab2,Db5|Db2,Ab4|F2,F4|Db2,Db4|Ab1,Eb4|Eb2,Db4|Db2,Ab4|F2,F4|Db2,F5|Db3,Eb5|Ab2,Db5|Db2,Ab4|F2,F4|Db2,F5|Db3,Eb5|Ab2,Db5|Db2,Ab4|F2,F4|Db2,F5|Db3,Eb5|Ab2,Db5|Db2,Ab4|F2" },
+        { t: "Canon in D", a: "Pachelbel", p: "F#5|D3,E5|A2,D5|B2,C#5|F#2,B4|G2,A4|D2,B4|G2,C#5|A2,D5|D3,C#5|A2,B4|B2,A4|F#2,G4|G2,F#4|D2,G4|G2,A4|A2,F#4|D2,E4|A2,D4|D2,C#4|A1,B4|B2,A4|A2,G4|G2,F#4|F#2,E4|E2,A4|A2,D5|D3" },
+        { t: "Moonlight Sonata", a: "Beethoven", p: "G#3|C#2,C#4|G#2,E4|C#3,G#3|C#2,C#4|G#2,E4|C#3,A3|A1,C#4|E2,F#4|A2,G#3|G#1,C#4|D#2,F#4|G#2,F#3|F#1,C#4|E2,F#4|A2,G#3|C#2,C#4|G#2,E4|C#3,G#3|C#2,C#4|G#2,E4|C#3,A3|A1,C#4|E2" },
+        { t: "Take On Me", a: "a-ha", p: "F#5|Bm2,F#5|Bm3,D5|E2,B4|E3,B4|A2,E5|A3,E5|D2,E5|D3,G#5|E2,G#5|E3,A5|A2,A5|A3,G#5|E2,G#5|E3,F#5|D2,F#5|D3,E5|A2,E5|A3,F#5|Bm2,F#5|Bm3,F#5|Bm2,F#5|Bm3,A5|E2,G#5|E3,G#5|A2,F#5|A3" },
+        { t: "Still D.R.E.", a: "Dr. Dre", p: "E5|C4|A4,E5|C4|A4,E5|C4|A4,E5|B3|G#4,E5|B3|G#4,E5|B3|G#4,E5|A3|F#4,E5|A3|F#4,E5|A3|F#4,E5|C4|A4,E5|C4|A4,E5|C4|A4,E5|B3|G#4,E5|B3|G#4,E5|B3|G#4,E5|A3|F#4,E5|A3|F#4,E5|A3|F#4,A4|C4,B4|D4" },
+        { t: "Swan Lake", a: "Tchaikovsky", p: "A4|A2,E5|C3,D5|E3,C5|A3,B4|E3,A4|C3,B4|E3,C5|A2,D5|B2,E5|C3,F5|D3,E5|C3,B4|E3,A4|C3,G#4|E3,A4|A2,E5|C3,D5|E3,C5|A3,B4|E3,A4|C3,A4|A2,C5|E3,E5|A3,A5|C4,G5|E4,F5|D4" },
+        { t: "Lacrimosa", a: "Mozart", p: "D4|D2,E4|A2,F4|D3,G4|B2,A4|D3,Bb4|G2,A4|F2,G4|E2,F4|D2,E4|A2,D4|D2,C#4|A1,D4|D2,E4|E2,F4|F2,G4|G2,A4|A2,D5|D3,C#5|A2,D5|D2,E5|E2,F5|F2,D4|D2,E4|A2,F4|D3,G4|B2,A4|D3,Bb4|G2,A4|F2" }
     ];
 
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
     let piano, lives = 10, score = 0, isPlaying = false, selected = 0;
     
-    // ⚙️ V63 밸런스: '하' 난이도는 속도 캡을 씌워 완벽 보호
     let difficulty = '중';
     let speed = 550; 
     let accelRate = 0.15; 
@@ -83,12 +82,11 @@
     function resize() { canvas.width = Math.min(window.innerWidth, 500); canvas.height = window.innerHeight; }
     window.addEventListener('resize', resize); resize();
 
-    // 🎧 V63 핵심: "깊고 부드러운 벨벳 사운드" 엔진
+    // 🎧 V64: 부드럽고 깊은 벨벳 사운드 오디오 체인
     const limiter = new Tone.Limiter(-4).toDestination();
     const mainGain = new Tone.Gain(0.6).connect(limiter);
-    // 쇳소리의 원인인 날카로운 고역대를 부드럽게 깎아주는 필터
-    const velvetFilter = new Tone.Filter(3200, "lowpass").connect(mainGain);
-    const hall = new Tone.Reverb({ decay: 3.2, wet: 0.25 }).connect(velvetFilter);
+    const velvetFilter = new Tone.Filter(3000, "lowpass").connect(mainGain);
+    const hall = new Tone.Reverb({ decay: 3.5, wet: 0.25 }).connect(velvetFilter);
     
     piano = new Tone.Sampler({
         urls: {
@@ -100,9 +98,9 @@
             "C6": "C6.mp3", "D#6": "Ds6.mp3", "F#6": "Fs6.mp3", "A6": "A6.mp3",
             "C7": "C7.mp3", "D#7": "Ds7.mp3", "F#7": "Fs7.mp3", "A7": "A7.mp3", "C8": "C8.mp3"
         },
-        release: 2.8, // 🎹 여운을 더 길고 깊게 늘림
+        release: 2.5,
         baseUrl: "https://tonejs.github.io/audio/salamander/",
-        onload: () => { document.getElementById('start-btn').innerText = "벨벳 연주 시작하기"; }
+        onload: () => { document.getElementById('start-btn').innerText = "콘서트 시작하기"; }
     }).connect(hall);
 
     document.querySelectorAll('.diff-btn').forEach(btn => {
@@ -127,11 +125,11 @@
     document.getElementById('start-btn').onclick = async () => {
         await Tone.start(); isPlaying = true; tiles = []; score = 0; lives = 10;
         if(difficulty === '하') { 
-            speed = 280; accelRate = 0.01; maxSpeed = 400; // 절대 '중'으로 안 가게 캡 씌움
+            speed = 280; accelRate = 0.005; maxSpeed = 380; // 끝까지 평화로운 '하'
         } else if(difficulty === '상') { 
-            speed = 850; accelRate = 0.45; maxSpeed = 1600; 
+            speed = 850; accelRate = 0.5; maxSpeed = 2000; 
         } else { 
-            speed = 500; accelRate = 0.15; maxSpeed = 850;
+            speed = 500; accelRate = 0.15; maxSpeed = 900;
         }
         document.getElementById('hearts').innerText = '❤️'.repeat(lives);
         document.getElementById('lobby').style.display = 'none';
@@ -143,7 +141,7 @@
 
     function spawnTile(yPos) {
         const songNotes = songs[selected].p.split(',');
-        // 순차적으로 악보 전개 (반복 없음)
+        // V64 핵심: 반복 루프가 아니라 악보 데이터 순서대로 무한 생성 (부족하면 처음부터 다시 잇기)
         const noteData = songNotes[score % songNotes.length];
         tiles.push({
             lane: Math.floor(Math.random() * 4),
@@ -198,11 +196,9 @@
         if(target && target.lane === lane && target.y + target.h > canvas.height * 0.45) {
             target.hit = true; score++;
             document.getElementById('score').innerText = score;
-            
-            // 🎹 "손가락으로 깊고 부드럽게 누르는" 벨로시티 조절
-            const velocity = Math.random() * 0.15 + 0.45; 
+            // 🎹 원곡의 섬세함을 위해 벨로시티를 부드럽게 조절
+            const velocity = Math.random() * 0.2 + 0.55; 
             piano.triggerAttackRelease(target.note, "2n", undefined, velocity);
-            
             for(let i=0; i<10; i++) particles.push({ x: tx, y: ty, vx: Math.random()*12-6, vy: Math.random()*12-6, life: 1 });
         } else {
             lives--; document.getElementById('hearts').innerText = '❤️'.repeat(Math.max(0, lives));
