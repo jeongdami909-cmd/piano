@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Piano Tiles - V31 Grand Master</title>
+    <title>Piano Tiles - V32 Final Master</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
     <style>
         :root { --neon: #00f2ff; --pink: #ff00ea; --gold: #ffea00; }
@@ -34,9 +34,9 @@
 <body>
 
 <div id="lobby" class="screen" style="display: flex;">
-    <h1>V31 GRAND MASTER</h1>
+    <h1>V32 FINAL MASTER</h1>
     <div id="song-list"></div>
-    <button id="start-btn">웅장한 무대 조율 중...</button>
+    <button id="start-btn">무대 장치 확인 중...</button>
 </div>
 
 <div id="game" class="screen">
@@ -55,6 +55,7 @@
 </div>
 
 <script>
+    // 🎹 소희님의 12곡 완벽 세팅
     const songs = [
         { t: "Piano Concerto No.2", a: "Rachmaninoff", p: "C4,Eb4,G4,C5,G4,Eb4,C4,G3" },
         { t: "Swan Lake", a: "Tchaikovsky", p: "A4,E5,D5,C5,B4,A4,B4,C5" },
@@ -75,19 +76,13 @@
     let speed = 0.5; 
     const gameArea = document.getElementById('game');
 
-    // 🎧 V31 Clean Grand 사운드 세팅
+    // 🎧 쇳소리 없는 클린 사운드 엔진
     const hall = new Tone.Reverb({ decay: 2.5, wet: 0.25 }).toDestination(); 
     const compressor = new Tone.Compressor(-15, 2).connect(hall); 
 
     piano = new Tone.Sampler({
         urls: {
-            A0:"A0.mp3",C1:"C1.mp3","D#1":"Ds1.mp3","F#1":"Fs1.mp3",
-            A1:"A1.mp3",C2:"C2.mp3","D#2":"Ds2.mp3","F#2":"Fs2.mp3",
-            A2:"A2.mp3",C3:"C3.mp3","D#3":"Ds3.mp3","F#3":"Fs3.mp3",
-            A3:"A3.mp3",C4:"C4.mp3","D#4":"Ds4.mp3","F#4":"Fs4.mp3",
-            A4:"A4.mp3",C5:"C5.mp3","D#5":"Ds5.mp3","F#5":"Fs5.mp3",
-            A5:"A5.mp3",C6:"C6.mp3","D#6":"Ds6.mp3","F#6":"Fs6.mp3",
-            A6:"A6.mp3",C7:"C7.mp3",A7:"A7.mp3",C8:"C8.mp3"
+            A0:"A0.mp3",C1:"C1.mp3",C4:"C4.mp3",C8:"C8.mp3"
         },
         release: 1.8, 
         baseUrl: "https://tonejs.github.io/audio/salamander/",
@@ -97,8 +92,6 @@
     function playHuman(note){
         const velocity = 0.75 + Math.random()*0.2;
         piano.triggerAttackRelease(note, "8n", undefined, velocity);
-
-        // 30% 확률로만 부드러운 옥타브 추가
         if(Math.random() < 0.3){
             const octave = Tone.Frequency(note).transpose(-12).toNote();
             piano.triggerAttackRelease(octave, "8n", "+0.02", velocity-0.25);
@@ -120,7 +113,6 @@
 
     document.getElementById('start-btn').addEventListener('click', async (e) => {
         e.stopPropagation(); 
-        if (document.getElementById('start-btn').innerText.includes("조율")) return;
         await Tone.start();
         document.getElementById('lobby').style.display = 'none';
         gameArea.style.display = 'block';
@@ -128,11 +120,11 @@
         const song = songs[selected];
         sheet = [];
         const notes = song.p.split(',');
-        for(let i=0; i<150; i++) {
+        for(let i=0; i<200; i++) {
             sheet.push({ lane: Math.floor(Math.random()*4), note: notes[i % notes.length] });
         }
 
-        isPlaying = true; score = 0; currentStep = 0; activeRows = []; speed = 0.5;
+        isPlaying = true; score = 0; currentStep = 0; activeRows = []; speed = 0.6;
         document.getElementById('score').innerText = "0";
         for(let i=0; i<4; i++) createRow(100 + (i * 25)); 
         
@@ -162,25 +154,37 @@
             const currentBottom = parseFloat(row.rowEl.style.bottom);
             const newBottom = currentBottom - speed;
             row.rowEl.style.bottom = newBottom + "%";
-            
-            // 바닥을 통과하면 게임 오버
             if (newBottom < -25 && !row.locked) {
                 end(false);
                 return;
             }
         }
-        speed += 0.0002;
+        speed += 0.0001;
         requestAnimationFrame(gameLoop);
     }
 
+    // 🛠️ V32 핵심: 실제 물리 위치 기반 판정 엔진
     gameArea.addEventListener("pointerdown", (e) => {
         if (!isPlaying || !canClick || activeRows.length === 0) return;
         e.preventDefault();
         
-        // 정렬을 통해 실제 바닥과 가장 가까운 타겟 찾기
-        const bottomRow = activeRows.find(r => !r.locked);
+        // 🔥 지피티 제안: 배열 순서가 아니라 실제 style.bottom이 가장 낮은 타겟 찾기
+        let bottomRow = null;
+        let lowestPos = Infinity;
+
+        activeRows.forEach(r => {
+            if (!r.locked) {
+                const currentBottom = parseFloat(r.rowEl.style.bottom);
+                if (currentBottom < lowestPos) {
+                    lowestPos = currentBottom;
+                    bottomRow = r;
+                }
+            }
+        });
+
         if (!bottomRow) return;
 
+        // 정확히 그 타일을 눌렀는지 확인
         const hitTarget = (e.target === bottomRow.tileEl);
 
         if (hitTarget) {
@@ -195,6 +199,7 @@
                 activeRows = activeRows.filter(r => r !== bottomRow);
             }, 50);
             
+            // 새 타일 생성 (가장 위에 있는 타일보다 25% 높은 곳)
             const topRow = activeRows[activeRows.length - 1];
             const topPos = topRow ? parseFloat(topRow.rowEl.style.bottom) : 100;
             createRow(topPos + 25);
@@ -203,7 +208,7 @@
                 setTimeout(() => end(true), 300);
             }
         } else if (!e.target.classList.contains('pressed')) {
-            // 흰 바탕 클릭 시 오답 처리
+            // 빈 흰 바탕을 누르면 즉시 실패 판정
             const rect = gameArea.getBoundingClientRect();
             const lane = Math.floor((e.clientX - rect.left) / (rect.width / 4));
             const errTile = document.createElement('div');
@@ -221,7 +226,7 @@
             gameArea.style.display = 'none';
             document.getElementById('result').style.display = 'flex';
             document.getElementById('res-title').innerText = win ? "PERFECT PERFORMANCE" : "CONCERT OVER";
-            document.getElementById('rank').innerText = win ? "SSS" : (score > 100 ? "S" : (score > 50 ? "A" : "F"));
+            document.getElementById('rank').innerText = win ? "SSS" : (score > 100 ? "S" : (score > 30 ? "A" : "F"));
             document.getElementById('final-score').innerText = `Score: ${score}`;
         }, 300);
     }
