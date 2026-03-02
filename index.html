@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Piano Tiles - V60 Legato</title>
+    <title>Piano Tiles - V61 Balance</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
     <style>
         :root { --pink: #ffb3e6; --purple: #e6ccff; --gold: #ffea00; }
@@ -31,14 +31,14 @@
 
 <div class="ui-layer">
     <div id="lobby">
-        <h1>LEGATO MAESTRO 16</h1>
+        <h1>BALANCE MAESTRO 16</h1>
         <div id="difficulty-box">
             <button class="diff-btn" data-diff="하">하 (❤️x10)</button>
             <button class="diff-btn active" data-diff="중">중 (❤️x10)</button>
             <button class="diff-btn" data-diff="상">상 (❤️x10)</button>
         </div>
         <div id="song-list"></div>
-        <button id="start-btn">부드러운 선율 조율 중...</button>
+        <button id="start-btn">밸런스 조율 중...</button>
     </div>
     <div id="game-ui">
         <div id="hearts">❤️❤️❤️❤️❤️❤️❤️❤️❤️❤️</div>
@@ -47,7 +47,7 @@
 </div>
 
 <script>
-    // 🎹 16곡 전곡 악보 (1분 30초 이상, 부드러운 전개)
+    // 🎹 16곡 전곡 악보 데이터 (1.5분 이상 반복 없는 긴 구성)
     const songs = [
         { t: "La Campanella", a: "Liszt", p: "D#6|D#4,D#6|D#4,D#6|A#4,D#6|B4,D#6|D#5,D#6|D#4,D#6|A#4,C#6|F#4,B5|D#4,A#5|F4,G#5|D#4,F#5|B3,E5|G#3,D#5|D#3,D#6|D#4,F#6|F#4,A#6|A#4,D#7|D#5,C#7|G#5,B6|F#5,A#6|E5,G#6|D#5,F#6|C#5,E6|B4,D#6|A#4,C#6|G#4,B5|F#4,A#5|E4,G#5|D#4".repeat(4) },
         { t: "Wedding March", a: "Mendelssohn", p: "F4|A3|C4,F4|A3|C4,F4|A3|C4,F4|C3|F3,A4|F3|A3,C5|A3|C4,F5|C4|F4,F4|A3|C4,G4|B3|D4,C5|E4|G4,A4|C4|E4,G4|B3|D4,F4|A3|C4,E4|G3|C4".repeat(8) },
@@ -70,18 +70,22 @@
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
     let piano, lives = 10, score = 0, isPlaying = false, selected = 0;
-    let difficulty = '중', tiles = [], particles = [], lastTime = 0, speed = 600;
+    
+    // ⚙️ V61 핵심: 난이도별 밸런스 설정
+    let difficulty = '중';
+    let speed = 600; 
+    let accelRate = 0.2; // 초당 증가하는 속도
+    let maxSpeed = 1000; // 난이도별 최고 속도 제한
+
+    let tiles = [], particles = [], lastTime = 0;
 
     function resize() { canvas.width = Math.min(window.innerWidth, 500); canvas.height = window.innerHeight; }
     window.addEventListener('resize', resize); resize();
 
-    // 🎧 V60의 핵심: "감싸는 소리"를 위한 마스터 오디오 체인
-    // 리미터를 강하게 걸어 음이 겹쳐도 깨지지 않게 방어
+    // 🎧 부드러운 레가토 사운드 엔진 유지
     const limiter = new Tone.Limiter(-4).toDestination();
-    const mainGain = new Tone.Gain(0.6).connect(limiter); // 전체 볼륨을 살짝 낮춰 여유 확보
-    
-    // 깊고 따뜻한 울림을 주는 리버브 (감싸는 느낌)
-    const hall = new Tone.Reverb({ decay: 3.5, wet: 0.35 }).connect(mainGain);
+    const mainGain = new Tone.Gain(0.6).connect(limiter);
+    const hall = new Tone.Reverb({ decay: 3.5, wet: 0.3 }).connect(mainGain);
     
     piano = new Tone.Sampler({
         urls: {
@@ -93,9 +97,9 @@
             "C6": "C6.mp3", "D#6": "Ds6.mp3", "F#6": "Fs6.mp3", "A6": "A6.mp3",
             "C7": "C7.mp3", "D#7": "Ds7.mp3", "F#7": "Fs7.mp3", "A7": "A7.mp3", "C8": "C8.mp3"
         },
-        release: 2.5, // 🎹 여운을 2.5초로 늘려 음이 이어지는 느낌(Legato) 극대화
+        release: 2.5,
         baseUrl: "https://tonejs.github.io/audio/salamander/",
-        onload: () => { document.getElementById('start-btn').innerText = "레가토 연주 시작"; }
+        onload: () => { document.getElementById('start-btn').innerText = "콘서트 시작하기"; }
     }).connect(hall);
 
     document.querySelectorAll('.diff-btn').forEach(btn => {
@@ -119,10 +123,22 @@
 
     document.getElementById('start-btn').onclick = async () => {
         await Tone.start(); isPlaying = true; tiles = []; score = 0;
-        lives = 10;
-        if(difficulty === '하') { speed = 400; }
-        else if(difficulty === '상') { speed = 850; }
-        else { speed = 600; }
+        lives = 10; // 모든 난이도 하트 10개 고정 히히 😊
+
+        // ⚙️ 난이도별 정밀 세팅 적용
+        if(difficulty === '하') { 
+            speed = 350;     // 느린 시작
+            accelRate = 0.05; // 아주 천천히 가속
+            maxSpeed = 550;   // 한계 속도 명확히 제한 (중 난이도 초기 속도 수준)
+        } else if(difficulty === '상') { 
+            speed = 800;     // 빠른 시작
+            accelRate = 0.35; // 빠른 가속
+            maxSpeed = 1600;  // 고득점 무한 경쟁 가능
+        } else { // 중 난이도
+            speed = 550; 
+            accelRate = 0.18;
+            maxSpeed = 1000;
+        }
         
         document.getElementById('hearts').innerText = '❤️'.repeat(lives);
         document.getElementById('lobby').style.display = 'none';
@@ -171,7 +187,10 @@
             if(p.life <= 0) particles.splice(i, 1);
             else { ctx.fillStyle = `rgba(255,255,255,${p.life})`; ctx.beginPath(); ctx.arc(p.x, p.y, 4, 0, Math.PI*2); ctx.fill(); }
         }
-        speed += 0.25; 
+
+        // ⚙️ 난이도별 제한 속도 내에서만 가속
+        if(speed < maxSpeed) speed += accelRate; 
+        
         requestAnimationFrame(animate);
     }
 
@@ -188,8 +207,7 @@
             target.hit = true; score++;
             document.getElementById('score').innerText = score;
             
-            // 🎹 V60의 핵심: "부드럽게 이어지는 연주"
-            // 벨로시티를 낮춰(0.5~0.7) 타격감을 줄이고, 재생 시간을 늘려 음을 잇습니다.
+            // 🎹 부드러운 터치 (Legato)
             const velocity = Math.random() * 0.2 + 0.5; 
             piano.triggerAttackRelease(target.note, "2n", undefined, velocity);
             
