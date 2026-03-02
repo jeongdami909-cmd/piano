@@ -3,34 +3,64 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Piano Tiles - V34 Ultimate</title>
+    <title>Piano Tiles - V35 La Campanella</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
     <style>
-        :root { --neon: #00f2ff; --pink: #ff00ea; --gold: #ffea00; }
+        :root { --neon: #00f2ff; --pink: #ff99f1; --purple: #e6b2ff; --gold: #ffea00; }
         * { box-sizing: border-box; user-select: none; margin: 0; padding: 0; font-family: 'Pretendard', sans-serif; -webkit-tap-highlight-color: transparent; }
-        body { color: #000; height: 100dvh; overflow: hidden; background: #000; touch-action: none; }
-        .screen { position: absolute; top: 0; left: 50%; width: 100%; height: 100%; max-width: 500px; transform: translateX(-50%); display: none; flex-direction: column; background: #fff; border-left: 1px solid #ddd; border-right: 1px solid #ddd; }
-        #lobby { display: flex; z-index: 100; padding: 25px; background: #0a0a0c; color: #fff; }
-        h1 { text-align: center; font-size: 26px; font-weight: 900; background: linear-gradient(90deg, var(--neon), var(--pink)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; padding: 15px 0; }
-        #song-list { flex: 1; overflow-y: auto; background: rgba(255,255,255,0.05); border-radius: 20px; padding: 12px; margin-bottom: 20px; border: 1px solid #333; }
-        .song-item { padding: 16px; border-bottom: 1px solid #222; border-radius: 12px; margin-bottom: 8px; cursor: pointer; background: rgba(255,255,255,0.03); }
-        .song-item.active { background: rgba(0,242,255,0.15); border: 1px solid var(--neon); }
-        #start-btn { width: 100%; padding: 22px; border-radius: 50px; border: none; font-size: 18px; font-weight: 900; background: linear-gradient(45deg, var(--neon), var(--pink)); color: #fff; cursor: pointer; }
-        #game { z-index: 50; position: relative; background: #fff; overflow: hidden; }
-        .lane-line { position: absolute; top: 0; width: 25%; height: 100%; border-right: 1px solid #eee; pointer-events: none; }
-        #score { position: absolute; top: 40px; width: 100%; text-align: center; font-size: 70px; font-weight: 900; z-index: 60; color: #ff0055; pointer-events: none; text-shadow: 2px 2px 0#fff, -2px -2px 0#fff; }
+        
+        /* 🌸 영상 속 몽환적인 핑크/퍼플 그라데이션 배경 */
+        body { 
+            background: linear-gradient(135deg, #ff99f1 0%, #e6b2ff 100%); 
+            height: 100dvh; overflow: hidden; touch-action: none; 
+        }
+
+        /* 눈송이/파티클 효과를 위한 배경 레이어 */
+        .snow-bg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; opacity: 0.6; }
+
+        .screen { position: absolute; top: 0; left: 50%; width: 100%; height: 100%; max-width: 500px; transform: translateX(-50%); display: none; flex-direction: column; background: rgba(255,255,255,0.1); backdrop-filter: blur(5px); }
+        
+        #lobby { display: flex; z-index: 100; padding: 25px; color: #fff; background: rgba(0,0,0,0.3); }
+        h1 { text-align: center; font-size: 28px; font-weight: 900; color: #fff; text-shadow: 0 0 15px var(--pink); padding: 20px 0; }
+        
+        #song-list { flex: 1; overflow-y: auto; background: rgba(255,255,255,0.15); border-radius: 20px; padding: 12px; margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.3); }
+        .song-item { padding: 16px; border-bottom: 1px solid rgba(255,255,255,0.1); border-radius: 12px; margin-bottom: 8px; background: rgba(0,0,0,0.2); color: #fff; }
+        .song-item.active { background: var(--pink); border: 2px solid #fff; box-shadow: 0 0 15px var(--pink); }
+
+        #start-btn { width: 100%; padding: 22px; border-radius: 50px; border: none; font-size: 20px; font-weight: 900; background: #fff; color: #ff66cc; cursor: pointer; box-shadow: 0 10px 20px rgba(0,0,0,0.2); }
+
+        #game { z-index: 50; position: relative; overflow: hidden; background: transparent; }
+        .lane-line { position: absolute; top: 0; width: 25%; height: 100%; border-right: 1px solid rgba(255,255,255,0.2); pointer-events: none; }
+        
+        /* 🎀 점수판 디자인 개선 */
+        #score { position: absolute; top: 40px; width: 100%; text-align: center; font-size: 80px; font-weight: 900; z-index: 60; color: #fff; pointer-events: none; text-shadow: 0 5px 15px rgba(255,0,150,0.5); }
+        
         .row { position: absolute; width: 100%; height: 25%; pointer-events: none; }
-        .tile { position: absolute; width: 25%; height: 100%; background: #111; border: 1px solid #000; pointer-events: none; }
-        .tile.pressed { background: #bbb !important; }
-        .tile.missed { background: #ff0055 !important; animation: blink 0.2s infinite; }
+        
+        /* 🎹 타일 디자인: 영상처럼 일반 타일은 검정, 롱 타일은 파란빛 */
+        .tile { position: absolute; width: 25%; height: 100%; background: #1a1a1a; border: 1px solid #333; pointer-events: auto; transition: background 0.05s; }
+        .tile.long { background: linear-gradient(to bottom, #00d2ff, #3a7bd5); height: 200%; border-radius: 10px; }
+        .tile.pressed { background: rgba(255,255,255,0.6) !important; box-shadow: 0 0 30px #fff; }
+        .tile.missed { background: #ff4d4d !important; animation: blink 0.2s infinite; }
+
+        /* ✨ 타격 시 터지는 파티클 효과 */
+        .spark { position: absolute; width: 10px; height: 10px; background: #fff; border-radius: 50%; pointer-events: none; animation: explode 0.4s ease-out forwards; }
+        
+        @keyframes explode {
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(3) translate(var(--tx), var(--ty)); opacity: 0; }
+        }
         @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-        #result { justify-content: center; align-items: center; text-align: center; z-index: 200; background: rgba(0,0,0,0.95); color: #fff; }
+        
+        #result { justify-content: center; align-items: center; text-align: center; z-index: 200; background: rgba(255,153,241,0.95); color: #fff; }
     </style>
 </head>
 <body>
 
+<div class="snow-bg" id="particles"></div>
+
 <div id="lobby" class="screen" style="display: flex;">
-    <h1>V34 ULTIMATE FINAL</h1>
+    <h1>LA CAMPANELLA EDITION</h1>
     <div id="song-list"></div>
     <button id="start-btn">웅장한 무대 조율 중...</button>
 </div>
@@ -44,17 +74,19 @@
 </div>
 
 <div id="result" class="screen">
-    <h2 id="res-title">PERFECT PERFORMANCE</h2>
-    <div id="rank" style="font-size:100px; font-weight:900; color:var(--gold);">S</div>
+    <h2 id="res-title">MASTERPIECE!</h2>
+    <div id="rank" style="font-size:100px; font-weight:900; color:var(--gold); text-shadow: 0 0 20px var(--gold);">SSS</div>
     <div id="final-score">Score: 0</div>
-    <button onclick="location.reload()" style="padding: 20px 60px; border-radius: 50px; background:#fff; font-size: 18px; font-weight: bold; color:#000;">Encore (다시 연주)</button>
+    <button onclick="location.reload()" style="padding: 20px 60px; border-radius: 50px; background:#fff; font-size: 20px; font-weight: bold; color:#ff66cc;">Encore</button>
 </div>
 
 <script>
+    // 🎼 영상의 핵심인 '라 캄파넬라'를 메인으로 12곡 세팅
     const songs = [
+        { t: "La Campanella", a: "Liszt", p: "D#6,D#6,D#6,D#6,D#6,D#6,D#6,D#6,D#6,C#6,B5,A#5,G#5,F#5,E5,D#5" },
         { t: "Piano Concerto No.2", a: "Rachmaninoff", p: "C4,Eb4,G4,C5,G4,Eb4,C4,G3" },
-        { t: "Swan Lake", a: "Tchaikovsky", p: "A4,E5,D5,C5,B4,A4,B4,C5" },
         { t: "Winter Wind", a: "Chopin", p: "E4,E4,F4,E4,A4,G#4,A4,C5,B4,C5,E5" },
+        { t: "Swan Lake", a: "Tchaikovsky", p: "A4,E5,D5,C5,B4,A4,B4,C5" },
         { t: "Purple Rain", a: "Prince", p: "Bb3,F4,G4,F4,Bb3,F4,G4,F4" },
         { t: "Still D.R.E.", a: "Dr. Dre", p: "E5,E5,E5,E5,E5,E5,E5,B4,B4,B4,B4" },
         { t: "No Scrubs", a: "TLC", p: "G#4,F#4,E4,F#4,G#4,G#4,G#4" },
@@ -62,39 +94,31 @@
         { t: "For Tomorrow", a: "Blur", p: "G4,A4,B4,D5,B4,A4,G4,E4" },
         { t: "Canon in D", a: "Pachelbel", p: "F#5,E5,D5,C#5,B4,A4,B4,C#5" },
         { t: "River Flows in You", a: "Yiruma", p: "F#4,E4,F#4,C#4,F#4,E4,F#4,C#4" },
-        { t: "Nocturne Op.9 No.2", a: "Chopin", p: "G4,G5,F5,G5,Eb5,D5,C5,Bb4" },
         { t: "Take On Me", a: "a-ha", p: "F#5,F#5,D5,B4,B4,E5,E5,E5,G#5,G#5" }
     ];
 
     let piano, sheet = [], activeRows = [];
     let isPlaying = false, score = 0, currentStep = 0, selected = 0, canClick = false;
-    let speed = 0.5;
+    let speed = 0.8; // 🔥 영상처럼 처음부터 더 빠른 속도감
     const gameArea = document.getElementById('game');
 
-    // 사운드 세팅: 쇳소리 방지를 위한 튜닝
-    const hall = new Tone.Reverb({ decay: 2.0, wet: 0.2 }).toDestination();
-    const compressor = new Tone.Compressor(-15, 2).connect(hall);
-
+    const hall = new Tone.Reverb({ decay: 2.5, wet: 0.3 }).toDestination();
     piano = new Tone.Sampler({
         urls: { A0:"A0.mp3", C1:"C1.mp3", C4:"C4.mp3", C8:"C8.mp3" },
-        release: 1.5,
         baseUrl: "https://tonejs.github.io/audio/salamander/",
-        onload: () => { document.getElementById('start-btn').innerText = "콘서트 연주 시작"; }
-    }).connect(compressor);
+        onload: () => { document.getElementById('start-btn').innerText = "연주 시작하기"; }
+    }).connect(hall);
 
-    // 강제 시작 타이머 (사운드 로딩 안 되어도 5초 뒤 시작 가능하게)
-    setTimeout(() => {
-        if (document.getElementById('start-btn').innerText.includes("조율")) {
-            document.getElementById('start-btn').innerText = "콘서트 연주 시작";
-        }
-    }, 5000);
-
-    function playHuman(note){
-        const velocity = 0.7 + Math.random()*0.3;
-        piano.triggerAttackRelease(note, "8n", undefined, velocity);
-        if(Math.random() < 0.3){
-            const low = Tone.Frequency(note).transpose(-12).toNote();
-            piano.triggerAttackRelease(low, "8n", "+0.02", velocity-0.25);
+    function createSpark(x, y) {
+        for(let i=0; i<8; i++) {
+            const s = document.createElement('div');
+            s.className = 'spark';
+            s.style.left = x + 'px';
+            s.style.top = y + 'px';
+            s.style.setProperty('--tx', (Math.random()*100 - 50) + 'px');
+            s.style.setProperty('--ty', (Math.random()*100 - 50) + 'px');
+            gameArea.appendChild(s);
+            setTimeout(() => s.remove(), 400);
         }
     }
 
@@ -104,15 +128,14 @@
         songs.forEach((s, idx) => {
             const item = document.createElement('div');
             item.className = `song-item ${idx === selected ? 'active' : ''}`;
-            item.innerHTML = `<strong>${s.t}</strong><br><small style="color:#aaa">${s.a}</small>`;
+            item.innerHTML = `<strong>${s.t}</strong><br><small>${s.a}</small>`;
             item.onclick = () => { selected = idx; renderSongs(); };
             listDiv.appendChild(item);
         });
     }
     renderSongs();
 
-    document.getElementById('start-btn').addEventListener('click', async (e) => {
-        e.stopPropagation();
+    document.getElementById('start-btn').addEventListener('click', async () => {
         await Tone.start();
         document.getElementById('lobby').style.display = 'none';
         gameArea.style.display = 'block';
@@ -120,16 +143,17 @@
         const song = songs[selected];
         sheet = [];
         const notes = song.p.split(',');
-        for(let i=0; i<300; i++) {
-            sheet.push({ lane: Math.floor(Math.random()*4), note: notes[i % notes.length] });
+        for(let i=0; i<500; i++) {
+            // 15% 확률로 롱 타일 생성
+            const isLong = Math.random() < 0.15;
+            sheet.push({ lane: Math.floor(Math.random()*4), note: notes[i % notes.length], isLong });
         }
 
-        isPlaying = true; score = 0; currentStep = 0; activeRows = []; speed = 0.5;
+        isPlaying = true; score = 0; currentStep = 0; activeRows = []; speed = 0.8;
         document.getElementById('score').innerText = "0";
-        for(let i=0; i<4; i++) createRow(110 + (i * 25));
+        for(let i=0; i<5; i++) createRow(110 + (i * 25));
         
-        // 시작 직후 터치 방지 (0.4초)
-        setTimeout(() => { canClick = true; }, 400);
+        setTimeout(() => { canClick = true; }, 300);
         requestAnimationFrame(gameLoop);
     });
 
@@ -139,12 +163,14 @@
         const rowEl = document.createElement('div');
         rowEl.className = 'row';
         rowEl.style.bottom = bottomVal + '%';
+        
         const tileEl = document.createElement('div');
-        tileEl.className = 'tile';
+        tileEl.className = `tile ${data.isLong ? 'long' : ''}`;
         tileEl.style.left = (data.lane * 25) + '%';
+        
         rowEl.appendChild(tileEl);
         gameArea.appendChild(rowEl);
-        activeRows.push({ rowEl, tileEl, lane: data.lane, note: data.note, locked: false });
+        activeRows.push({ rowEl, tileEl, lane: data.lane, note: data.note, locked: false, isLong: data.isLong });
         currentStep++;
     }
 
@@ -156,13 +182,12 @@
             const newBottom = currentBottom - speed;
             row.rowEl.style.bottom = newBottom + "%";
             
-            // 바닥 통과 실패 로직: 0% 아래로 내려가면 탈락
-            if (newBottom < -5 && !row.locked) {
+            if (newBottom < -25 && !row.locked) {
                 end(false);
                 return;
             }
         }
-        speed += 0.0001;
+        speed += 0.00015; // 🔥 속도 증가 가속도 상향
         requestAnimationFrame(gameLoop);
     }
 
@@ -170,7 +195,6 @@
         if (!isPlaying || !canClick || activeRows.length === 0) return;
         e.preventDefault();
         
-        // 가장 낮은 위치의 타일 찾기 (물리 판정)
         let bottomRow = null;
         let lowestPos = Infinity;
         activeRows.forEach(r => {
@@ -180,38 +204,38 @@
             }
         });
 
-        if (!bottomRow) return;
+        if (!bottomRow || lowestPos > 45) return;
 
-        // 판정 범위: 바닥 근처 40% 이내만 인정
-        if (lowestPos > 40) return;
-
-        // 레인 판정 로직
         const rect = gameArea.getBoundingClientRect();
-        const touchX = e.clientX - rect.left;
+        const touchX = (e.clientX || e.touches[0].clientX) - rect.left;
+        const touchY = (e.clientY || e.touches[0].clientY) - rect.top;
         let clickedLane = Math.floor(touchX / (rect.width / 4));
         clickedLane = Math.max(0, Math.min(3, clickedLane));
 
         if (clickedLane === bottomRow.lane) {
             bottomRow.locked = true;
-            playHuman(bottomRow.note);
+            piano.triggerAttackRelease(bottomRow.note, "8n");
             bottomRow.tileEl.classList.add('pressed');
-            score++;
+            
+            // ✨ 영상 속 파티클 효과 재현
+            createSpark(touchX, touchY);
+            
+            score += bottomRow.isLong ? 3 : 1; // 롱 타일은 추가 점수
             document.getElementById('score').innerText = score;
             
             setTimeout(() => {
                 bottomRow.rowEl.remove();
                 activeRows = activeRows.filter(r => r !== bottomRow);
-            }, 60);
+            }, 80);
             
             const topRow = activeRows[activeRows.length - 1];
             const topPos = topRow ? parseFloat(topRow.rowEl.style.bottom) : 100;
-            createRow(topPos + 25);
+            createRow(topPos + (bottomRow.isLong ? 40 : 25));
             
             if(currentStep >= sheet.length && activeRows.length === 0) {
                 setTimeout(() => end(true), 300);
             }
         } else {
-            // 오답 판정
             const errTile = document.createElement('div');
             errTile.className = 'tile missed';
             errTile.style.left = (clickedLane * 25) + '%';
@@ -226,9 +250,9 @@
         setTimeout(() => {
             gameArea.style.display = 'none';
             document.getElementById('result').style.display = 'flex';
-            document.getElementById('res-title').innerText = win ? "PERFECT PERFORMANCE" : "CONCERT OVER";
-            document.getElementById('rank').innerText = win ? "SSS" : (score > 100 ? "S" : (score > 30 ? "A" : "F"));
-            document.getElementById('final-score').innerText = `Score: ${score}`;
+            document.getElementById('res-title').innerText = win ? "GOD-LIKE!" : "GAME OVER";
+            document.getElementById('rank').innerText = score > 1000 ? "SSS" : (score > 500 ? "SS" : "S");
+            document.getElementById('final-score').innerText = `Final Score: ${score}`;
         }, 300);
     }
 </script>
