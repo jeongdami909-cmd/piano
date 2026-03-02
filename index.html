@@ -3,29 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Piano Tiles - V23.5 Ultimate Concert</title>
+    <title>Piano Tiles - V24 Ultra</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
     <style>
         :root { --neon: #00f2ff; --pink: #ff00ea; --gold: #ffea00; }
         * { box-sizing: border-box; user-select: none; margin: 0; padding: 0; font-family: 'Pretendard', sans-serif; -webkit-tap-highlight-color: transparent; }
-        body { color: #000; height: 100dvh; overflow: hidden; background: #fff; touch-action: none; }
-        .screen { position: absolute; top: 0; left: 50%; width: 100%; height: 100%; max-width: 500px; transform: translateX(-50%); display: none; flex-direction: column; background: #fff; border-left: 1px solid #ddd; border-right: 1px solid #ddd; }
+        body { color: #000; height: 100dvh; overflow: hidden; background: #000; touch-action: none; }
+        .screen { position: absolute; top: 0; left: 50%; width: 100%; height: 100%; max-width: 500px; transform: translateX(-50%); display: none; flex-direction: column; background: #fff; }
         
-        #lobby { display: flex; z-index: 100; padding: 25px; background: #050508; color: #fff; }
+        /* 로비 디자인 개선 */
+        #lobby { display: flex; z-index: 100; padding: 25px; background: #0a0a0c; color: #fff; }
         h1 { text-align: center; font-size: 26px; font-weight: 900; background: linear-gradient(90deg, var(--neon), var(--pink)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; padding: 15px 0; }
-        #song-list { flex: 1; overflow-y: auto; background: rgba(255,255,255,0.03); border-radius: 20px; padding: 10px; margin-bottom: 20px; border: 1px solid #222; }
-        .song-item { padding: 15px; border-bottom: 1px solid #222; border-radius: 12px; margin-bottom: 8px; cursor: pointer; background: rgba(255,255,255,0.02); }
+        #song-list { flex: 1; overflow-y: auto; background: rgba(255,255,255,0.05); border-radius: 20px; padding: 12px; margin-bottom: 20px; border: 1px solid #333; }
+        .song-item { padding: 16px; border-bottom: 1px solid #222; border-radius: 12px; margin-bottom: 8px; cursor: pointer; background: rgba(255,255,255,0.03); }
         .song-item.active { background: rgba(0,242,255,0.15); border: 1px solid var(--neon); }
-        #start-btn { width: 100%; padding: 20px; border-radius: 50px; border: none; font-size: 18px; font-weight: 900; background: linear-gradient(45deg, var(--neon), var(--pink)); color: #fff; cursor: pointer; }
+        #start-btn { width: 100%; padding: 22px; border-radius: 50px; border: none; font-size: 20px; font-weight: 900; background: linear-gradient(45deg, var(--neon), var(--pink)); color: #fff; cursor: pointer; transition: 0.2s; }
+        #start-btn:active { transform: scale(0.96); opacity: 0.8; }
+
+        /* 게임 화면 */
+        #game { z-index: 50; position: relative; background: #fff; border-left: 1px solid #ddd; border-right: 1px solid #ddd; }
+        .lane-line { position: absolute; top: 0; width: 25%; height: 100%; border-right: 1px solid #eee; pointer-events: none; }
+        #score { position: absolute; top: 40px; width: 100%; text-align: center; font-size: 70px; font-weight: 900; z-index: 60; color: #ff0055; pointer-events: none; text-shadow: 2px 2px 0#fff, -2px -2px 0#fff; }
         
-        #game { overflow: hidden; z-index: 50; position: relative; background: #fff; }
-        .lane-line { position: absolute; top: 0; width: 25%; height: 100%; border-right: 1px solid #ddd; pointer-events: none; }
-        #score { position: absolute; top: 30px; width: 100%; text-align: center; font-size: 60px; font-weight: 900; z-index: 60; color: #ff0055; pointer-events: none; text-shadow: 2px 2px 0#fff, -2px -2px 0#fff; }
-        
-        /* 쫀득한 움직임을 위한 트랜지션 */
-        .row { position: absolute; width: 100%; height: 25%; transition: bottom 0.12s ease-out; }
-        .tile { position: absolute; width: 25%; height: 100%; background: #111; border: 1px solid #000; box-shadow: inset 0 -4px 10px rgba(255,255,255,0.15); }
-        .tile.pressed { background: #bbb !important; box-shadow: none; }
+        .row { position: absolute; width: 100%; height: 25%; transition: bottom 0.1s linear; pointer-events: none; }
+        .tile { position: absolute; width: 25%; height: 100%; background: #111; border: 1px solid #000; pointer-events: auto; }
+        .tile.pressed { background: #ccc !important; }
         .tile.missed { background: #ff0055 !important; animation: blink 0.2s infinite; }
         
         @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
@@ -35,9 +37,9 @@
 <body>
 
 <div id="lobby" class="screen" style="display: flex;">
-    <h1>V23.5 ULTIMATE CONCERT</h1>
+    <h1>V24 ULTRA STABLE</h1>
     <div id="song-list"></div>
-    <button id="start-btn">콘서트홀 준비 중...</button>
+    <button id="start-btn">연주 시작하기</button>
 </div>
 
 <div id="game" class="screen">
@@ -49,14 +51,14 @@
 </div>
 
 <div id="result" class="screen">
-    <h2 id="res-title">BRAVO!</h2>
+    <h2 id="res-title">EXCELLENT!</h2>
     <div id="rank" style="font-size:100px; font-weight:900; color:var(--gold);">S</div>
     <div id="final-score">Score: 0</div>
-    <button onclick="location.reload()" style="padding: 15px 50px; border-radius: 50px; background:#fff; font-size: 18px; font-weight: bold; color:#000; cursor: pointer;">앵콜 (다시 하기)</button>
+    <button onclick="location.reload()" style="padding: 20px 60px; border-radius: 50px; background:#fff; font-size: 20px; font-weight: bold; color:#000;">다시 도전</button>
 </div>
 
 <script>
-    // 🎹 12곡 완벽 세팅
+    // 🎹 소희님의 감성을 담은 12곡
     const songs = [
         { t: "Piano Concerto No.2", a: "Rachmaninoff", p: "C4,Eb4,G4,C5,G4,Eb4,C4,G3" },
         { t: "Swan Lake", a: "Tchaikovsky", p: "A4,E5,D5,C5,B4,A4,B4,C5" },
@@ -73,27 +75,133 @@
     ];
 
     let piano, sheet = [], activeRows = [];
-    let isPlaying = false, score = 0, currentStep = 0, selected = 0, canClick = false;
+    let isPlaying = false, score = 0, currentStep = 0, selected = 0;
     const gameArea = document.getElementById('game');
 
-    // 🎧 지피티 제안: 콘서트홀 오디오 체인 적용
-    const reverb = new Tone.Reverb({ decay: 4, wet: 0.35 });
-    const compressor = new Tone.Compressor(-12, 3);
-    Tone.Destination.volume.value = -6; // 초기 볼륨 세팅
-
+    // 오디오 설정 (로딩 지연 방지)
     piano = new Tone.Sampler({
-        urls: {
-            A0: "A0.mp3", C1: "C1.mp3", "D#1": "Ds1.mp3", "F#1": "Fs1.mp3",
-            A1: "A1.mp3", C2: "C2.mp3", "D#2": "Ds2.mp3", "F#2": "Fs2.mp3",
-            A2: "A2.mp3", C3: "C3.mp3", "D#3": "Ds3.mp3", "F#3": "Fs3.mp3",
-            A3: "A3.mp3", C4: "C4.mp3", "D#4": "Ds4.mp3", "F#4": "Fs4.mp3",
-            A4: "A4.mp3", C5: "C5.mp3", "D#5": "Ds5.mp3", "F#5": "Fs5.mp3",
-            A5: "A5.mp3", C6: "C6.mp3", "D#6": "Ds6.mp3", "F#6": "Fs6.mp3",
-            A6: "A6.mp3", C7: "C7.mp3", A7: "A7.mp3", C8: "C8.mp3"
-        },
-        release: 4, // 페달을 밟은 듯한 잔향감
+        urls: { A0: "A0.mp3", C1: "C1.mp3", C4: "C4.mp3", C8: "C8.mp3" },
         baseUrl: "https://tonejs.github.io/audio/salamander/",
-        onload: () => { document.getElementById('start-btn').innerText = "연주 시작하기"; }
+        onload: () => { console.log("Piano Ready"); }
+    }).toDestination();
+
+    function renderSongs() {
+        const listDiv = document.getElementById('song-list');
+        listDiv.innerHTML = "";
+        songs.forEach((s, idx) => {
+            const item = document.createElement('div');
+            item.className = `song-item ${idx === selected ? 'active' : ''}`;
+            item.innerHTML = `<strong>${s.t}</strong><br><small style="color:#aaa">${s.a}</small>`;
+            item.onclick = () => { selected = idx; renderSongs(); };
+            listDiv.appendChild(item);
+        });
+    }
+    renderSongs();
+
+    function playNote(note) {
+        const vel = 0.8 + Math.random() * 0.2;
+        piano.triggerAttackRelease(note, "4n", undefined, vel);
+        // 왼손 옥타브 추가
+        try {
+            const low = Tone.Frequency(note).transpose(-12).toNote();
+            piano.triggerAttackRelease(low, "4n", "+0.02", vel - 0.2);
+        } catch(e) {}
+    }
+
+    document.getElementById('start-btn').addEventListener('click', async () => {
+        await Tone.start();
+        document.getElementById('lobby').style.display = 'none';
+        gameArea.style.display = 'block';
+
+        const song = songs[selected];
+        sheet = [];
+        const notes = song.p.split(',');
+        for(let i=0; i<100; i++) {
+            sheet.push({ lane: Math.floor(Math.random()*4), note: notes[i % notes.length] });
+        }
+
+        isPlaying = true; score = 0; currentStep = 0; activeRows = [];
+        document.getElementById('score').innerText = "0";
+        for(let i=0; i<5; i++) createRow(i);
     });
-    
-    // 오디오 연결
+
+    function createRow(offset) {
+        const sheetIdx = currentStep + offset;
+        if(sheetIdx >= sheet.length) return; 
+
+        const data = sheet[sheetIdx];
+        const rowEl = document.createElement('div');
+        rowEl.className = 'row';
+        rowEl.style.bottom = (offset * 25) + '%'; 
+
+        const tileEl = document.createElement('div');
+        tileEl.className = 'tile';
+        tileEl.style.left = (data.lane * 25) + '%';
+        
+        rowEl.appendChild(tileEl);
+        gameArea.appendChild(rowEl);
+        
+        activeRows.push({ rowEl, tileEl, lane: data.lane, note: data.note, locked: false });
+    }
+
+    // 🛠️ 핵심 변경: 좌표 계산이 아닌 '타일 클릭' 기반 무결점 엔진
+    gameArea.addEventListener("pointerdown", (e) => {
+        if (!isPlaying || activeRows.length === 0) return;
+        e.preventDefault();
+
+        // 위치 기반으로 맨 아래 타일 찾기
+        activeRows.sort((a, b) => parseFloat(a.rowEl.style.bottom) - parseFloat(b.rowEl.style.bottom));
+        const bottomRow = activeRows[0];
+
+        // 클릭된 요소가 검은 타일인지 확인
+        const isTile = e.target.classList.contains('tile');
+        
+        if (isTile && e.target === bottomRow.tileEl && !bottomRow.locked) {
+            // ✅ 정답
+            bottomRow.locked = true;
+            playNote(bottomRow.note);
+            bottomRow.tileEl.classList.add('pressed');
+            
+            score++;
+            document.getElementById('score').innerText = score;
+            
+            const removed = activeRows.shift();
+            setTimeout(() => removed.rowEl.remove(), 80);
+            
+            // 나머지 타일들 위치 갱신
+            activeRows.forEach((r, idx) => {
+                r.rowEl.style.bottom = (idx * 25) + '%'; 
+            });
+            
+            currentStep++;
+            createRow(4);
+
+            if(currentStep >= sheet.length && activeRows.length === 0) {
+                setTimeout(() => end(true), 300);
+            }
+        } else if (!bottomRow.locked) {
+            // ❌ 오답: 빈 공간이나 엉뚱한 타일을 누름
+            const rect = gameArea.getBoundingClientRect();
+            const lane = Math.floor((e.clientX - rect.left) / (rect.width / 4));
+            const errTile = document.createElement('div');
+            errTile.className = 'tile missed';
+            errTile.style.left = (Math.max(0, Math.min(3, lane)) * 25) + '%';
+            bottomRow.rowEl.appendChild(errTile);
+            end(false);
+        }
+    });
+
+    function end(win) {
+        if (!isPlaying) return;
+        isPlaying = false;
+        setTimeout(() => {
+            gameArea.style.display = 'none';
+            document.getElementById('result').style.display = 'flex';
+            document.getElementById('res-title').innerText = win ? "PERFECT!" : "GAME OVER";
+            document.getElementById('rank').innerText = win ? "SSS" : (score > 60 ? "S" : (score > 30 ? "A" : "F"));
+            document.getElementById('final-score').innerText = `Score: ${score}`;
+        }, 400);
+    }
+</script>
+</body>
+</html>
