@@ -3,361 +3,224 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>프로 AI 체스 - v39 Grandmaster</title>
+    <title>Piano Tiles - V28 Masterpiece</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
     <style>
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        html, body { height: 100%; margin: 0; padding: 0; overflow: hidden; background-color: #f0ede5; }
-        body { display: flex; flex-direction: column; align-items: center; font-family: -apple-system, sans-serif; padding: 10px; }
-        .app-wrapper { width: 100%; max-width: 400px; height: 100%; display: flex; flex-direction: column; justify-content: space-between; }
+        :root { --neon: #00f2ff; --pink: #ff00ea; --gold: #ffea00; }
+        * { box-sizing: border-box; user-select: none; margin: 0; padding: 0; font-family: 'Pretendard', sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { color: #000; height: 100dvh; overflow: hidden; background: #000; touch-action: none; }
+        .screen { position: absolute; top: 0; left: 50%; width: 100%; height: 100%; max-width: 500px; transform: translateX(-50%); display: none; flex-direction: column; background: #fff; border-left: 1px solid #ddd; border-right: 1px solid #ddd; }
         
-        #ui-header { height: 70px; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
-        #status { font-size: 16px; font-weight: 800; color: #2c3e50; margin-bottom: 5px; }
-        #ai-loader { visibility: hidden; width: 100%; height: 4px; background: #dcdde1; overflow: hidden; border-radius: 2px; }
-        .thinking-bar { width: 35%; height: 100%; background: #3498db; animation: move 1s infinite linear; }
-        @keyframes move { from { margin-left: -35%; } to { margin-left: 100%; } }
+        #lobby { display: flex; z-index: 100; padding: 25px; background: #0a0a0c; color: #fff; }
+        h1 { text-align: center; font-size: 26px; font-weight: 900; background: linear-gradient(90deg, var(--neon), var(--pink)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; padding: 15px 0; }
+        #song-list { flex: 1; overflow-y: auto; background: rgba(255,255,255,0.05); border-radius: 20px; padding: 12px; margin-bottom: 20px; border: 1px solid #333; }
+        .song-item { padding: 16px; border-bottom: 1px solid #222; border-radius: 12px; margin-bottom: 8px; cursor: pointer; background: rgba(255,255,255,0.03); }
+        .song-item.active { background: rgba(0,242,255,0.15); border: 1px solid var(--neon); }
+        #start-btn { width: 100%; padding: 22px; border-radius: 50px; border: none; font-size: 18px; font-weight: 900; background: linear-gradient(45deg, var(--neon), var(--pink)); color: #fff; cursor: pointer; }
 
-        /* 보드 버그 수정: 엄격한 그리드 유지 */
-        #board { 
-            display: grid; 
-            grid-template-columns: repeat(8, 12.5%); 
-            grid-template-rows: repeat(8, 12.5%); 
-            width: 100%; 
-            aspect-ratio: 1 / 1; 
-            border: 6px solid #3d2b1f; 
-            background-color: #3d2b1f; 
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3); 
-            position: relative;
-            overflow: hidden; /* 칸 합쳐짐 방지 */
-        }
-        .square { 
-            display: flex; justify-content: center; align-items: center; 
-            font-size: 8.5vw; cursor: pointer; user-select: none; position: relative;
-            width: 100%; height: 100%;
-        }
-        @media (min-width: 400px) { .square { font-size: 38px; } }
+        #game { z-index: 50; position: relative; background: #fff; overflow: hidden; }
+        .lane-line { position: absolute; top: 0; width: 25%; height: 100%; border-right: 1px solid #eee; pointer-events: none; }
+        #score { position: absolute; top: 40px; width: 100%; text-align: center; font-size: 70px; font-weight: 900; z-index: 60; color: #ff0055; pointer-events: none; text-shadow: 2px 2px 0#fff, -2px -2px 0#fff; }
         
-        .light { background-color: #f1d9b5; } .dark { background-color: #b58863; }
-        .selected { background-color: #bac466 !important; }
-        .pending { background-color: #f6e58d !important; }
-        .origin { background-color: #f9ca24 !important; opacity: 0.6; }
+        /* 🔥 지피티의 CSS 수정 제안 반영: 터치를 막지 않도록 설정 */
+        .row { position: absolute; width: 100%; height: 25%; transition: bottom 0.1s linear; pointer-events: auto; }
+        .tile { position: absolute; width: 25%; height: 100%; background: #111; border: 1px solid #000; pointer-events: auto; box-shadow: inset 0 -4px 10px rgba(255,255,255,0.1); }
+        .tile.pressed { background: #bbb !important; box-shadow: none; }
+        .tile.missed { background: #ff0055 !important; animation: blink 0.2s infinite; }
         
-        /* 체크메이트/체크 효과 */
-        .check::after { 
-            content: ''; position: absolute; width: 90%; height: 90%; 
-            background: radial-gradient(circle, rgba(235, 77, 75, 0.8) 30%, transparent 70%); 
-            border-radius: 50%; z-index: 0; 
-        }
-        .square span { z-index: 1; position: relative; pointer-events: none; }
-
-        .black-piece { color: #000; filter: drop-shadow(0 2px 2px rgba(255,255,255,0.2)); }
-        .white-piece { color: #fff; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4)); }
-        
-        .captured-area { width: 100%; height: 40px; display: flex; align-items: center; gap: 2px; padding: 0 10px; background: #e0e0e0; border-radius: 8px; font-size: 18px; overflow: hidden; }
-        .ui-row { display: flex; gap: 8px; width: 100%; margin-bottom: 5px; }
-        
-        button { flex: 1; padding: 14px 0; font-size: 14px; font-weight: bold; border: none; border-radius: 10px; cursor: pointer; color: white; transition: 0.1s; }
-        button:active { filter: brightness(0.8); }
-        #btn-confirm { background-color: #27ae60; display: none; }
-        #btn-cancel { background-color: #c0392b; display: none; }
-        #btn-reset { background-color: #7f8c8d; }
-        .castle-btn { background-color: #8e44ad; display: none; border-bottom: 3px solid #6d3285; }
-
-        #promotion-overlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 100; justify-content: center; align-items: center; gap: 10px; }
-        .promo-choice { width: 65px; height: 65px; background: #fff; border-radius: 12px; display: flex; justify-content: center; align-items: center; font-size: 40px; cursor: pointer; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        #result { justify-content: center; align-items: center; text-align: center; z-index: 200; background: rgba(0,0,0,0.95); color: #fff; }
     </style>
 </head>
 <body>
-    <div class="app-wrapper">
-        <div id="ui-header">
-            <div id="status">Grandmaster AI Edition</div>
-            <div id="ai-loader"><div class="thinking-bar"></div></div>
-        </div>
 
-        <div class="captured-area" id="black-captured"></div>
-        <div id="board"><div id="promotion-overlay"></div></div>
-        <div class="captured-area" id="white-captured"></div>
+<div id="lobby" class="screen" style="display: flex;">
+    <h1>V28 FINAL MASTER</h1>
+    <div id="song-list"></div>
+    <button id="start-btn">웅장한 무대 조율 중...</button>
+</div>
+
+<div id="game" class="screen">
+    <div class="lane-line" style="left:0%"></div>
+    <div class="lane-line" style="left:25%"></div>
+    <div class="lane-line" style="left:50%"></div>
+    <div class="lane-line" style="left:75%; border:none;"></div>
+    <div id="score">0</div>
+</div>
+
+<div id="result" class="screen">
+    <h2 id="res-title">BRAVO!</h2>
+    <div id="rank" style="font-size:100px; font-weight:900; color:var(--gold);">S</div>
+    <div id="final-score">Score: 0</div>
+    <button onclick="location.reload()" style="padding: 20px 60px; border-radius: 50px; background:#fff; font-size: 18px; font-weight: bold; color:#000;">Encore (다시 연주)</button>
+</div>
+
+<script>
+    // 🎹 소희님의 12곡 리스트 복원
+    const songs = [
+        { t: "Piano Concerto No.2", a: "Rachmaninoff", p: "C4,Eb4,G4,C5,G4,Eb4,C4,G3" },
+        { t: "Swan Lake", a: "Tchaikovsky", p: "A4,E5,D5,C5,B4,A4,B4,C5" },
+        { t: "Winter Wind", a: "Chopin", p: "E4,E4,F4,E4,A4,G#4,A4,C5,B4,C5,E5" },
+        { t: "Purple Rain", a: "Prince", p: "Bb3,F4,G4,F4,Bb3,F4,G4,F4" },
+        { t: "Still D.R.E.", a: "Dr. Dre", p: "E5,E5,E5,E5,E5,E5,E5,B4,B4,B4,B4" },
+        { t: "No Scrubs", a: "TLC", p: "G#4,F#4,E4,F#4,G#4,G#4,G#4" },
+        { t: "Honey", a: "L'Arc-en-Ciel", p: "E4,F#4,G#4,A4,B4,A4,G#4,F#4" },
+        { t: "For Tomorrow", a: "Blur", p: "G4,A4,B4,D5,B4,A4,G4,E4" },
+        { t: "Canon in D", a: "Pachelbel", p: "F#5,E5,D5,C#5,B4,A4,B4,C#5" },
+        { t: "River Flows in You", a: "Yiruma", p: "F#4,E4,F#4,C#4,F#4,E4,F#4,C#4" },
+        { t: "Nocturne Op.9 No.2", a: "Chopin", p: "G4,G5,F5,G5,Eb5,D5,C5,Bb4" },
+        { t: "Take On Me", a: "a-ha", p: "F#5,F#5,D5,B4,B4,E5,E5,E5,G#5,G#5" }
+    ];
+
+    let piano, sheet = [], activeRows = [];
+    let isPlaying = false, score = 0, currentStep = 0, selected = 0, canClick = false;
+    const gameArea = document.getElementById('game');
+
+    // 🎧 지피티 제안: 콘서트홀 파이널 사운드 엔진 세팅
+    const hall = new Tone.Reverb({ decay: 6, wet: 0.4 }).toDestination();
+    const compressor = new Tone.Compressor(-10, 3).connect(hall);
+    
+    piano = new Tone.Sampler({
+        urls: {
+            A0:"A0.mp3",C1:"C1.mp3","D#1":"Ds1.mp3","F#1":"Fs1.mp3",
+            A1:"A1.mp3",C2:"C2.mp3","D#2":"Ds2.mp3","F#2":"Fs2.mp3",
+            A2:"A2.mp3",C3:"C3.mp3","D#3":"Ds3.mp3","F#3":"Fs3.mp3",
+            A3:"A3.mp3",C4:"C4.mp3","D#4":"Ds4.mp3","F#4":"Fs4.mp3",
+            A4:"A4.mp3",C5:"C5.mp3","D#5":"Ds5.mp3","F#5":"Fs5.mp3",
+            A5:"A5.mp3",C6:"C6.mp3","D#6":"Ds6.mp3","F#6":"Fs6.mp3",
+            A6:"A6.mp3",C7:"C7.mp3",A7:"A7.mp3",C8:"C8.mp3"
+        },
+        release: 5, // 페달감 향상
+        baseUrl: "https://tonejs.github.io/audio/salamander/",
+        onload: () => { document.getElementById('start-btn').innerText = "콘서트 연주 시작"; }
+    }).connect(compressor);
+
+    // 🎹 사람다운 연주를 위한 왼손+오른손 시간차 함수
+    function playHuman(note){
+        const velocity = 0.7 + Math.random()*0.3;
+        piano.triggerAttackRelease(note, "8n", undefined, velocity);
+
+        try {
+            const low = Tone.Frequency(note).transpose(-24).toNote();
+            const root = Tone.Frequency(note).transpose(-12).toNote();
+            const fifth = Tone.Frequency(note).transpose(-7).toNote();
+
+            // 왼손 시간차 구현 (사람 감성 핵심)
+            piano.triggerAttackRelease(low, "4n", "+0.04", velocity-0.3);
+            piano.triggerAttackRelease([root, fifth], "8n", "+0.08", velocity-0.2);
+        } catch(e) {}
+    }
+
+    function renderSongs() {
+        const listDiv = document.getElementById('song-list');
+        listDiv.innerHTML = "";
+        songs.forEach((s, idx) => {
+            const item = document.createElement('div');
+            item.className = `song-item ${idx === selected ? 'active' : ''}`;
+            item.innerHTML = `<strong>${s.t}</strong><br><small style="color:#aaa">${s.a}</small>`;
+            item.onclick = () => { selected = idx; renderSongs(); };
+            listDiv.appendChild(item);
+        });
+    }
+    renderSongs();
+
+    document.getElementById('start-btn').addEventListener('click', async (e) => {
+        e.stopPropagation(); 
+        if (document.getElementById('start-btn').innerText.includes("조율")) return;
+        await Tone.start();
+        document.getElementById('lobby').style.display = 'none';
+        gameArea.style.display = 'block';
+
+        const song = songs[selected];
+        sheet = [];
+        const notes = song.p.split(',');
+        for(let i=0; i<100; i++) {
+            sheet.push({ lane: Math.floor(Math.random()*4), note: notes[i % notes.length] });
+        }
+
+        isPlaying = true; score = 0; currentStep = 0; activeRows = []; canClick = false;
+        document.getElementById('score').innerText = "0";
+        for(let i=0; i<5; i++) createRow(i);
         
-        <div class="ui-row">
-            <button id="btn-castle-king" class="castle-btn" onclick="tryCastle('king')">킹사이드 캐슬링 🏰</button>
-            <button id="btn-castle-queen" class="castle-btn" onclick="tryCastle('queen')">퀸사이드 캐슬링 🏰</button>
-        </div>
+        // 🛡️ 즉사 보호막
+        setTimeout(() => { canClick = true; }, 300);
+    });
 
-        <div class="ui-row">
-            <button id="btn-reset" onclick="resetGame()">새 게임</button>
-        </div>
-        <div class="ui-row">
-            <button id="btn-cancel" onclick="cancelMove()">이동 취소</button>
-            <button id="btn-confirm" onclick="confirmMove()">이동 확정 (턴 종료)</button>
-        </div>
-    </div>
+    function createRow(offset) {
+        const sheetIdx = currentStep + offset;
+        if(sheetIdx >= sheet.length) return; 
 
-    <script>
-        // --- Grandmaster Level AI Worker ---
-        const workerCode = `
-            self.onmessage = function(e) {
-                const { boardState, depth } = e.data;
-                const pVals = { p:100, n:320, b:330, r:500, q:900, k:20000 };
-                
-                // 그랜드마스터 데이터 기반 PST (기물 배치 최적화)
-                const pst = {
-                    p: [0,0,0,0,0,0,0,0, 50,50,50,50,50,50,50,50, 10,10,20,30,30,20,10,10, 5,5,10,27,27,10,5,5, 0,0,0,25,25,0,0,0, 5,-5,-10,0,0,-10,-5,5, 5,10,10,-25,-25,10,10,5, 0,0,0,0,0,0,0,0],
-                    n: [-50,-40,-30,-30,-30,-30,-40,-50, -40,-20,0,5,5,0,-20,-40, -30,5,15,20,20,15,5,-30, -30,0,20,25,25,20,0,-30, -30,5,20,25,25,20,5,-30, -30,0,15,20,20,15,0,-30, -40,-20,0,5,5,0,-20,-40, -50,-40,-30,-30,-30,-30,-40,-50],
-                    b: [-20,-10,-10,-10,-10,-10,-10,-20, -10,5,0,0,0,0,5,-10, -10,10,10,10,10,10,10,-10, -10,0,10,15,15,10,0,-10, -10,5,5,15,15,5,5,-10, -10,0,5,10,10,5,0,-10, -10,0,0,0,0,0,0,-10, -20,-10,-10,-10,-10,-10,-10,-20],
-                    r: [0,0,0,5,5,0,0,0, 5,10,10,10,10,10,10,5, -5,0,0,0,0,0,0,-5, -5,0,0,0,0,0,0,-5, -5,0,0,0,0,0,0,-5, -5,0,0,0,0,0,0,-5, 5,10,10,10,10,10,10,5, 0,0,0,0,0,0,0,0],
-                    q: [-20,-10,-10,-5,-5,-10,-10,-20, -10,0,5,0,0,0,0,-10, -10,5,5,5,5,5,0,-10, 0,0,5,5,5,5,0,-5, -5,0,5,5,5,5,0,-5, -10,0,5,5,5,5,0,-10, -10,0,0,0,0,0,0,-10, -20,-10,-10,-5,-5,-10,-10,-20],
-                    k: [20,30,10,0,0,10,30,20, 20,20,0,0,0,0,20,20, -10,-20,-20,-20,-20,-20,-20,-10, -20,-30,-40,-40,-40,-40,-30,-20, -30,-40,-50,-50,-50,-50,-40,-30, -30,-40,-50,-50,-50,-50,-40,-30, -30,-40,-50,-50,-50,-50,-40,-30, -30,-40,-50,-50,-50,-50,-40,-30]
-                };
+        const data = sheet[sheetIdx];
+        const rowEl = document.createElement('div');
+        rowEl.className = 'row';
+        rowEl.style.bottom = (offset * 25) + '%'; 
 
-                function evaluate(s) {
-                    let total = 0;
-                    const blackMoves = getValidMoves(s, false).length;
-                    const whiteMoves = getValidMoves(s, true).length;
-                    
-                    for(let r=0; r<8; r++) for(let c=0; c<8; c++) {
-                        let p = s[r][c]; if(!p) continue;
-                        let t = p.toLowerCase();
-                        let val = pVals[t] + (p===t ? pst[t][r*8+c] : pst[t][(7-r)*8+c]);
-                        total += (p === t) ? val : -val;
-                    }
-                    // 가동성 보너스 (그랜드마스터들은 기물이 자유로운 것을 선호함)
-                    total += (blackMoves - whiteMoves) * 5;
-                    return total;
-                }
+        const tileEl = document.createElement('div');
+        tileEl.className = 'tile';
+        tileEl.style.left = (data.lane * 25) + '%';
+        
+        rowEl.appendChild(tileEl);
+        gameArea.appendChild(rowEl);
+        activeRows.push({ rowEl, tileEl, lane: data.lane, note: data.note, locked: false });
+    }
 
-                function getValidMoves(s, isWhite) {
-                    const moves = [];
-                    for(let r=0; r<8; r++) for(let c=0; c<8; c++) {
-                        let p = s[r][c]; if(!p || (isWhite ? p!==p.toUpperCase() : p!==p.toLowerCase())) continue;
-                        for(let tr=0; tr<8; tr++) for(let tc=0; tc<8; tc++) {
-                            if(isValid(s, r, c, tr, tc)) moves.push({fr:r, fc:c, tr, tc});
-                        }
-                    }
-                    return moves;
-                }
+    // 🛠️ V28 무결점 클릭 엔진
+    gameArea.addEventListener("pointerdown", (e) => {
+        if (!isPlaying || !canClick || activeRows.length === 0) return;
+        e.preventDefault();
 
-                function isValid(s, fr, fc, tr, tc) {
-                    if(fr===tr && fc===tc) return false;
-                    let p = s[fr][fc]; let target = s[tr][tc];
-                    if(target && (p===p.toUpperCase()) === (target===target.toUpperCase())) return false;
-                    let dr=tr-fr, dc=tc-fc, t=p.toLowerCase();
-                    const path=()=>{let sR=dr===0?0:dr/Math.abs(dr), sC=dc===0?0:dc/Math.abs(dc), cR=fr+sR, cC=fc+sC; while(cR!==tr||cC!==tc){if(s[cR][cC]!=='') return false; cR+=sR; cC+=sC;} return true;};
-                    if(t==='p'){ let d=(p===p.toUpperCase())?-1:1; if(dc===0 && dr===d && target==='') return true; if(dc===0 && dr===d*2 && (fr===6||fr===1) && target==='' && s[fr+d][fc]==='') return true; if(Math.abs(dc)===1 && dr===d && target!=='') return true; return false; }
-                    if(t==='r') return (dr===0||dc===0) && path(); if(t==='b') return Math.abs(dr)===Math.abs(dc) && path(); if(t==='q') return (dr===0||dc===0||Math.abs(dr)===Math.abs(dc)) && path();
-                    if(t==='n') return (Math.abs(dr)===2 && Math.abs(dc)===1) || (Math.abs(dr)===1 && Math.abs(dc)===2);
-                    if(t==='k') return Math.abs(dr)<=1 && Math.abs(dc)<=1;
-                    return false;
-                }
+        // 물리적 위치(bottom) 정렬
+        activeRows.sort((a, b) => parseFloat(a.rowEl.style.bottom) - parseFloat(b.rowEl.style.bottom));
+        const bottomRow = activeRows[0];
 
-                function minimax(s, d, alpha, beta, isMax) {
-                    if(d===0) return evaluate(s);
-                    let moves = getValidMoves(s, !isMax);
-                    if(isMax) {
-                        let v = -Infinity;
-                        for(let m of moves) {
-                            let ns = s.map(r=>[...r]); ns[m.tr][m.tc]=ns[m.fr][m.fc]; ns[m.fr][m.fc]='';
-                            v = Math.max(v, minimax(ns, d-1, alpha, beta, false));
-                            alpha = Math.max(alpha, v); if(beta <= alpha) break;
-                        }
-                        return v === -Infinity ? -10000 : v;
-                    } else {
-                        let v = Infinity;
-                        for(let m of moves) {
-                            let ns = s.map(r=>[...r]); ns[m.tr][m.tc]=ns[m.fr][m.fc]; ns[m.fr][m.fc]='';
-                            v = Math.min(v, minimax(ns, d-1, alpha, beta, true));
-                            beta = Math.min(beta, v); if(beta <= alpha) break;
-                        }
-                        return v === Infinity ? 10000 : v;
-                    }
-                }
+        // 🎯 터치된 요소가 정답 타일인지 직접 확인
+        const hitTarget = (e.target === bottomRow.tileEl);
 
-                let possible = getValidMoves(boardState, false);
-                // 수 정렬 (캡처를 먼저 고려하여 가지치기 효율 증대)
-                possible.sort((a,b) => (boardState[b.tr][b.tc] ? 1 : 0) - (boardState[a.tr][a.tc] ? 1 : 0));
-                
-                let best = null, bestV = -Infinity;
-                for(let m of possible) {
-                    let ns = boardState.map(r=>[...r]); ns[m.tr][m.tc]=ns[m.fr][m.fc]; ns[m.fr][m.fc]='';
-                    let v = minimax(ns, depth-1, -Infinity, Infinity, false);
-                    if(v > bestV) { bestV = v; best = m; }
-                }
-                self.postMessage(best);
-            };
-        `;
-
-        const pieces = { r:'♜', n:'♞', b:'♝', q:'♛', k:'♚', p:'♟', R:'♜', N:'♞', B:'♝', Q:'♛', K:'♚', P:'♟' };
-        let boardState, capturedWhite, capturedBlack, turn, movedStatus, pending, selected, lastState;
-        const ai = new Worker(URL.createObjectURL(new Blob([workerCode], { type: 'application/javascript' })));
-
-        function saveGame() {
-            localStorage.setItem('chess_v39_save', JSON.stringify({ boardState, capturedWhite, capturedBlack, turn, movedStatus }));
-        }
-
-        function loadGame() {
-            const saved = localStorage.getItem('chess_v39_save');
-            if (saved) {
-                const d = JSON.parse(saved);
-                boardState = d.boardState; capturedWhite = d.capturedWhite;
-                capturedBlack = d.capturedBlack; turn = d.turn; movedStatus = d.movedStatus;
-            } else { resetGameData(); }
-            render();
-        }
-
-        function resetGameData() {
-            boardState = [['r','n','b','q','k','b','n','r'],['p','p','p','p','p','p','p','p'],['','','','','','','',''],['','','','','','','',''],['','','','','','','',''],['','','','','','','',''],['P','P','P','P','P','P','P','P'],['R','N','B','Q','K','B','N','R']];
-            capturedWhite = []; capturedBlack = []; turn = 'White';
-            movedStatus = { wK: false, wR1: false, wR2: false, bK: false, bR1: false, bR2: false };
-            saveGame(); render();
-        }
-
-        function isSquareAttacked(s, r, c, attackerColor) {
-            for(let i=0; i<8; i++) for(let j=0; j<8; j++) {
-                let p = s[i][j]; if(!p) continue;
-                let isAttacker = (attackerColor === 'White') ? p === p.toUpperCase() : p === p.toLowerCase();
-                if(isAttacker && isValidRaw(s, i, j, r, c)) return true;
-            }
-            return false;
-        }
-
-        function isCheck(s, color) {
-            let kChar = color === 'White' ? 'K' : 'k';
-            let kr, kc;
-            for(let r=0; r<8; r++) for(let c=0; c<8; c++) if(s[r][c] === kChar) { kr=r; kc=c; }
-            if(kr === undefined) return false;
-            return isSquareAttacked(s, kr, kc, color === 'White' ? 'Black' : 'White');
-        }
-
-        function isValidRaw(s, fr, fc, tr, tc) {
-            if(fr===tr && fc===tc) return false;
-            let p = s[fr][fc]; let target = s[tr][tc];
-            if(target && (p===p.toUpperCase()) === (target===target.toUpperCase())) return false;
-            let dr=tr-fr, dc=tc-fc, t=p.toLowerCase();
-            const path=()=>{let sR=dr===0?0:dr/Math.abs(dr), sC=dc===0?0:dc/Math.abs(dc), cR=fr+sR, cC=fc+sC; while(cR!==tr||cC!==tc){if(s[cR][cC]!=='') return false; cR+=sR; cC+=sC;} return true;};
-            if(t==='p'){ let d=(p===p.toUpperCase())?-1:1; if(dc===0 && dr===d && target==='') return true; if(dc===0 && dr===d*2 && (fr===6||fr===1) && target==='' && s[fr+d][fc]==='') return true; if(Math.abs(dc)===1 && dr===d && target!=='') return true; return false; }
-            if(t==='r') return (dr===0||dc===0) && path(); if(t==='b') return Math.abs(dr)===Math.abs(dc) && path(); if(t==='q') return (dr===0||dc===0||Math.abs(dr)===Math.abs(dc)) && path();
-            if(t==='n') return (Math.abs(dr)===2 && Math.abs(dc)===1) || (Math.abs(dr)===1 && Math.abs(dc)===2);
-            if(t==='k') return Math.abs(dr)<=1 && Math.abs(dc)<=1;
-            return false;
-        }
-
-        function render() {
-            const board = document.getElementById('board');
-            board.innerHTML = '<div id="promotion-overlay"></div>';
-            const inCheck = isCheck(boardState, turn);
+        if (hitTarget && !bottomRow.locked) {
+            bottomRow.locked = true;
+            playHuman(bottomRow.note); // 🔥 업그레이드된 휴먼 사운드
+            bottomRow.tileEl.classList.add('pressed');
             
-            for (let r=0; r<8; r++) for (let c=0; c<8; c++) {
-                const s = document.createElement('div');
-                s.className = `square ${(r+c)%2===0?'light':'dark'}`;
-                const p = boardState[r][c];
-                if (selected?.r === r && selected?.c === c) s.classList.add('selected');
-                if (pending && ((pending.fr===r && pending.fc===c) || (pending.tr===r && pending.tc===c))) s.classList.add('pending');
-                if (p === (turn==='White'?'K':'k') && inCheck) s.classList.add('check');
-                if (p) {
-                    const span = document.createElement('span');
-                    span.textContent = pieces[p];
-                    span.className = (p === p.toUpperCase() ? 'white-piece' : 'black-piece');
-                    s.appendChild(span);
-                }
-                s.onclick = () => handleSquareClick(r, c);
-                board.appendChild(s);
-            }
-            document.getElementById('white-captured').innerHTML = capturedWhite.map(p => pieces[p]).join('');
-            document.getElementById('black-captured').innerHTML = capturedBlack.map(p => pieces[p]).join('');
-            updateCastleButtons();
-        }
-
-        function updateCastleButtons() {
-            const bk = document.getElementById('btn-castle-king');
-            const bq = document.getElementById('btn-castle-queen');
-            bk.style.display = 'none'; bq.style.display = 'none';
-            if(!selected || boardState[selected.r][selected.c] !== 'K' || turn !== 'White' || isCheck(boardState, 'White')) return;
-            if(!movedStatus.wK && !movedStatus.wR2 && boardState[7][5]==='' && boardState[7][6]==='' && !isSquareAttacked(boardState, 7, 5, 'Black') && !isSquareAttacked(boardState, 7, 6, 'Black')) bk.style.display = 'block';
-            if(!movedStatus.wK && !movedStatus.wR1 && boardState[7][1]==='' && boardState[7][2]==='' && boardState[7][3]==='' && !isSquareAttacked(boardState, 7, 2, 'Black') && !isSquareAttacked(boardState, 7, 3, 'Black')) bq.style.display = 'block';
-        }
-
-        window.tryCastle = (side) => {
-            lastState = JSON.parse(JSON.stringify(boardState));
-            if(side === 'king') {
-                boardState[7][6] = 'K'; boardState[7][4] = ''; boardState[7][5] = 'R'; boardState[7][7] = '';
-                pending = { type: 'castle', side: 'king', fr:7, fc:4, tr:7, tc:6 };
-            } else {
-                boardState[7][2] = 'K'; boardState[7][4] = ''; boardState[7][3] = 'R'; boardState[7][0] = '';
-                pending = { type: 'castle', side: 'queen', fr:7, fc:4, tr:7, tc:2 };
-            }
-            selected = null; document.getElementById('btn-confirm').style.display='block'; document.getElementById('btn-cancel').style.display='block';
-            render();
-        }
-
-        function handleSquareClick(r, c) {
-            if(turn==='Black' || pending) return;
-            const p = boardState[r][c];
-            if(selected) {
-                if(selected.r===r && selected.c===c) { selected=null; }
-                else if(p && p===p.toUpperCase()) { selected={r,c}; }
-                else if(isValidRaw(boardState, selected.r, selected.c, r, c)) {
-                    lastState = JSON.parse(JSON.stringify(boardState));
-                    let movingPiece = boardState[selected.r][selected.c];
-                    let cap = boardState[r][c];
-                    boardState[r][c] = movingPiece; boardState[selected.r][selected.c] = '';
-                    if(isCheck(boardState, 'White')) { boardState = lastState; alert("⚠️ 왕이 노출되는 수입니다!"); return; }
-                    pending = { fr:selected.r, fc:selected.c, tr:r, tc:c, p:movingPiece, cap:cap };
-                    selected = null;
-                    if(movingPiece==='P' && r===0) showPromotionUI();
-                    else { document.getElementById('btn-confirm').style.display='block'; document.getElementById('btn-cancel').style.display='block'; }
-                }
-            } else if(p && p===p.toUpperCase()) { selected={r,c}; }
-            render();
-        }
-
-        function showPromotionUI() {
-            const overlay = document.getElementById('promotion-overlay'); overlay.style.display = 'flex';
-            ['Q','R','B','N'].forEach(type => {
-                const b = document.createElement('div'); b.className = 'promo-choice'; b.textContent = pieces[type];
-                b.onclick = (e) => {
-                    e.stopPropagation(); boardState[pending.tr][pending.tc] = type; pending.p = type; overlay.style.display = 'none';
-                    document.getElementById('btn-confirm').style.display='block'; document.getElementById('btn-cancel').style.display='block'; render();
-                };
-                overlay.appendChild(b);
+            score++;
+            document.getElementById('score').innerText = score;
+            
+            const removed = activeRows.shift();
+            setTimeout(() => removed.rowEl.remove(), 80);
+            
+            // 모든 건반 즉시 재정렬 (멈춤 현상 방지)
+            activeRows.forEach((r, idx) => {
+                r.rowEl.style.bottom = (idx * 25) + '%'; 
             });
+            
+            currentStep++;
+            createRow(4);
+
+            if(currentStep >= sheet.length && activeRows.length === 0) {
+                setTimeout(() => end(true), 300);
+            }
+        } else if (!e.target.classList.contains('pressed')) {
+            // ❌ 오답 판정: 흰 바탕이나 엉뚱한 타일을 누름
+            const rect = gameArea.getBoundingClientRect();
+            const lane = Math.floor((e.clientX - rect.left) / (rect.width / 4));
+            const errTile = document.createElement('div');
+            errTile.className = 'tile missed';
+            errTile.style.left = (Math.max(0, Math.min(3, lane)) * 25) + '%';
+            bottomRow.rowEl.appendChild(errTile);
+            end(false);
         }
+    });
 
-        window.confirmMove = () => {
-            if (pending.cap) capturedWhite.push(pending.cap);
-            if(pending.type === 'castle') { movedStatus.wK = true; if(pending.side==='king') movedStatus.wR2=true; else movedStatus.wR1=true; }
-            else {
-                if(pending.p==='K') movedStatus.wK = true;
-                if(pending.fr===7 && pending.fc===0) movedStatus.wR1 = true;
-                if(pending.fr===7 && pending.fc===7) movedStatus.wR2 = true;
-            }
-            pending = null; turn = 'Black';
-            document.getElementById('btn-confirm').style.display = 'none'; document.getElementById('btn-cancel').style.display = 'none';
-            saveGame(); render();
-            document.getElementById('status').innerText = "AI가 최선의 수를 계산 중입니다..."; 
-            document.getElementById('ai-loader').style.visibility = 'visible';
-            ai.postMessage({ boardState, depth: 3 });
-        };
-
-        window.cancelMove = () => { if(!pending) return; boardState = lastState; pending = null; document.getElementById('btn-confirm').style.display = 'none'; document.getElementById('btn-cancel').style.display = 'none'; render(); };
-        window.resetGame = () => { if(confirm("게임을 초기화하시겠습니까?")) { localStorage.removeItem('chess_v39_save'); resetGameData(); } };
-
-        ai.onmessage = (e) => {
-            const m = e.data; document.getElementById('ai-loader').style.visibility = 'hidden';
-            if (m) {
-                if (boardState[m.tr][m.tc]) capturedBlack.push(boardState[m.tr][m.tc]);
-                boardState[m.tr][m.tc] = boardState[m.fr][m.fc];
-                if(boardState[m.tr][m.tc]==='p' && m.tr===7) boardState[m.tr][m.tc]='q';
-                boardState[m.fr][m.fc] = '';
-                
-                // AI 이동 후 왕/룩 상태 업데이트
-                if(boardState[m.tr][m.tc]==='k') movedStatus.bK = true;
-                if(m.fr===0 && m.fc===0) movedStatus.bR1 = true;
-                if(m.fr===0 && m.fc===7) movedStatus.bR2 = true;
-
-                turn = 'White'; saveGame(); render(); 
-                document.getElementById('status').innerText = isCheck(boardState, 'White') ? "⚠️ CHECK!" : "당신의 차례입니다";
-            }
-        };
-
-        loadGame();
-    </script>
+    function end(win) {
+        if (!isPlaying) return;
+        isPlaying = false;
+        setTimeout(() => {
+            gameArea.style.display = 'none';
+            document.getElementById('result').style.display = 'flex';
+            document.getElementById('res-title').innerText = win ? "PERFECT!" : "GAME OVER";
+            document.getElementById('rank').innerText = win ? "SSS" : (score > 60 ? "S" : (score > 20 ? "A" : "F"));
+            document.getElementById('final-score').innerText = `Score: ${score}`;
+        }, 400);
+    }
+</script>
 </body>
 </html>
